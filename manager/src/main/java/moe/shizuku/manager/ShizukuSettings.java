@@ -222,7 +222,7 @@ public class ShizukuSettings {
     public static final String SYSTEM_START_CUSTOM = "custom";
 
     public static String getSystemStartMethod() {
-        return getPreferences().getString(Keys.KEY_SYSTEM_START_METHOD, SYSTEM_START_EXPLOIT);
+        return getPreferences().getString(Keys.KEY_SYSTEM_START_METHOD, SYSTEM_START_CUSTOM);
     }
 
     public static void setSystemStartMethod(String method) {

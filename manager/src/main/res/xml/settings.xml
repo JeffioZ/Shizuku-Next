@@ -37,7 +37,7 @@
             android:key="system_start_method"
             android:title="@string/settings_system_start_method"
             android:summary="%s"
-            android:defaultValue="exploit"
+            android:defaultValue="custom"
             android:entries="@array/system_start_method"
             android:entryValues="@array/system_start_method_value" />
 
