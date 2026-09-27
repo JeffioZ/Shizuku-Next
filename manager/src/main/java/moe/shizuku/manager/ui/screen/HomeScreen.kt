@@ -32,7 +32,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -50,6 +52,7 @@ import moe.shizuku.manager.ui.component.SegmentedListItem
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.SettingsHelper
 import moe.shizuku.manager.utils.ShizukuStateMachine
+import moe.shizuku.manager.utils.UpdateHelper
 import rikka.core.util.ClipboardUtils
 import rikka.shizuku.Shizuku
 
@@ -65,6 +68,8 @@ fun HomeScreen() {
         mutableStateOf(SettingsHelper.isIgnoringBatteryOptimizations(context))
     }
     var showAdbCommand by remember { mutableStateOf(false) }
+    var updateAvailable by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     DisposableEffect(Unit) {
         val listener: (ShizukuStateMachine.State) -> Unit = {
@@ -78,7 +83,12 @@ fun HomeScreen() {
         onDispose { ShizukuStateMachine.removeListener(listener) }
     }
 
-    LaunchedEffect(Unit) { ShizukuStateMachine.update() }
+    LaunchedEffect(Unit) {
+        ShizukuStateMachine.update()
+        updateAvailable = runCatching {
+            UpdateHelper.isCheckForUpdatesEnabled() && UpdateHelper.isNewUpdateAvailable()
+        }.getOrDefault(false)
+    }
 
     Column(modifier = Modifier.fillMaxWidth()) {
         TopAppBar(title = { Text(stringResource(R.string.app_name)) })
@@ -87,6 +97,34 @@ fun HomeScreen() {
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(13.dp)
         ) {
+            if (updateAvailable) {
+                item {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.tertiaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                        shape = MaterialTheme.shapes.large
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = stringResource(R.string.snackbar_update_available),
+                                modifier = Modifier.weight(1f),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            TextButton(onClick = {
+                                scope.launch {
+                                    runCatching { UpdateHelper.update() }
+                                    updateAvailable = false
+                                }
+                            }) { Text(stringResource(R.string.snackbar_action_update)) }
+                        }
+                    }
+                }
+            }
+
             if (!batteryIgnored) {
                 item {
                     Surface(
