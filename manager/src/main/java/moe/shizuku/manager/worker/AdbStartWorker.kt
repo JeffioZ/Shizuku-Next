@@ -50,8 +50,37 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
 
             val cr = applicationContext.contentResolver
 
-            Settings.Global.putInt(cr, Settings.Global.ADB_ENABLED, 1)
-            Settings.Global.putLong(cr, "adb_allowed_connection_time", 0L)
+            // Do NOT unconditionally force USB debugging on. On some devices (e.g.
+            // Xiaomi/OPPO/Lenovo) that kills Shizuku when the USB mode is File
+            // Transfer and the screen is off. Prefer the transport that is already
+            // available.
+            val wirelessAlreadyEnabled = Settings.Global.getInt(cr, "adb_wifi_enabled", 0) == 1
+            val usbAlreadyEnabled = Settings.Global.getInt(cr, Settings.Global.ADB_ENABLED, 0) == 1
+
+            if (usbAlreadyEnabled) {
+                // USB is already on — reset the allowed connection time and proceed
+                // via the USB path.
+                Settings.Global.putLong(cr, "adb_allowed_connection_time", 0L)
+            } else if (wirelessAlreadyEnabled) {
+                // USB is off and wireless is already active. Writing adb_wifi_enabled=1
+                // again is a no-op (SettingsProvider does not notify on the same
+                // value), so adbd never reinitialises wireless and mDNS discovery
+                // finds nothing. Write 0 first so the re-enable below is a real 0->1
+                // change, forcing adbd to restart wireless and emit a fresh mDNS
+                // announcement.
+                Settings.Global.putInt(cr, "adb_wifi_enabled", 0)
+                try {
+                    delay(200)
+                } finally {
+                    // Restore unconditionally: normally a harmless no-op, and on
+                    // cancellation it avoids leaving wireless disabled.
+                    Settings.Global.putInt(cr, "adb_wifi_enabled", 1)
+                }
+            } else {
+                // Neither is on — enable USB debugging for the start.
+                Settings.Global.putInt(cr, Settings.Global.ADB_ENABLED, 1)
+                Settings.Global.putLong(cr, "adb_allowed_connection_time", 0L)
+            }
 
             val tcpPort = EnvironmentUtils.getAdbTcpPort()
             if (tcpPort > 0 && !ShizukuSettings.getTcpMode()) {

@@ -45,6 +45,7 @@ This version of Shizuku includes some extra features over the original version, 
 * **[BETA] Stealth mode:** hide Shizuku from other apps that don't work when Shizuku is installed
 * **[BETA] In-app updates:** option to automatically check for new updates, and can automatically download/install the latest version from GitHub
 * **Android/Google TV and VR headset support:** UI is now compatible with D-Pad remotes, all TVs are supported (including Android 14+ TVs that require pairing), and the multi-window pairing dialog is toggleable in settings for VR headsets
+* **Stability on some Chinese devices (Xiaomi/OPPO/Lenovo):** background starts no longer force USB debugging on, so Shizuku no longer dies when the USB mode is File Transfer and the screen is off
 * **MediaTek support:** fixes a critical bug in the original v13.6.0 which prevented Shizuku from working on MediaTek devices
 * And more!
 
