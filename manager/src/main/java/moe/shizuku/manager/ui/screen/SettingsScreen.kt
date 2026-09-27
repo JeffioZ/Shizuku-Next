@@ -39,6 +39,7 @@ import moe.shizuku.manager.ui.component.SegmentedColumn
 import moe.shizuku.manager.ui.theme.ThemeState
 import moe.shizuku.manager.ui.component.SegmentedListItem
 import moe.shizuku.manager.utils.CustomTabsHelper
+import moe.shizuku.manager.utils.SettingsHelper
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,6 +62,9 @@ fun SettingsScreen(onOpenDetail: (Detail) -> Unit) {
     }
     var blackNight by remember {
         mutableStateOf(ShizukuSettings.getPreferences().getBoolean(ShizukuSettings.Keys.KEY_BLACK_NIGHT_THEME, false))
+    }
+    var batteryIgnored by remember {
+        mutableStateOf(SettingsHelper.isIgnoringBatteryOptimizations(context))
     }
 
     var tcpPortDialog by remember { mutableStateOf(false) }
@@ -179,6 +183,61 @@ fun SettingsScreen(onOpenDetail: (Detail) -> Unit) {
                                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
                             },
                             onClick = { systemStartDialog = true }
+                        )
+                    }
+                }
+            }
+
+            item {
+                SegmentedColumn(modifier = Modifier.fillMaxWidth()) {
+                    item {
+                        SegmentedListItem(
+                            headlineContent = { Text(stringResource(R.string.tools_battery)) },
+                            supportingContent = {
+                                Text(
+                                    stringResource(
+                                        if (batteryIgnored) R.string.tools_battery_ignored
+                                        else R.string.tools_battery_not_ignored
+                                    )
+                                )
+                            },
+                            trailingContent = if (!batteryIgnored) {
+                                {
+                                    TextButton(onClick = {
+                                        SettingsHelper.requestIgnoreBatteryOptimizationsPrivileged(context) {
+                                            batteryIgnored = SettingsHelper.isIgnoringBatteryOptimizations(context)
+                                        }
+                                    }) { Text(stringResource(R.string.snackbar_action_fix)) }
+                                }
+                            } else null
+                        )
+                    }
+                    item {
+                        SegmentedListItem(
+                            headlineContent = { Text(stringResource(R.string.tools_stealth)) },
+                            trailingContent = {
+                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+                            },
+                            onClick = { onOpenDetail(Detail.STEALTH) }
+                        )
+                    }
+                    item {
+                        SegmentedListItem(
+                            headlineContent = { Text(stringResource(R.string.tools_terminal)) },
+                            trailingContent = {
+                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+                            },
+                            onClick = { onOpenDetail(Detail.TERMINAL) }
+                        )
+                    }
+                    item {
+                        SegmentedListItem(
+                            headlineContent = { Text(stringResource(R.string.intents_title)) },
+                            supportingContent = { Text(stringResource(R.string.intents_description)) },
+                            trailingContent = {
+                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+                            },
+                            onClick = { onOpenDetail(Detail.INTENTS) }
                         )
                     }
                 }

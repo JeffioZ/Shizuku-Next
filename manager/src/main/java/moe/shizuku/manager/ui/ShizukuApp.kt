@@ -6,11 +6,9 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Apps
-import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Apps
-import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
@@ -36,7 +34,6 @@ import moe.shizuku.manager.ui.screen.IntentsScreen
 import moe.shizuku.manager.ui.screen.SettingsScreen
 import moe.shizuku.manager.ui.screen.StealthScreen
 import moe.shizuku.manager.ui.screen.TerminalScreen
-import moe.shizuku.manager.ui.screen.ToolsScreen
 import moe.shizuku.manager.ui.theme.ShizukuTheme
 
 /** A secondary screen shown on top of the tab pager. */
@@ -51,7 +48,6 @@ private data class Tab(
 private val tabs = listOf(
     Tab(R.string.tab_home, Icons.Filled.Home, Icons.Outlined.Home),
     Tab(R.string.tab_apps, Icons.Filled.Apps, Icons.Outlined.Apps),
-    Tab(R.string.tab_tools, Icons.Filled.Build, Icons.Outlined.Build),
     Tab(R.string.tab_settings, Icons.Filled.Settings, Icons.Outlined.Settings),
 )
 
@@ -109,8 +105,7 @@ private fun MainTabs(onOpenDetail: (Detail) -> Unit) {
             when (page) {
                 0 -> HomeScreen()
                 1 -> AppsScreen()
-                2 -> ToolsScreen(onOpenDetail = onOpenDetail)
-                3 -> SettingsScreen(onOpenDetail = onOpenDetail)
+                2 -> SettingsScreen(onOpenDetail = onOpenDetail)
             }
         }
     }
