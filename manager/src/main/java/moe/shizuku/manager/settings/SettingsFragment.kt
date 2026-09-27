@@ -489,7 +489,14 @@ class SettingsFragment : PreferenceFragmentCompat(), SharedPreferences.OnSharedP
                     msg = context.getString(R.string.snackbar_battery_optimization_settings),
                     duration = 6000,
                     actionText = context.getString(R.string.snackbar_action_fix),
-                    action = { SettingsHelper.requestIgnoreBatteryOptimizations(context, batteryOptimizationListener) },
+                    action = {
+                        SettingsHelper.requestIgnoreBatteryOptimizationsPrivileged(
+                            context,
+                            batteryOptimizationListener
+                        ) { granted ->
+                            if (continuation.isActive) continuation.resume(granted)
+                        }
+                    },
                     onDismiss = { event ->
                         if (event != Snackbar.Callback.DISMISS_EVENT_ACTION && continuation.isActive)
                             continuation.resume(false)

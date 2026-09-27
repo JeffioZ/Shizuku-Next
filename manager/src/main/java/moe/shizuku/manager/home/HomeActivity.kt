@@ -91,7 +91,7 @@ abstract class HomeActivity : AppBarActivity() {
                 msg = getString(R.string.snackbar_battery_optimization_home),
                 duration = Snackbar.LENGTH_INDEFINITE,
                 actionText = getString(R.string.snackbar_action_fix),
-                action = { SettingsHelper.requestIgnoreBatteryOptimizations(this, null) }
+                action = { SettingsHelper.requestIgnoreBatteryOptimizationsPrivileged(this) }
             )
         }
         homeModel.checkBatteryOptimization()
