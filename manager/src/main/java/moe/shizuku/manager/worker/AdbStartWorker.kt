@@ -35,7 +35,6 @@ import moe.shizuku.manager.adb.AdbPairingRequiredException
 import moe.shizuku.manager.adb.AdbStarter
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter.WorkerState
-import moe.shizuku.manager.receiver.ShizukuReceiverStarter.updateNotification
 import moe.shizuku.manager.settings.BugReportDialogActivity
 import moe.shizuku.manager.start.StartFailureKind
 import moe.shizuku.manager.start.StartStatusReporter
@@ -44,34 +43,45 @@ import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.ShizukuStateMachine
 
 class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
+
+    /** The method this start was asked for, so notifications retry the same way. */
+    private var requestedMethod = ShizukuSettings.StartMethod.WIRELESS
+
+    private fun notify(state: ShizukuReceiverStarter.WorkerState) =
+        ShizukuReceiverStarter.updateNotification(applicationContext, state, requestedMethod)
+
     override suspend fun doWork(): Result {
         try {
-            updateNotification(
-                applicationContext,
-                WorkerState.RUNNING
-            )
+            requestedMethod = inputData.getInt(KEY_START_METHOD, ShizukuSettings.StartMethod.WIRELESS)
+
+            notify(WorkerState.RUNNING)
 
             val cr = applicationContext.contentResolver
-            val enableWirelessDebugging = inputData.getBoolean(KEY_ENABLE_WIFI, true)
+            val startMethod = requestedMethod
+            val usbMethod = startMethod == ShizukuSettings.StartMethod.USB
 
-            // Do NOT unconditionally force USB debugging on. On some devices (e.g.
-            // Xiaomi/OPPO/Lenovo) that kills Shizuku when the USB mode is File
-            // Transfer and the screen is off. Prefer the transport that is already
-            // available.
+            // Which debugging toggle we use is the entire difference between the two
+            // ADB start methods, so each one only ever touches its own:
+            //   USB      -> USB debugging, never wireless debugging
+            //   WIRELESS -> wireless debugging, never USB debugging. Forcing USB
+            //               debugging on is what the old USB "fallback" did, and it
+            //               is what killed Shizuku on some Chinese devices when the
+            //               USB mode was File Transfer and the screen went off.
             val wirelessAlreadyEnabled = Settings.Global.getInt(cr, "adb_wifi_enabled", 0) == 1
             val usbAlreadyEnabled = Settings.Global.getInt(cr, Settings.Global.ADB_ENABLED, 0) == 1
 
-            if (usbAlreadyEnabled) {
-                // USB is already on — reset the allowed connection time and proceed
-                // via the USB path.
+            if (usbMethod) {
+                if (!usbAlreadyEnabled) {
+                    Settings.Global.putInt(cr, Settings.Global.ADB_ENABLED, 1)
+                }
+                // Don't let the authorized connection expire while we connect.
                 Settings.Global.putLong(cr, "adb_allowed_connection_time", 0L)
             } else if (wirelessAlreadyEnabled) {
-                // USB is off and wireless is already active. Writing adb_wifi_enabled=1
-                // again is a no-op (SettingsProvider does not notify on the same
-                // value), so adbd never reinitialises wireless and mDNS discovery
-                // finds nothing. Write 0 first so the re-enable below is a real 0->1
-                // change, forcing adbd to restart wireless and emit a fresh mDNS
-                // announcement.
+                // Wireless is already active. Writing adb_wifi_enabled=1 again is a
+                // no-op (SettingsProvider does not notify on the same value), so adbd
+                // never reinitialises wireless and mDNS discovery finds nothing. Write
+                // 0 first so the re-enable below is a real 0->1 change, forcing adbd to
+                // restart wireless and emit a fresh mDNS announcement.
                 Settings.Global.putInt(cr, "adb_wifi_enabled", 0)
                 try {
                     delay(200)
@@ -80,18 +90,24 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                     // cancellation it avoids leaving wireless disabled.
                     Settings.Global.putInt(cr, "adb_wifi_enabled", 1)
                 }
-            } else if (!enableWirelessDebugging) {
-                // Neither is on and wireless is not requested — fall back to USB.
-                Settings.Global.putInt(cr, Settings.Global.ADB_ENABLED, 1)
-                Settings.Global.putLong(cr, "adb_allowed_connection_time", 0L)
             }
-            // else: neither is on but wireless is requested — do not touch USB; let
-            // the callbackFlow below write adb_wifi_enabled=1 so the start proceeds
-            // over wireless only.
+            // else: wireless is off and we are starting over it — the callbackFlow
+            // below writes adb_wifi_enabled=1 so the start proceeds over wireless.
 
             val tcpPort = EnvironmentUtils.getAdbTcpPort()
             if (tcpPort > 0 && !ShizukuSettings.getTcpMode()) {
                 AdbStarter.stopTcp(applicationContext, tcpPort)
+            }
+
+            if (usbMethod && EnvironmentUtils.isWifiRequired()) {
+                // USB debugging on its own gives us nothing to connect to: adbd only
+                // accepts a local connection on the classic TCP port, which a computer
+                // has to open with `adb tcpip`. Say so instead of discovering nothing.
+                StartStatusReporter.failed(
+                    applicationContext.getString(R.string.start_failed_usb_no_port)
+                )
+                notify(WorkerState.AWAITING_RETRY)
+                return Result.failure()
             }
 
             val port = tcpPort.takeIf { !EnvironmentUtils.isWifiRequired() } ?: callbackFlow {
@@ -117,14 +133,15 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                     if (km.isKeyguardLocked) {
                         val notification = ShizukuReceiverStarter.buildNotification(
                             applicationContext,
-                            null
+                            null,
+                            requestedMethod
                         )
                         val foregroundInfo = ForegroundInfo(
                             ShizukuReceiverStarter.NOTIFICATION_ID,
                             notification
                         )
                         setForegroundAsync(foregroundInfo)
-                        updateNotification(applicationContext, WorkerState.WAITING_FOR_UNLOCK)
+                        notify(WorkerState.WAITING_FOR_UNLOCK)
 
                         val filter = IntentFilter(Intent.ACTION_USER_PRESENT)
                         unlockReceiver = object : BroadcastReceiver() {
@@ -169,7 +186,7 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 }
             }.first()
             
-            updateNotification(applicationContext, WorkerState.CONNECTING)
+            notify(WorkerState.CONNECTING)
             AdbStarter.startAdb(applicationContext, port)
             Starter.waitForBinder()
 
@@ -188,7 +205,7 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                     else -> WorkerState.AWAITING_RETRY
                 }
             }
-            updateNotification(applicationContext, state)
+            notify(state)
 
             throw e
         } catch (e: Exception) {
@@ -237,10 +254,7 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             if (ShizukuStateMachine.update() == ShizukuStateMachine.State.RUNNING) {
                 return Result.success()
             } else {
-                updateNotification(
-                    applicationContext,
-                    WorkerState.AWAITING_RETRY
-                )
+                notify(WorkerState.AWAITING_RETRY)
                 return Result.retry()
             }
         }
@@ -280,22 +294,24 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
     }
 
     companion object {
-        const val KEY_ENABLE_WIFI = "enable_wifi"
+        const val KEY_START_METHOD = "start_method"
 
         fun enqueue(
             context: Context,
-            enableWirelessDebugging: Boolean = false,
+            startMethod: Int = ShizukuSettings.StartMethod.WIRELESS,
             immediate: Boolean = false
         ) {
+            val usbMethod = startMethod == ShizukuSettings.StartMethod.USB
             val cb = Constraints.Builder()
             // `immediate` is for user-initiated starts (manual broadcast, GUI button):
             // they shouldn't wait on unmetered Wi-Fi like unattended auto-restarts do,
-            // since the discovery flow works without any network connection.
-            if (EnvironmentUtils.isWifiRequired() && !immediate)
+            // since the discovery flow works without any network connection. A USB
+            // start never wants a network constraint at all.
+            if (EnvironmentUtils.isWifiRequired() && !immediate && !usbMethod)
                 cb.setRequiredNetworkType(NetworkType.UNMETERED)
             val constraints = cb.build()
 
-            val inputData = workDataOf(KEY_ENABLE_WIFI to enableWirelessDebugging)
+            val inputData = workDataOf(KEY_START_METHOD to startMethod)
 
             val request = OneTimeWorkRequestBuilder<AdbStartWorker>()
                 .setConstraints(constraints)

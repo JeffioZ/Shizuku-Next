@@ -17,10 +17,10 @@ import com.topjohnwu.superuser.Shell
 import moe.shizuku.manager.R
 import moe.shizuku.manager.AppConstants
 import moe.shizuku.manager.ShizukuSettings
-import moe.shizuku.manager.ShizukuSettings.LaunchMethod
 import moe.shizuku.manager.start.StartFailureKind
 import moe.shizuku.manager.start.StartStatusReporter
 import moe.shizuku.manager.starter.Starter
+import moe.shizuku.manager.starter.StarterActivity
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.SettingsPage
 import moe.shizuku.manager.utils.ShizukuStateMachine
@@ -41,7 +41,18 @@ object ShizukuReceiverStarter {
         STOPPED
     }
 
-    fun start(context: Context, forceStart: Boolean = false, userInitiated: Boolean = false) {
+    /**
+     * Starts Shizuku with [startMethod], defaulting to the method chosen in
+     * settings. Every entry point goes through here — the Start button, start on
+     * boot, the watchdog, the manual-start intent and the pairing flow — so they
+     * all behave the same instead of guessing from whichever method worked last.
+     */
+    fun start(
+        context: Context,
+        forceStart: Boolean = false,
+        userInitiated: Boolean = false,
+        @ShizukuSettings.StartMethod startMethod: Int = ShizukuSettings.getStartMethod()
+    ) {
         // A start request from any entry point clears manual-stop suppression.
         ShizukuSettings.setManuallyStopped(false)
 
@@ -49,54 +60,75 @@ object ShizukuReceiverStarter {
 
         StartStatusReporter.starting()
 
-        if (ShizukuSettings.getLastLaunchMode() == LaunchMethod.ROOT) {
-            rootStart(context)
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
-            || EnvironmentUtils.isTelevision()
-            || EnvironmentUtils.getAdbTcpPort() > 0
-        ) {
-            // UNKNOWN (e.g. after a fresh install) is treated as ADB so a start
-            // request still works instead of silently doing nothing.
-                if (context.checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED) {
-                    // Wireless debugging cannot stay enabled without a Wi-Fi
-                    // connection — the system reverts it moments after we enable
-                    // it, so mDNS never finds a port. Fail loudly instead of
-                    // waiting forever.
-                    if (EnvironmentUtils.isWifiRequired() &&
-                        !EnvironmentUtils.isWifiConnected() &&
-                        !EnvironmentUtils.isTelevision()
-                    ) {
-                        StartStatusReporter.failed(
-                            context.getString(R.string.start_failed_wifi_required),
-                            StartFailureKind.WIFI
-                        )
-                        return
-                    }
-
-                    // Falling back to USB debugging is controlled by settings.
-                    val allowUsbFallback = ShizukuSettings.getAllowUsbFallback()
-                    // User-initiated starts never wait for Wi-Fi; unattended
-                    // background restarts honour the "wait for Wi-Fi" setting.
-                    val immediate = userInitiated || !ShizukuSettings.getWaitForWifi()
-                    AdbStartWorker.enqueue(
-                        context,
-                        enableWirelessDebugging = !allowUsbFallback,
-                        immediate = immediate
-                    )
-                    updateNotification(context, WorkerState.AWAITING_WIFI)
-                } else {
-                    StartStatusReporter.failed(
-                        context.getString(R.string.start_failed_write_secure_settings)
-                    )
-                    showPermissionErrorNotification(context)
-                }
-        } else {
-            StartStatusReporter.failed(context.getString(R.string.start_failed_unsupported))
-            Log.w(AppConstants.TAG, "Background start not supported")
+        when (startMethod) {
+            ShizukuSettings.StartMethod.ROOT -> rootStart(context)
+            ShizukuSettings.StartMethod.SYSTEM -> systemStart(context)
+            else -> adbStart(context, userInitiated, startMethod)
         }
     }
 
-    fun buildNotification(context: Context, msg: String? = null): Notification {
+    /**
+     * The system start runs the built-in exploit (or an external command) through
+     * [StarterActivity], which needs the app in the foreground — a background start
+     * such as boot or the watchdog cannot drive it.
+     */
+    private fun systemStart(context: Context) {
+        val started = runCatching {
+            context.startActivity(
+                Intent(context, StarterActivity::class.java)
+                    .putExtra(StarterActivity.EXTRA_IS_SYSTEM, true)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+        }.isSuccess
+
+        if (!started) {
+            StartStatusReporter.failed(context.getString(R.string.start_failed_system_needs_app))
+        }
+    }
+
+    private fun adbStart(context: Context, userInitiated: Boolean, startMethod: Int) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R
+            && !EnvironmentUtils.isTelevision()
+            && EnvironmentUtils.getAdbTcpPort() <= 0
+        ) {
+            StartStatusReporter.failed(context.getString(R.string.start_failed_unsupported))
+            Log.w(AppConstants.TAG, "Background start not supported")
+            return
+        }
+
+        if (context.checkSelfPermission(WRITE_SECURE_SETTINGS) != PackageManager.PERMISSION_GRANTED) {
+            StartStatusReporter.failed(context.getString(R.string.start_failed_write_secure_settings))
+            showPermissionErrorNotification(context)
+            return
+        }
+
+        // Wireless debugging cannot stay enabled without a Wi-Fi connection — the
+        // system reverts it moments after we enable it, so mDNS never finds a port.
+        // Fail loudly instead of waiting forever. A USB start doesn't need Wi-Fi.
+        if (startMethod == ShizukuSettings.StartMethod.WIRELESS &&
+            EnvironmentUtils.isWifiRequired() &&
+            !EnvironmentUtils.isWifiConnected() &&
+            !EnvironmentUtils.isTelevision()
+        ) {
+            StartStatusReporter.failed(
+                context.getString(R.string.start_failed_wifi_required),
+                StartFailureKind.WIFI
+            )
+            return
+        }
+
+        // User-initiated starts never wait for Wi-Fi; unattended background restarts
+        // honour the "wait for Wi-Fi" setting.
+        val immediate = userInitiated || !ShizukuSettings.getWaitForWifi()
+        AdbStartWorker.enqueue(context, startMethod = startMethod, immediate = immediate)
+        updateNotification(context, WorkerState.AWAITING_WIFI)
+    }
+
+    fun buildNotification(
+        context: Context,
+        msg: String? = null,
+        @ShizukuSettings.StartMethod startMethod: Int = ShizukuSettings.getStartMethod()
+    ): Notification {
         val channel = NotificationChannel(
             CHANNEL_ID,
             context.getString(R.string.wadb_notification_title),
@@ -111,6 +143,8 @@ object ShizukuReceiverStarter {
         )
 
         val attemptNowIntent = Intent(context, NotifAttemptReceiver::class.java)
+            // Keep the retry on the same method the start used.
+            .putExtra(AppConstants.EXTRA_START_METHOD, startMethod)
         val attemptNowPendingIntent = PendingIntent.getBroadcast(
             context, 0, attemptNowIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -141,7 +175,11 @@ object ShizukuReceiverStarter {
             .build()
     }
 
-    fun updateNotification(context: Context, state: WorkerState) {
+    fun updateNotification(
+        context: Context,
+        state: WorkerState,
+        @ShizukuSettings.StartMethod startMethod: Int = ShizukuSettings.getStartMethod()
+    ) {
         if (state == WorkerState.STOPPED) return
         val msgId = when (state) {
             WorkerState.AWAITING_WIFI -> R.string.wadb_notification_wifi_required
@@ -152,7 +190,7 @@ object ShizukuReceiverStarter {
         }
         val msg = if (msgId != null) context.getString(msgId) else null
         val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        nm.notify(NOTIFICATION_ID, buildNotification(context, msg))
+        nm.notify(NOTIFICATION_ID, buildNotification(context, msg, startMethod))
     }
 
     private fun rootStart(context: Context) {

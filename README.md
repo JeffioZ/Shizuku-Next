@@ -47,7 +47,9 @@ This version of Shizuku includes some extra features over the original version, 
 * **Batch permission management:** long-press an app to enter multi-select, then grant or revoke permission for many apps at once, with select-all and a confirmation
 * **New Material 3 interface:** the manager UI is rebuilt in Jetpack Compose with a KernelSU-style layout — a bottom tab bar (Home · Apps · Settings), tonal status cards, and dynamic color
 * **Start as system (UID 1000):** a "Start (system)" card launches Shizuku under the system UID — either via a built-in device exploit or by copying a command for your own privilege escalation, selected in settings
-* **Restart transport settings:** choose whether restarts may fall back to enabling USB debugging, and whether unattended restarts wait for an unmetered Wi-Fi connection (starts you trigger yourself never wait)
+* **Start method setting:** pick how Shizuku starts — Wireless debugging, USB debugging, System (UID 1000) or Root — and the Start button, start on boot, the watchdog and the start intents all follow it instead of guessing from the last method that happened to work
+* **Separate USB start:** home now has "Start via USB debugging" next to the wireless one. Each method only touches its own debugging toggle — a wireless start never enables USB debugging (the old "USB fallback" was what could kill Shizuku on some Chinese devices), and a USB start never enables wireless debugging
+* **Restart timing:** choose whether unattended restarts wait for an unmetered Wi-Fi connection (starts you trigger yourself never wait)
 * **Search and sort authorized apps:** filter the apps list by name and sort it alphabetically or by most recently added
 * **Watchdog service:** automatically restarts Shizuku if it stops unexpectedly, and can alert you of crashes/potential fixes
 * **More resilient watchdog:** self-heals a dead server on screen unlock (even if the manager wasn't running when it died) and never fights a deliberate Stop

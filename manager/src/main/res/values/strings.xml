@@ -24,6 +24,8 @@
 
     <!-- Home - Wireless Adb -->
     <string name="home_wireless_adb_title"><![CDATA[Start via Wireless debugging]]></string>
+    <string name="home_usb_adb_title"><![CDATA[Start via USB debugging]]></string>
+    <string name="home_usb_adb_summary">Needs an ADB port opened by a computer with <b>adb tcpip</b></string>
     <string name="home_wireless_adb_description"><![CDATA[On Android 11 or above, you can enable Wireless debugging and start Shizuku directly from your device, without connecting to a computer.<p>Please view the step-by-step guide first.]]></string>
     <string name="home_wireless_adb_description_pre_11"><![CDATA[Before Android 11, connecting to a computer is required to enable Wireless debugging.]]></string>
     <string name="home_wireless_adb_view_guide_button">Step-by-step guide</string>
@@ -153,6 +155,8 @@
     <string name="action_connect_wifi">Connect</string>
     <string name="action_pair">Pair</string>
     <string name="start_failed_pairing_required">This device isn\'t paired for wireless debugging (or the pairing was invalidated).</string>
+    <string name="start_failed_usb_no_port">USB debugging is on but no ADB port is open. Run <b>adb tcpip 5555</b> from a computer, or start over wireless debugging instead.</string>
+    <string name="start_failed_system_needs_app">The system start method has to be started from the app.</string>
     <string name="settings_section_startup">Startup</string>
     <string name="settings_section_wireless">Wireless debugging</string>
     <string name="settings_section_tools">Tools</string>
@@ -228,8 +232,12 @@
     <string name="settings_use_system_color">Use system theme color</string>
     <string name="settings_watchdog">Watchdog</string>
     <string name="settings_watchdog_summary">Automatically restart Shizuku if it crashes</string>
-    <string name="settings_allow_usb_fallback">Allow USB debugging fallback</string>
-    <string name="settings_allow_usb_fallback_summary">When wireless debugging is unavailable, allow Shizuku to start by enabling USB debugging. Turn off to only ever restart over wireless debugging.</string>
+    <string name="settings_start_method">Start method</string>
+    <string name="settings_start_method_summary">How Start, start on boot and the watchdog launch Shizuku</string>
+    <string name="start_method_wireless">Wireless debugging</string>
+    <string name="start_method_usb">USB debugging</string>
+    <string name="start_method_system">System (UID 1000)</string>
+    <string name="start_method_root">Root</string>
     <string name="settings_wait_for_wifi">Wait for Wi-Fi before restarting</string>
     <string name="settings_wait_for_wifi_summary">Unattended restarts wait for an unmetered Wi-Fi connection before attempting to start. Starts you trigger yourself never wait.</string>
     <string name="settings_system_start_method">System start method</string>

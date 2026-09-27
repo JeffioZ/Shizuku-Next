@@ -45,6 +45,7 @@ import moe.shizuku.manager.ui.theme.ThemeState
 import moe.shizuku.manager.ui.component.SegmentedListItem
 import moe.shizuku.manager.adb.AdbStarter
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter
+import moe.shizuku.manager.start.startMethodLabelRes
 import moe.shizuku.manager.utils.CustomTabsHelper
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.SettingsHelper
@@ -61,7 +62,7 @@ fun SettingsScreen(onOpenDetail: (Detail) -> Unit) {
     var startOnBoot by remember { mutableStateOf(ShizukuSettings.getStartOnBoot(context)) }
     var watchdog by remember { mutableStateOf(ShizukuSettings.getWatchdog()) }
     var autoDisableUsb by remember { mutableStateOf(ShizukuSettings.getAutoDisableUsbDebugging()) }
-    var allowUsbFallback by remember { mutableStateOf(ShizukuSettings.getAllowUsbFallback()) }
+    var startMethod by remember { mutableStateOf(ShizukuSettings.getStartMethod()) }
     var waitForWifi by remember { mutableStateOf(ShizukuSettings.getWaitForWifi()) }
     var tcpMode by remember { mutableStateOf(ShizukuSettings.getTcpMode()) }
     var tcpPort by remember { mutableStateOf(ShizukuSettings.getTcpPort().toString()) }
@@ -86,6 +87,7 @@ fun SettingsScreen(onOpenDetail: (Detail) -> Unit) {
     var batteryPrompt by remember { mutableStateOf<(() -> Unit)?>(null) }
     val scope = rememberCoroutineScope()
 
+    var startMethodDialog by remember { mutableStateOf(false) }
     var tcpPortDialog by remember { mutableStateOf(false) }
     var systemStartDialog by remember { mutableStateOf(false) }
     var updateDialog by remember { mutableStateOf(false) }
@@ -158,14 +160,14 @@ fun SettingsScreen(onOpenDetail: (Detail) -> Unit) {
                     }
                     item {
                         SegmentedListItem(
-                            headlineContent = { Text(stringResource(R.string.settings_allow_usb_fallback)) },
-                            supportingContent = { Text(stringResource(R.string.settings_allow_usb_fallback_summary)) },
+                            headlineContent = { Text(stringResource(R.string.settings_start_method)) },
+                            supportingContent = {
+                                Text(stringResource(startMethodLabelRes(startMethod)))
+                            },
                             trailingContent = {
-                                Switch(checked = allowUsbFallback, onCheckedChange = {
-                                    ShizukuSettings.setAllowUsbFallback(it)
-                                    allowUsbFallback = it
-                                })
-                            }
+                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+                            },
+                            onClick = { startMethodDialog = true }
                         )
                     }
                     item {
@@ -587,6 +589,26 @@ fun SettingsScreen(onOpenDetail: (Detail) -> Unit) {
             },
             dismissButton = {
                 TextButton(onClick = { tcpPortDialog = false }) { Text(stringResource(android.R.string.cancel)) }
+            }
+        )
+    }
+
+    if (startMethodDialog) {
+        ChoiceDialog(
+            title = stringResource(R.string.settings_start_method),
+            options = listOf(
+                ShizukuSettings.StartMethod.WIRELESS.toString() to stringResource(R.string.start_method_wireless),
+                ShizukuSettings.StartMethod.USB.toString() to stringResource(R.string.start_method_usb),
+                ShizukuSettings.StartMethod.SYSTEM.toString() to stringResource(R.string.start_method_system),
+                ShizukuSettings.StartMethod.ROOT.toString() to stringResource(R.string.start_method_root),
+            ),
+            selected = startMethod.toString(),
+            onDismiss = { startMethodDialog = false },
+            onSelect = {
+                val value = it.toIntOrNull() ?: ShizukuSettings.StartMethod.WIRELESS
+                ShizukuSettings.setStartMethod(value)
+                startMethod = value
+                startMethodDialog = false
             }
         )
     }

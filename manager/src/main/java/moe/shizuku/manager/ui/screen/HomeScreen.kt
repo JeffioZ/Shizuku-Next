@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.widget.Toast
+import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -65,6 +66,7 @@ import moe.shizuku.manager.receiver.ShizukuReceiverStarter
 import moe.shizuku.manager.start.StartFailureKind
 import moe.shizuku.manager.start.StartStatus
 import moe.shizuku.manager.start.StartStatusReporter
+import moe.shizuku.manager.start.startMethodLabelRes
 import moe.shizuku.manager.starter.Starter
 import moe.shizuku.manager.starter.StarterActivity
 import moe.shizuku.manager.ui.component.SegmentedColumn
@@ -95,6 +97,7 @@ fun HomeScreen() {
     var duplicateApp by remember { mutableStateOf(false) }
     var updateAvailable by remember { mutableStateOf(false) }
     var rooted by remember { mutableStateOf(false) }
+    var startMethod by remember { mutableStateOf(ShizukuSettings.getStartMethod()) }
     val startStatus by StartStatusReporter.status.collectAsState()
     val scope = rememberCoroutineScope()
 
@@ -114,6 +117,10 @@ fun HomeScreen() {
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         ShizukuStateMachine.update()
         batteryIgnored = SettingsHelper.isIgnoringBatteryOptimizations(context)
+        startMethod = ShizukuSettings.getStartMethod()
+        // A start that is already running has nothing left to report; without this a
+        // "starting" state from a path that finishes elsewhere would stick.
+        if (ShizukuStateMachine.isRunning()) StartStatusReporter.clear()
     }
 
     LaunchedEffect(Unit) {
@@ -299,6 +306,9 @@ fun HomeScreen() {
                     starting = startStatus is StartStatus.Starting,
                     version = version,
                     uid = uid,
+                    startMethodLabelRes = startMethodLabelRes(startMethod),
+                    // Uses whichever method is set in Settings; never guesses from the
+                    // last one that happened to work.
                     onStart = { ShizukuReceiverStarter.start(context, userInitiated = true) },
                     onStop = { confirmStop = true }
                 )
@@ -312,7 +322,31 @@ fun HomeScreen() {
                             trailingContent = {
                                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
                             },
-                            onClick = { ShizukuReceiverStarter.start(context, userInitiated = true) }
+                            onClick = {
+                                ShizukuReceiverStarter.start(
+                                    context,
+                                    userInitiated = true,
+                                    startMethod = ShizukuSettings.StartMethod.WIRELESS
+                                )
+                            }
+                        )
+                    }
+                    item {
+                        SegmentedListItem(
+                            headlineContent = { Text(stringResource(R.string.home_usb_adb_title)) },
+                            supportingContent = {
+                                Text(stringResource(R.string.home_usb_adb_summary).stripHtmlTags())
+                            },
+                            trailingContent = {
+                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+                            },
+                            onClick = {
+                                ShizukuReceiverStarter.start(
+                                    context,
+                                    userInitiated = true,
+                                    startMethod = ShizukuSettings.StartMethod.USB
+                                )
+                            }
                         )
                     }
                     if (rooted) {
@@ -352,9 +386,10 @@ fun HomeScreen() {
                                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
                             },
                             onClick = {
-                                context.startActivity(
-                                    Intent(context, StarterActivity::class.java)
-                                        .putExtra(StarterActivity.EXTRA_IS_SYSTEM, true)
+                                ShizukuReceiverStarter.start(
+                                    context,
+                                    userInitiated = true,
+                                    startMethod = ShizukuSettings.StartMethod.SYSTEM
                                 )
                             }
                         )
@@ -461,6 +496,7 @@ private fun StatusCard(
     starting: Boolean,
     version: Int,
     uid: Int,
+    @StringRes startMethodLabelRes: Int,
     onStart: () -> Unit,
     onStop: () -> Unit
 ) {
@@ -516,6 +552,13 @@ private fun StatusCard(
 
                     starting -> Text(
                         stringResource(R.string.start_waiting_for_service),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
+                    // Say what Start is going to do, instead of leaving the user to
+                    // remember the setting.
+                    else -> Text(
+                        stringResource(startMethodLabelRes),
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }

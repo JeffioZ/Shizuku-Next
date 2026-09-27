@@ -43,7 +43,7 @@ public class ShizukuSettings {
         public static final String KEY_CATEGORY_ADVANCED = "category_advanced";
         public static final String KEY_MANUALLY_STOPPED = "manually_stopped";
         public static final String KEY_LAST_ADB_TRANSPORT = "last_adb_transport";
-        public static final String KEY_ALLOW_USB_FALLBACK = "allow_usb_fallback";
+        public static final String KEY_START_METHOD = "start_method";
         public static final String KEY_WAIT_FOR_WIFI = "wait_for_wifi";
         public static final String KEY_SYSTEM_START_METHOD = "system_start_method";
     }
@@ -91,6 +91,37 @@ public class ShizukuSettings {
         }
     }
 
+    /**
+     * Which method a start uses. This is what the Start button, start on boot,
+     * the watchdog and the start intents all follow, so "start" behaves the same
+     * everywhere instead of guessing from whichever method happened to work last.
+     */
+    @IntDef({
+        StartMethod.WIRELESS,
+        StartMethod.USB,
+        StartMethod.SYSTEM,
+        StartMethod.ROOT,
+    })
+    @Retention(SOURCE)
+    public @interface StartMethod {
+        int WIRELESS = 0;
+        int USB = 1;
+        int SYSTEM = 2;
+        int ROOT = 3;
+    }
+
+    @StartMethod
+    public static int getStartMethod() {
+        int fallback = getLastLaunchMode() == LaunchMethod.ROOT
+                ? StartMethod.ROOT
+                : StartMethod.WIRELESS;
+        return getPreferences().getInt(Keys.KEY_START_METHOD, fallback);
+    }
+
+    public static void setStartMethod(@StartMethod int method) {
+        getPreferences().edit().putInt(Keys.KEY_START_METHOD, method).apply();
+    }
+
     @IntDef({
         LaunchMethod.UNKNOWN,
         LaunchMethod.ROOT,
@@ -103,6 +134,7 @@ public class ShizukuSettings {
         int ADB = 1;
     }
 
+    /** Which method was observed to work last — informational (status card, transport). */
     @LaunchMethod
     public static int getLastLaunchMode() {
         return getPreferences().getInt("mode", LaunchMethod.UNKNOWN);
@@ -188,18 +220,6 @@ public class ShizukuSettings {
 
     public static void setLastAdbTransport(int transport) {
         getPreferences().edit().putInt(Keys.KEY_LAST_ADB_TRANSPORT, transport).apply();
-    }
-
-    /**
-     * When disabled, background restarts never fall back to enabling USB
-     * debugging — they only ever use wireless debugging (TLS).
-     */
-    public static boolean getAllowUsbFallback() {
-        return getPreferences().getBoolean(Keys.KEY_ALLOW_USB_FALLBACK, true);
-    }
-
-    public static void setAllowUsbFallback(boolean enable) {
-        getPreferences().edit().putBoolean(Keys.KEY_ALLOW_USB_FALLBACK, enable).apply();
     }
 
     /**
