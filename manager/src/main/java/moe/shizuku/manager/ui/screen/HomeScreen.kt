@@ -578,6 +578,9 @@ private fun StatusCard(
     }
 }
 
+/** Restart's blue — see the note where it is used. */
+private val RestartBlue = Color(0xFF2563EB)
+
 /**
  * Start, Stop and Restart below the status card, all always visible. An action that
  * doesn't apply right now is disabled rather than hidden, so the row never shifts.
@@ -591,8 +594,6 @@ private fun ServerActionButtons(
     onStop: () -> Unit,
     onRestart: () -> Unit
 ) {
-    val outline = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
-
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -615,22 +616,31 @@ private fun ServerActionButtons(
             }
         }
 
-        OutlinedButton(
+        // Red: stopping is the destructive one, and the theme's error role stays red
+        // whatever the seed colour is.
+        Button(
             modifier = Modifier.weight(1f),
             enabled = running,
             onClick = onStop,
-            // Explicit outline: the default one is nearly invisible on the plain
-            // background.
-            border = outline
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.error,
+                contentColor = MaterialTheme.colorScheme.onError
+            )
         ) {
             Text(stringResource(R.string.action_stop))
         }
 
-        OutlinedButton(
+        // Blue on purpose: Material 3 has no blue role and the palette is seeded from
+        // the wallpaper or the brand colour, so a role here would come out indigo or
+        // teal depending on the theme.
+        Button(
             modifier = Modifier.weight(1f),
             enabled = running,
             onClick = onRestart,
-            border = outline
+            colors = ButtonDefaults.buttonColors(
+                containerColor = RestartBlue,
+                contentColor = Color.White
+            )
         ) {
             Text(stringResource(R.string.action_restart))
         }
