@@ -35,6 +35,73 @@ int get_proc_name(int pid, char *name, size_t size) {
     return 0;
 }
 
+// Identify a running Shizuku server process using several /proc vectors, so a
+// stale server started by any path (starter, root, adb) can be cleaned up.
+int is_shizuku_server(int pid, const char *target_name) {
+    if (pid <= 1 || pid == getpid()) return 0;
+
+    char buf[4096];
+
+    // 1. /proc/<pid>/comm (kernel thread name, truncated to 15 chars)
+    snprintf(buf, sizeof(buf), "/proc/%d/comm", pid);
+    int fd = open(buf, O_RDONLY);
+    if (fd != -1) {
+        ssize_t n = fdgets(buf, sizeof(buf), fd);
+        close(fd);
+        if (n > 0) {
+            trim(buf);
+            if (strcmp(buf, "shizuku_server") == 0 ||
+                strcmp(buf, "shizuku_serve") == 0 ||
+                (target_name && strcmp(buf, target_name) == 0)) {
+                return 1;
+            }
+        }
+    }
+
+    // 2. /proc/<pid>/cmdline across all NUL-separated arguments
+    snprintf(buf, sizeof(buf), "/proc/%d/cmdline", pid);
+    fd = open(buf, O_RDONLY);
+    if (fd != -1) {
+        ssize_t n = read(fd, buf, sizeof(buf) - 1);
+        close(fd);
+        if (n > 0) {
+            buf[n] = '\0';
+            for (ssize_t i = 0; i < n; ++i) {
+                if (buf[i] == '\0') buf[i] = ' ';
+            }
+            if (strstr(buf, "rikka.shizuku.server.ShizukuService") != nullptr ||
+                strstr(buf, "--nice-name=shizuku_server") != nullptr ||
+                strstr(buf, "shizuku_server") != nullptr ||
+                (target_name && strstr(buf, target_name) != nullptr)) {
+                return 1;
+            }
+        }
+    }
+
+    // 3. /proc/<pid>/stat (comm inside parentheses)
+    snprintf(buf, sizeof(buf), "/proc/%d/stat", pid);
+    fd = open(buf, O_RDONLY);
+    if (fd != -1) {
+        ssize_t n = fdgets(buf, sizeof(buf), fd);
+        close(fd);
+        if (n > 0) {
+            char *open_p = strchr(buf, '(');
+            char *close_p = strrchr(buf, ')');
+            if (open_p && close_p && close_p > open_p) {
+                *close_p = '\0';
+                char *comm = open_p + 1;
+                if (strcmp(comm, "shizuku_server") == 0 ||
+                    strcmp(comm, "shizuku_serve") == 0 ||
+                    (target_name && strcmp(comm, target_name) == 0)) {
+                    return 1;
+                }
+            }
+        }
+    }
+
+    return 0;
+}
+
 int is_num(const char *s) {
     size_t len = strlen(s);
     for (size_t i = 0; i < len; ++i)

@@ -197,6 +197,8 @@ static int switch_cgroup() {
     return -1;
 }
 
+static int s_killed_count = 0;
+
 int main(int argc, char *argv[]) {
     std::string apk_path;
     for (int i = 0; i < argc; ++i) {
@@ -242,28 +244,36 @@ int main(int argc, char *argv[]) {
     printf("info: starter begin\n");
     fflush(stdout);
 
-    // kill old server
-    printf("info: killing old process...\n");
+    // kill old server(s)
+    printf("info: checking for existing server processes...\n");
     fflush(stdout);
 
+    s_killed_count = 0;
     foreach_proc([](pid_t pid) {
         if (pid == getpid()) return;
 
-        char name[1024];
-        if (get_proc_name(pid, name, 1024) != 0) return;
-
-        if (strcmp(SERVER_NAME, name) != 0)
+        if (!is_shizuku_server(pid, SERVER_NAME))
             return;
 
-        if (kill(pid, SIGKILL) == 0)
-            printf("info: killed %d (%s)\n", pid, name);
-        else if (errno == EPERM) {
-            perrorf("fatal: can't kill %d, please try to stop existing Shizuku from app first.\n", pid);
+        printf("info: found active server process %d\n", pid);
+        if (kill(pid, SIGKILL) == 0) {
+            printf("info: killed process %d\n", pid);
+            s_killed_count++;
+        } else if (errno == EPERM) {
+            perrorf("fatal: can't kill %d (owned by root), please try to stop existing Shizuku from app first.\n", pid);
             exit(EXIT_FATAL_KILL);
         } else {
-            printf("warn: failed to kill %d (%s)\n", pid, name);
+            printf("warn: failed to kill %d\n", pid);
         }
     });
+
+    if (s_killed_count == 0) {
+        printf("info: no existing server process running\n");
+    } else {
+        printf("info: cleanly terminated %d existing process(es)\n", s_killed_count);
+        usleep(100000); // give the OS time to reclaim sockets & binder
+    }
+    fflush(stdout);
 
     if (access(apk_path.c_str(), R_OK) == 0) {
         printf("info: use apk path from argv\n");
