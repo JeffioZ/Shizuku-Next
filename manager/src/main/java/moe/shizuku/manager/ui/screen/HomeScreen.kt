@@ -20,6 +20,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -29,6 +30,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -39,6 +41,7 @@ import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter
 import moe.shizuku.manager.ui.component.SegmentedColumn
 import moe.shizuku.manager.ui.component.SegmentedListItem
+import moe.shizuku.manager.utils.SettingsHelper
 import moe.shizuku.manager.utils.ShizukuStateMachine
 import rikka.shizuku.Shizuku
 
@@ -50,6 +53,9 @@ fun HomeScreen() {
     var running by remember { mutableStateOf(ShizukuStateMachine.isRunning()) }
     var uid by remember { mutableStateOf(if (running) runCatching { Shizuku.getUid() }.getOrDefault(-1) else -1) }
     var version by remember { mutableStateOf(if (running) runCatching { Shizuku.getVersion() }.getOrDefault(0) else 0) }
+    var batteryIgnored by remember {
+        mutableStateOf(SettingsHelper.isIgnoringBatteryOptimizations(context))
+    }
 
     DisposableEffect(Unit) {
         val listener: (ShizukuStateMachine.State) -> Unit = {
@@ -84,6 +90,33 @@ fun HomeScreen() {
                         runCatching { Shizuku.exit() }
                     }
                 )
+            }
+
+            if (!batteryIgnored) {
+                item {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                        shape = MaterialTheme.shapes.large
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = stringResource(R.string.home_battery_warning),
+                                modifier = Modifier.weight(1f),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            TextButton(onClick = {
+                                SettingsHelper.requestIgnoreBatteryOptimizationsPrivileged(context) {
+                                    batteryIgnored = SettingsHelper.isIgnoringBatteryOptimizations(context)
+                                }
+                            }) { Text(stringResource(R.string.snackbar_action_fix)) }
+                        }
+                    }
+                }
             }
 
             item {

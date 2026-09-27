@@ -125,6 +125,16 @@ fun ToolsScreen(onOpenDetail: (Detail) -> Unit) {
                             onClick = { onOpenDetail(Detail.TERMINAL) }
                         )
                     }
+                    item {
+                        SegmentedListItem(
+                            headlineContent = { Text(stringResource(R.string.intents_title)) },
+                            supportingContent = { Text(stringResource(R.string.intents_description)) },
+                            trailingContent = {
+                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+                            },
+                            onClick = { onOpenDetail(Detail.INTENTS) }
+                        )
+                    }
                 }
             }
 
