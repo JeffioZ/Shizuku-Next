@@ -13,8 +13,12 @@ import javax.net.ssl.SSLException
 import java.net.SocketTimeoutException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.adb.AdbClient
@@ -166,6 +170,67 @@ object AdbStarter {
             }
         }
     }
+
+    /**
+     * Opens the classic ADB port and returns whether it is up.
+     *
+     * The port is only ever created by a `tcpip` request sent over an existing
+     * connection, and a reboot clears it (it isn't persistent), so after a reboot the
+     * app has nothing to connect to until something sends that request. The wireless
+     * port is the only one the app can raise on its own, so this borrows it briefly:
+     * connect, ask adbd to also listen on the classic port, and leave the wireless
+     * connection behind. The caller then starts over the classic port as usual.
+     *
+     * Returns false when there is no way to try (no Wi-Fi, or no wireless port found).
+     * Throws [AdbPairingRequiredException] when the fallback needs pairing first.
+     */
+    suspend fun openTcpPort(context: Context, port: Int): Boolean = withContext(Dispatchers.IO) {
+        // Wi-Fi is what keeps wireless debugging — and with it the wireless port —
+        // alive; without it there is nothing to borrow.
+        if (!EnvironmentUtils.isWifiConnected()) {
+            Log.i(TAG, "Not opening the ADB port: no Wi-Fi connection to borrow")
+            return@withContext false
+        }
+
+        Settings.Global.putInt(context.contentResolver, "adb_wifi_enabled", 1)
+        val wirelessPort = findWirelessPort(context) ?: run {
+            Log.w(TAG, "Not opening the ADB port: no wireless debugging port was found")
+            return@withContext false
+        }
+
+        val key = AdbKey(PreferenceAdbKeyStore(ShizukuSettings.getPreferences()), "shizuku")
+
+        try {
+            AdbClient("127.0.0.1", wirelessPort, key).use { client ->
+                client.connectForPairing()
+                // adbd restarts to listen on the new port, so the connection dying here
+                // is the expected outcome, not a failure.
+                runCatching { client.command("tcpip:$port") }
+                    .onFailure { if (it !is EOFException && it !is SocketException) throw it }
+            }
+        } catch (e: AdbPairingRequiredException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not open the ADB port over the wireless connection", e)
+            return@withContext false
+        }
+
+        val available = waitForPortAvailable("127.0.0.1", port)
+        Log.i(TAG, "ADB port $port open: $available")
+        available
+    }
+
+    /** The wireless (TLS) port, as advertised over mDNS, or null if none shows up. */
+    private suspend fun findWirelessPort(context: Context, timeoutMs: Long = 15_000L): Int? =
+        withTimeoutOrNull(timeoutMs) {
+            callbackFlow {
+                val adbMdns = AdbMdns(context, AdbMdns.TLS_CONNECT) { p ->
+                    if (p.second > 0) trySend(p.second)
+                }
+                adbMdns.start()
+                awaitClose { adbMdns.stop() }
+            }.first()
+        }
 
     private suspend fun waitForPortAvailable(
         host: String,

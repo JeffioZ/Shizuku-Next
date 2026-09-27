@@ -94,12 +94,24 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             // else: wireless is off and we are starting over it — the callbackFlow
             // below writes adb_wifi_enabled=1 so the start proceeds over wireless.
 
-            val tcpPort = EnvironmentUtils.getAdbTcpPort()
+            var tcpPort = EnvironmentUtils.getAdbTcpPort()
             // "TCP mode off" means don't keep a port open for wireless restarts — but
             // a USB start exists to use that port, so it opens and keeps it instead of
             // closing the very thing it needs.
             if (tcpPort > 0 && !ShizukuSettings.getTcpMode() && !usbMethod) {
                 AdbStarter.stopTcp(applicationContext, tcpPort)
+            }
+
+            if (usbMethod && tcpPort <= 0) {
+                // A reboot clears the classic ADB port (it isn't persistent) and the
+                // port can only be created by a `tcpip` request over a live connection.
+                // Borrow the wireless connection to reopen it, then carry on over the
+                // classic port — so a USB start repairs itself instead of needing a
+                // computer after every reboot.
+                notify(WorkerState.CONNECTING)
+                if (AdbStarter.openTcpPort(applicationContext, ShizukuSettings.getTcpPort())) {
+                    tcpPort = EnvironmentUtils.getAdbTcpPort()
+                }
             }
 
 
@@ -114,6 +126,7 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 notify(WorkerState.AWAITING_RETRY)
                 return Result.failure()
             }
+            // From here the USB method always has a classic port to use.
 
             // A wireless start always goes over the wireless (TLS) port. Taking the
             // classic ADB port here — which TCP mode keeps open — is what made a
@@ -319,9 +332,13 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             // they shouldn't wait on unmetered Wi-Fi like unattended auto-restarts do,
             // since the discovery flow works without any network connection. A USB
             // start never wants a network constraint at all.
-            // A wireless start always needs a network to keep wireless debugging
-            // alive; the USB method uses the classic port and needs none.
-            if (!usbMethod && !immediate)
+            // A wireless start always needs a network to keep wireless debugging alive.
+            // A USB start normally needs none — except when it has no port and would
+            // have to reopen one over the wireless connection, which is worth waiting
+            // for rather than failing at boot.
+            val needsNetwork =
+                !usbMethod || EnvironmentUtils.getAdbTcpPort() <= 0
+            if (needsNetwork && !immediate)
                 cb.setRequiredNetworkType(NetworkType.UNMETERED)
             val constraints = cb.build()
 
