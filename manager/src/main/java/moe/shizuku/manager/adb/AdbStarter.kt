@@ -4,8 +4,10 @@ import android.Manifest.permission.WRITE_SECURE_SETTINGS
 import android.content.pm.PackageManager
 import android.content.Context
 import android.provider.Settings
+import android.util.Log
 import android.widget.Toast
 import java.io.EOFException
+import java.net.Socket
 import java.net.SocketException
 import java.net.SocketTimeoutException
 import kotlinx.coroutines.CancellationException
@@ -20,6 +22,8 @@ import moe.shizuku.manager.adb.PreferenceAdbKeyStore
 import moe.shizuku.manager.starter.Starter
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.ShizukuStateMachine
+
+private const val TAG = "AdbStarter"
 
 object AdbStarter {
     suspend fun startAdb(context: Context, port: Int, log: ((String) -> Unit)? = null) {
@@ -64,6 +68,12 @@ object AdbStarter {
                     runCatching {
                         client.command("tcpip:$activePort")
                     }.onFailure { if (it !is EOFException && it !is SocketException) throw it } // Expected when ADB restarts in TCP mode
+
+                    // adbd restarts on the new port; wait until it actually listens so
+                    // the connect below targets a live socket (instead of the stale one).
+                    if (!waitForPortAvailable("127.0.0.1", activePort)) {
+                        Log.w(TAG, "Timed out waiting for ADB to listen on TCP port $activePort")
+                    }
                 }
             }
 
@@ -128,6 +138,22 @@ object AdbStarter {
                 }
             }
         }
+    }
+
+    private suspend fun waitForPortAvailable(
+        host: String,
+        port: Int,
+        timeoutMs: Long = 15_000L
+    ): Boolean = withContext(Dispatchers.IO) {
+        val deadline = System.currentTimeMillis() + timeoutMs
+        while (System.currentTimeMillis() < deadline) {
+            try {
+                Socket(host, port).use { return@withContext true }
+            } catch (_: Exception) {
+                delay(300)
+            }
+        }
+        false
     }
 
     private suspend fun connectWithRetry(client: AdbClient) {
