@@ -57,6 +57,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
@@ -622,16 +623,14 @@ private fun StatusCard(
                 )
                 // Everything about the server at a glance: how it is running now, what
                 // the Start button below will do next, and what it is running as.
-                StatusFact(
-                    R.string.home_status_started_with,
-                    if (running) runningMethodLabel(uid) else stringResource(R.string.status_value_none)
+                StatusFacts(
+                    R.string.home_status_started_with to
+                        (if (running) runningMethodLabel(uid) else stringResource(R.string.status_value_none)),
+                    R.string.settings_start_method to stringResource(startMethodLabelRes),
+                    R.string.home_info_title to
+                        (if (running) "v$version" else stringResource(R.string.status_value_none)),
+                    R.string.uid_label to uidLabel(uid)
                 )
-                StatusFact(R.string.settings_start_method, stringResource(startMethodLabelRes))
-                StatusFact(
-                    R.string.home_info_title,
-                    if (running) "v$version" else stringResource(R.string.status_value_none)
-                )
-                StatusFact(R.string.uid_label, uidLabel(uid))
             }
 
         }
@@ -711,17 +710,49 @@ private fun readSeccompStatus(): Int? {
 /** Reads what the device card shows, off the main thread. */
 private fun readDeviceStatus(): Pair<Int?, Int?> = readSelinuxStatus() to readSeccompStatus()
 
-/** A label/value pair inside the status card. */
+/**
+ * The facts inside the status card, two per row so they don't all stack down the left
+ * edge. Each takes half the width and ellipsises rather than scrambling the row when a
+ * value is long.
+ */
 @Composable
-private fun StatusFact(@StringRes labelRes: Int, value: String) {
-    Row(modifier = Modifier.padding(top = 2.dp)) {
+private fun StatusFacts(vararg facts: Pair<Int, String>) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        facts.toList().chunked(2).forEach { row ->
+            Row(modifier = Modifier.fillMaxWidth().padding(top = 2.dp)) {
+                row.forEach { (labelRes, value) ->
+                    StatusFact(labelRes, value, Modifier.weight(1f))
+                }
+                // Keep the columns even when the last row holds a single fact.
+                if (row.size == 1) Spacer(modifier = Modifier.weight(1f))
+            }
+        }
+    }
+}
+
+/** One label/value pair, centred in its half of the row. */
+@Composable
+private fun StatusFact(@StringRes labelRes: Int, value: String, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         Text(
             stringResource(labelRes),
             style = MaterialTheme.typography.bodySmall,
-            color = LocalContentColor.current.copy(alpha = 0.75f)
+            color = LocalContentColor.current.copy(alpha = 0.75f),
+            maxLines = 1
         )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(value, style = MaterialTheme.typography.bodySmall)
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(
+            value,
+            style = MaterialTheme.typography.bodySmall,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            // Take only the space the value needs, so a short one stays centred.
+            modifier = Modifier.weight(1f, fill = false)
+        )
     }
 }
 
