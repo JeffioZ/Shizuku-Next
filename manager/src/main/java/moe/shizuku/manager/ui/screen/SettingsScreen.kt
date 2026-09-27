@@ -38,8 +38,14 @@ import moe.shizuku.manager.ui.Detail
 import moe.shizuku.manager.ui.component.SegmentedColumn
 import moe.shizuku.manager.ui.theme.ThemeState
 import moe.shizuku.manager.ui.component.SegmentedListItem
+import moe.shizuku.manager.adb.AdbStarter
+import moe.shizuku.manager.receiver.ShizukuReceiverStarter
 import moe.shizuku.manager.utils.CustomTabsHelper
+import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.SettingsHelper
+import moe.shizuku.manager.utils.ShizukuStateMachine
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,6 +72,13 @@ fun SettingsScreen(onOpenDetail: (Detail) -> Unit) {
     var batteryIgnored by remember {
         mutableStateOf(SettingsHelper.isIgnoringBatteryOptimizations(context))
     }
+    var legacyPairing by remember { mutableStateOf(ShizukuSettings.getLegacyPairing()) }
+
+    var closeTcpDialog by remember { mutableStateOf(false) }
+    var restartAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+    var restartWifiNote by remember { mutableStateOf(false) }
+    var batteryPrompt by remember { mutableStateOf<(() -> Unit)?>(null) }
+    val scope = rememberCoroutineScope()
 
     var tcpPortDialog by remember { mutableStateOf(false) }
     var systemStartDialog by remember { mutableStateOf(false) }
@@ -84,9 +97,17 @@ fun SettingsScreen(onOpenDetail: (Detail) -> Unit) {
                         SegmentedListItem(
                             headlineContent = { Text(stringResource(R.string.settings_start_on_boot)) },
                             trailingContent = {
-                                Switch(checked = startOnBoot, onCheckedChange = {
-                                    ShizukuSettings.setStartOnBoot(context, it)
-                                    startOnBoot = ShizukuSettings.getStartOnBoot(context)
+                                Switch(checked = startOnBoot, onCheckedChange = { checked ->
+                                    if (checked && needsBatteryPrompt(context)) {
+                                        batteryPrompt = {
+                                            ShizukuSettings.setStartOnBoot(context, true)
+                                            startOnBoot = ShizukuSettings.getStartOnBoot(context)
+                                        }
+                                        startOnBoot = false
+                                    } else {
+                                        ShizukuSettings.setStartOnBoot(context, checked)
+                                        startOnBoot = ShizukuSettings.getStartOnBoot(context)
+                                    }
                                 })
                             }
                         )
@@ -96,9 +117,16 @@ fun SettingsScreen(onOpenDetail: (Detail) -> Unit) {
                             headlineContent = { Text(stringResource(R.string.settings_watchdog)) },
                             supportingContent = { Text(stringResource(R.string.settings_watchdog_summary)) },
                             trailingContent = {
-                                Switch(checked = watchdog, onCheckedChange = {
-                                    ShizukuSettings.setWatchdog(context, it)
-                                    watchdog = it
+                                Switch(checked = watchdog, onCheckedChange = { checked ->
+                                    if (checked && needsBatteryPrompt(context)) {
+                                        batteryPrompt = {
+                                            ShizukuSettings.setWatchdog(context, true)
+                                            watchdog = true
+                                        }
+                                    } else {
+                                        ShizukuSettings.setWatchdog(context, checked)
+                                        watchdog = checked
+                                    }
                                 })
                             }
                         )
@@ -150,9 +178,25 @@ fun SettingsScreen(onOpenDetail: (Detail) -> Unit) {
                             headlineContent = { Text(stringResource(R.string.settings_tcp_mode)) },
                             supportingContent = { Text(stringResource(R.string.settings_tcp_mode_summary)) },
                             trailingContent = {
-                                Switch(checked = tcpMode, onCheckedChange = {
-                                    ShizukuSettings.setTcpMode(it)
-                                    tcpMode = it
+                                Switch(checked = tcpMode, onCheckedChange = { checked ->
+                                    when {
+                                        !checked && EnvironmentUtils.getAdbTcpPort() > 0 ->
+                                            closeTcpDialog = true
+
+                                        ShizukuStateMachine.isRunning() &&
+                                            needsRestart(ShizukuSettings.Keys.KEY_TCP_MODE, checked) -> {
+                                            restartAction = {
+                                                ShizukuSettings.setTcpMode(checked)
+                                                tcpMode = checked
+                                            }
+                                            restartWifiNote = true
+                                        }
+
+                                        else -> {
+                                            ShizukuSettings.setTcpMode(checked)
+                                            tcpMode = checked
+                                        }
+                                    }
                                 })
                             }
                         )
@@ -165,6 +209,18 @@ fun SettingsScreen(onOpenDetail: (Detail) -> Unit) {
                                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
                             },
                             onClick = { tcpPortDialog = true }
+                        )
+                    }
+                    item {
+                        SegmentedListItem(
+                            headlineContent = { Text(stringResource(R.string.settings_legacy_pairing)) },
+                            trailingContent = {
+                                Switch(checked = legacyPairing, onCheckedChange = {
+                                    ShizukuSettings.getPreferences().edit()
+                                        .putBoolean(ShizukuSettings.Keys.KEY_LEGACY_PAIRING, it).apply()
+                                    legacyPairing = it
+                                })
+                            }
                         )
                     }
                     item {
@@ -363,6 +419,81 @@ fun SettingsScreen(onOpenDetail: (Detail) -> Unit) {
         }
     }
 
+    restartAction?.let { action ->
+        AlertDialog(
+            onDismissRequest = { restartAction = null },
+            title = { Text(stringResource(R.string.settings_restart_dialog_title)) },
+            text = {
+                Text(
+                    buildString {
+                        append(stringResource(R.string.settings_restart_dialog_message))
+                        if (restartWifiNote) {
+                            append(stringResource(R.string.settings_restart_dialog_message_wifi_required))
+                        }
+                    }
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    action()
+                    restartAction = null
+                    ShizukuReceiverStarter.start(context, forceStart = true, userInitiated = true)
+                }) { Text(stringResource(android.R.string.ok)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { restartAction = null }) {
+                    Text(stringResource(android.R.string.cancel))
+                }
+            }
+        )
+    }
+
+    if (closeTcpDialog) {
+        AlertDialog(
+            onDismissRequest = { closeTcpDialog = false },
+            title = { Text(stringResource(android.R.string.dialog_alert_title)) },
+            text = { Text(stringResource(R.string.settings_tcp_mode_dialog_close_port)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    closeTcpDialog = false
+                    scope.launch {
+                        val port = EnvironmentUtils.getAdbTcpPort()
+                        if (port > 0) AdbStarter.stopTcp(context, port)
+                        ShizukuSettings.setTcpMode(false)
+                        tcpMode = false
+                    }
+                }) { Text(stringResource(android.R.string.ok)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { closeTcpDialog = false }) {
+                    Text(stringResource(android.R.string.cancel))
+                }
+            }
+        )
+    }
+
+    batteryPrompt?.let { action ->
+        AlertDialog(
+            onDismissRequest = { batteryPrompt = null },
+            title = { Text(stringResource(R.string.tools_battery)) },
+            text = { Text(stringResource(R.string.snackbar_battery_optimization_settings)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    SettingsHelper.requestIgnoreBatteryOptimizationsPrivileged(context) {
+                        batteryIgnored = SettingsHelper.isIgnoringBatteryOptimizations(context)
+                    }
+                    action()
+                    batteryPrompt = null
+                }) { Text(stringResource(R.string.snackbar_action_fix)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { batteryPrompt = null }) {
+                    Text(stringResource(android.R.string.cancel))
+                }
+            }
+        )
+    }
+
     if (themeDialog) {
         ChoiceDialog(
             title = stringResource(R.string.settings_theme),
@@ -402,11 +533,22 @@ fun SettingsScreen(onOpenDetail: (Detail) -> Unit) {
             },
             confirmButton = {
                 TextButton(onClick = {
-                    draft.toIntOrNull()?.takeIf { it in 1..65535 }?.let {
-                        ShizukuSettings.setTcpPort(it)
-                        tcpPort = it.toString()
-                    }
+                    val value = draft.toIntOrNull()?.takeIf { it in 1..65535 }
                     tcpPortDialog = false
+                    if (value != null) {
+                        if (ShizukuStateMachine.isRunning() &&
+                            needsRestart(ShizukuSettings.Keys.KEY_TCP_PORT, value)
+                        ) {
+                            restartAction = {
+                                ShizukuSettings.setTcpPort(value)
+                                tcpPort = value.toString()
+                            }
+                            restartWifiNote = false
+                        } else {
+                            ShizukuSettings.setTcpPort(value)
+                            tcpPort = value.toString()
+                        }
+                    }
                 }) { Text(stringResource(android.R.string.ok)) }
             },
             dismissButton = {
@@ -452,6 +594,22 @@ fun SettingsScreen(onOpenDetail: (Detail) -> Unit) {
         )
     }
 }
+
+private fun needsRestart(setting: String, newValue: Any? = null): Boolean {
+    val currentPort = EnvironmentUtils.getAdbTcpPort()
+    return when (setting) {
+        ShizukuSettings.Keys.KEY_TCP_MODE ->
+            (currentPort > 0) != (newValue as? Boolean ?: ShizukuSettings.getTcpMode())
+
+        ShizukuSettings.Keys.KEY_TCP_PORT ->
+            currentPort > 0 && currentPort != (newValue as? Int ?: ShizukuSettings.getTcpPort())
+
+        else -> false
+    }
+}
+
+private fun needsBatteryPrompt(context: android.content.Context): Boolean =
+    !EnvironmentUtils.isTelevision() && !SettingsHelper.isIgnoringBatteryOptimizations(context)
 
 @Composable
 private fun ChoiceDialog(

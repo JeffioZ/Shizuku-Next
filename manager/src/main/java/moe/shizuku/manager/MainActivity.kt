@@ -1,10 +1,13 @@
 package moe.shizuku.manager
 
+import android.app.NotificationManager
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import moe.shizuku.manager.adb.AdbPairingService
 import moe.shizuku.manager.home.showAccessibilityDialog
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter
 import moe.shizuku.manager.ui.ShizukuApp
@@ -29,6 +32,8 @@ class MainActivity : ComponentActivity() {
         if (intent == null) return
 
         if (intent.getBooleanExtra(AppConstants.EXTRA_START_SERVICE_VIA_WADB, false)) {
+            (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
+                .cancel(AdbPairingService.NOTIFICATION_ID)
             ShizukuReceiverStarter.start(this, forceStart = true, userInitiated = true)
         }
 

@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import moe.shizuku.manager.Helps
 import moe.shizuku.manager.R
 import moe.shizuku.manager.authorization.AuthorizationManager
 
@@ -64,6 +65,7 @@ fun AppsScreen() {
     var version by remember { mutableIntStateOf(0) }
     var sortMenu by remember { mutableStateOf(false) }
     var pendingBatch by remember { mutableStateOf<Boolean?>(null) }
+    var permissionLimited by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         all = withContext(Dispatchers.IO) {
@@ -162,9 +164,12 @@ fun AppsScreen() {
                             if (selectionMode) {
                                 selected = if (isSelected) selected - pi.packageName else selected + pi.packageName
                             } else {
-                                runCatching {
+                                val result = runCatching {
                                     if (granted) AuthorizationManager.revoke(pi.packageName, uid)
                                     else AuthorizationManager.grant(pi.packageName, uid)
+                                }
+                                if (result.exceptionOrNull() is SecurityException) {
+                                    permissionLimited = true
                                 }
                                 version++
                             }
@@ -188,9 +193,12 @@ fun AppsScreen() {
                             Switch(
                                 checked = granted,
                                 onCheckedChange = { checked ->
-                                    runCatching {
+                                    val result = runCatching {
                                         if (checked) AuthorizationManager.grant(pi.packageName, uid)
                                         else AuthorizationManager.revoke(pi.packageName, uid)
+                                    }
+                                    if (result.exceptionOrNull() is SecurityException) {
+                                        permissionLimited = true
                                     }
                                     version++
                                 }
@@ -200,6 +208,22 @@ fun AppsScreen() {
                 )
             }
         }
+    }
+
+    if (permissionLimited) {
+        val adbUrl = runCatching { Helps.ADB.get() }.getOrDefault("")
+        AlertDialog(
+            onDismissRequest = { permissionLimited = false },
+            title = { Text(stringResource(R.string.app_management_dialog_adb_is_limited_title)) },
+            text = {
+                Text(stringResource(R.string.app_management_dialog_adb_is_limited_message, adbUrl))
+            },
+            confirmButton = {
+                TextButton(onClick = { permissionLimited = false }) {
+                    Text(stringResource(android.R.string.ok))
+                }
+            }
+        )
     }
 
     pendingBatch?.let { grant ->

@@ -1,6 +1,8 @@
 package moe.shizuku.manager.ui.screen
 
+import android.app.Activity
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -42,6 +44,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import moe.shizuku.manager.Manifest
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter
@@ -68,6 +73,9 @@ fun HomeScreen() {
         mutableStateOf(SettingsHelper.isIgnoringBatteryOptimizations(context))
     }
     var showAdbCommand by remember { mutableStateOf(false) }
+    var confirmStop by remember { mutableStateOf(false) }
+    var rebootRequired by remember { mutableStateOf(false) }
+    var duplicateApp by remember { mutableStateOf(false) }
     var updateAvailable by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
@@ -83,11 +91,34 @@ fun HomeScreen() {
         onDispose { ShizukuStateMachine.removeListener(listener) }
     }
 
+    // Refresh on every resume, like the old home screen did.
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        ShizukuStateMachine.update()
+        batteryIgnored = SettingsHelper.isIgnoringBatteryOptimizations(context)
+    }
+
     LaunchedEffect(Unit) {
         ShizukuStateMachine.update()
+
+        // After reinstalling under a different package name (stealth mode) the
+        // system may not recognize the Shizuku permission until a reboot, or a
+        // duplicate app may own it.
+        try {
+            context.packageManager.getPermissionGroupInfo(Manifest.permission_group.API, 0)
+            val permission = context.packageManager.getPermissionInfo(Manifest.permission.API_V23, 0)
+            if (permission.packageName != context.packageName) {
+                duplicateApp = true
+            }
+        } catch (e: PackageManager.NameNotFoundException) {
+            rebootRequired = true
+        }
+
         updateAvailable = runCatching {
             UpdateHelper.isCheckForUpdatesEnabled() && UpdateHelper.isNewUpdateAvailable()
         }.getOrDefault(false)
+        if (updateAvailable) {
+            runCatching { UpdateHelper.updateLastPromptedVersion() }
+        }
     }
 
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -158,11 +189,7 @@ fun HomeScreen() {
                     version = version,
                     uid = uid,
                     onStart = { ShizukuReceiverStarter.start(context, userInitiated = true) },
-                    onStop = {
-                        ShizukuSettings.setManuallyStopped(true)
-                        ShizukuStateMachine.set(ShizukuStateMachine.State.STOPPING)
-                        runCatching { Shizuku.exit() }
-                    }
+                    onStop = { confirmStop = true }
                 )
             }
 
@@ -245,6 +272,40 @@ fun HomeScreen() {
                 }
             }
         }
+    }
+
+    if (confirmStop) {
+        AlertDialog(
+            onDismissRequest = { confirmStop = false },
+            text = { Text(stringResource(R.string.dialog_stop_message)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmStop = false
+                    ShizukuSettings.setManuallyStopped(true)
+                    ShizukuStateMachine.set(ShizukuStateMachine.State.STOPPING)
+                    runCatching { Shizuku.exit() }
+                }) { Text(stringResource(android.R.string.ok)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmStop = false }) {
+                    Text(stringResource(android.R.string.cancel))
+                }
+            }
+        )
+    }
+
+    if (rebootRequired) {
+        ExitDialog(
+            R.string.home_dialog_reboot_required_title,
+            R.string.home_dialog_reboot_required_message
+        )
+    }
+
+    if (duplicateApp) {
+        ExitDialog(
+            R.string.home_dialog_duplicate_app_detected_title,
+            R.string.home_dialog_duplicate_app_detected_message
+        )
     }
 
     if (showAdbCommand) {
@@ -335,6 +396,21 @@ private fun StatusCard(
             }
         }
     }
+}
+
+@Composable
+private fun ExitDialog(titleRes: Int, messageRes: Int) {
+    val activity = LocalContext.current as? Activity
+    AlertDialog(
+        onDismissRequest = { activity?.finishAffinity() },
+        title = { Text(stringResource(titleRes)) },
+        text = { Text(stringResource(messageRes)) },
+        confirmButton = {
+            TextButton(onClick = { activity?.finishAffinity() }) {
+                Text(stringResource(R.string.home_dialog_button_exit))
+            }
+        }
+    )
 }
 
 private fun uidLabel(uid: Int): String = when (uid) {
