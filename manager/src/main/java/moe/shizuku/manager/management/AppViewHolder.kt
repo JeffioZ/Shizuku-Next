@@ -40,6 +40,10 @@ class AppViewHolder(private val binding: AppListItemBinding) : BaseViewHolder<Pa
     init {
         itemView.filterTouchesWhenObscured = true
         itemView.setOnClickListener(this)
+        itemView.setOnLongClickListener {
+            (adapter as? AppsAdapter)?.startSelection(packageName)
+            true
+        }
     }
 
     private inline val packageName get() = data.packageName
@@ -50,6 +54,14 @@ class AppViewHolder(private val binding: AppListItemBinding) : BaseViewHolder<Pa
 
     override fun onClick(v: View) {
         val context = v.context
+
+        // In selection mode a tap toggles the row's selection, not its permission.
+        val appsAdapter = adapter as? AppsAdapter
+        if (appsAdapter?.isSelectionMode == true) {
+            appsAdapter.toggleSelection(packageName)
+            return
+        }
+
         try {
             if (AuthorizationManager.granted(packageName, uid)) {
                 AuthorizationManager.revoke(packageName, uid)
@@ -92,6 +104,7 @@ class AppViewHolder(private val binding: AppListItemBinding) : BaseViewHolder<Pa
             ai.loadLabel(pm)
         }
         pkg.text = ai.packageName
+        bindSelectionState()
         switchWidget.isChecked = AuthorizationManager.granted(packageName, uid)
         root.visibility = if (ai.metaData != null && ai.metaData.getBoolean("moe.shizuku.client.V3_REQUIRES_ROOT")) View.VISIBLE else View.GONE
 
@@ -99,7 +112,16 @@ class AppViewHolder(private val binding: AppListItemBinding) : BaseViewHolder<Pa
     }
 
     override fun onBind(payloads: List<Any>) {
+        bindSelectionState()
         switchWidget.isChecked = AuthorizationManager.granted(packageName, uid)
+    }
+
+    private fun bindSelectionState() {
+        val appsAdapter = adapter as? AppsAdapter
+        val selecting = appsAdapter?.isSelectionMode == true
+        switchWidget.visibility = if (selecting) View.GONE else View.VISIBLE
+        binding.checkbox.visibility = if (selecting) View.VISIBLE else View.GONE
+        binding.checkbox.isChecked = appsAdapter?.isSelected(packageName) == true
     }
 
     override fun onRecycle() {

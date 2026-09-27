@@ -70,4 +70,12 @@
         android:clickable="false"
         android:focusable="false" />
 
+    <CheckBox
+        android:id="@+id/checkbox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:clickable="false"
+        android:focusable="false"
+        android:visibility="gone" />
+
 </LinearLayout>
