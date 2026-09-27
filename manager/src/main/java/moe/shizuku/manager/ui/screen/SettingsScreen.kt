@@ -8,6 +8,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
@@ -85,7 +86,10 @@ fun SettingsScreen(onOpenDetail: (Detail) -> Unit) {
     var updateDialog by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        TopAppBar(title = { Text(stringResource(R.string.tab_settings)) })
+        TopAppBar(
+            title = { Text(stringResource(R.string.tab_settings)) },
+            windowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp)
+        )
 
         LazyColumn(
             contentPadding = PaddingValues(16.dp),

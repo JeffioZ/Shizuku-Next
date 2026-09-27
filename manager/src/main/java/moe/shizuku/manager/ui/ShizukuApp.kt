@@ -2,9 +2,15 @@ package moe.shizuku.manager.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.pager.HorizontalPager
@@ -78,21 +84,29 @@ fun ShizukuApp() {
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
-            var detail by remember { mutableStateOf<Detail?>(null) }
-            val current = detail
+            // Apply the status bar inset exactly once for every screen: the app
+            // bars themselves have no insets, and the Scaffold opts out too.
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .windowInsetsPadding(WindowInsets.statusBars.only(WindowInsetsSides.Top))
+            ) {
+                var detail by remember { mutableStateOf<Detail?>(null) }
+                val current = detail
 
-            if (current != null) {
-                BackHandler { detail = null }
-                CenteredContent {
-                    when (current) {
-                        Detail.STEALTH -> StealthScreen(onBack = { detail = null })
-                        Detail.TERMINAL -> TerminalScreen(onBack = { detail = null })
-                        Detail.INTENTS -> IntentsScreen(onBack = { detail = null })
-                        Detail.ABOUT -> AboutScreen(onBack = { detail = null })
+                if (current != null) {
+                    BackHandler { detail = null }
+                    CenteredContent {
+                        when (current) {
+                            Detail.STEALTH -> StealthScreen(onBack = { detail = null })
+                            Detail.TERMINAL -> TerminalScreen(onBack = { detail = null })
+                            Detail.INTENTS -> IntentsScreen(onBack = { detail = null })
+                            Detail.ABOUT -> AboutScreen(onBack = { detail = null })
+                        }
                     }
+                } else {
+                    MainTabs(onOpenDetail = { detail = it })
                 }
-            } else {
-                MainTabs(onOpenDetail = { detail = it })
             }
         }
     }
@@ -126,6 +140,9 @@ private fun MainTabs(onOpenDetail: (Detail) -> Unit) {
     val scope = rememberCoroutineScope()
 
     Scaffold(
+        // Each screen's TopAppBar already applies the status bar inset; without
+        // this the Scaffold would apply it too and double the top padding.
+        contentWindowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
         bottomBar = {
             NavigationBar {
                 tabs.forEachIndexed { index, tab ->

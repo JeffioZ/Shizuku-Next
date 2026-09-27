@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -129,8 +131,11 @@ fun HomeScreen() {
         }
     }
 
-    Column(modifier = Modifier.fillMaxWidth()) {
-        TopAppBar(title = { Text(stringResource(R.string.app_name)) })
+    Column(modifier = Modifier.fillMaxSize()) {
+        TopAppBar(
+            title = { Text(stringResource(R.string.app_name)) },
+            windowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp)
+        )
 
         LazyColumn(
             contentPadding = PaddingValues(16.dp),

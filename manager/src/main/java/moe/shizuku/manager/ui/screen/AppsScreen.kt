@@ -6,6 +6,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -101,6 +102,7 @@ fun AppsScreen() {
         if (selectionMode) {
             TopAppBar(
                 title = { Text(stringResource(R.string.batch_selected_count, selected.size)) },
+                windowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
                 navigationIcon = {
                     IconButton(onClick = { selected = emptySet() }) {
                         Icon(Icons.Filled.Close, contentDescription = null)
@@ -121,6 +123,7 @@ fun AppsScreen() {
         } else {
             TopAppBar(
                 title = { Text(stringResource(R.string.tab_apps)) },
+                windowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
                 actions = {
                     IconButton(onClick = { sortMenu = true }) {
                         Icon(Icons.Filled.Sort, contentDescription = null)

@@ -1,5 +1,8 @@
 package moe.shizuku.manager.ui.theme
 
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import android.os.Build
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -7,11 +10,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowInsetsControllerCompat
 import com.materialkolor.PaletteStyle
 import com.materialkolor.dynamiccolor.ColorSpec
 import com.materialkolor.rememberDynamicColorScheme
@@ -64,8 +70,30 @@ fun ShizukuTheme(content: @Composable () -> Unit) {
         specVersion = ColorSpec.SpecVersion.SPEC_2021,
     )
 
+    // Match the status/navigation bar icons to the app's theme, not the system's;
+    // otherwise a white in-app theme gets light icons on a white bar (invisible).
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        LaunchedEffect(darkTheme) {
+            val window = view.context.findActivity()?.window ?: return@LaunchedEffect
+            WindowInsetsControllerCompat(window, window.decorView).apply {
+                isAppearanceLightStatusBars = !darkTheme
+                isAppearanceLightNavigationBars = !darkTheme
+            }
+        }
+    }
+
     MaterialTheme(
         colorScheme = colorScheme,
         content = content
     )
+}
+
+private fun Context.findActivity(): Activity? {
+    var context: Context = this
+    while (context is ContextWrapper) {
+        if (context is Activity) return context
+        context = context.baseContext
+    }
+    return context as? Activity
 }
