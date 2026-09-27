@@ -629,28 +629,54 @@ private fun StatusCard(
     }
 }
 
-/** "Nothing Phone (2)" style label, without repeating the maker when it's already in the model. */
-private fun deviceModel(): String {
-    val manufacturer = Build.MANUFACTURER.replaceFirstChar { it.uppercase() }
-    val model = Build.MODEL
-    return if (model.startsWith(manufacturer, ignoreCase = true)) model else "$manufacturer $model"
+/**
+ * KernelSU's fallback for the device name: manufacturer, brand when it differs, model.
+ * Their per-manufacturer "marketing name" properties (Samsung, Xiaomi, OPPO…) could be
+ * layered on top later; on a Nothing phone this is the name KSU shows too.
+ */
+private fun deviceModel(): String = buildString {
+    // Capitalised because manufacturers report themselves in lowercase ("samsung"),
+    // and without their marketing-name layer there is nothing else to show.
+    append(Build.MANUFACTURER.replaceFirstChar { it.uppercase() })
+    if (!Build.BRAND.equals(Build.MANUFACTURER, ignoreCase = true)) {
+        append(' ').append(Build.BRAND)
+    }
+    append(' ').append(Build.MODEL)
 }
 
 private fun kernelVersion(): String = System.getProperty("os.version").orEmpty().ifEmpty { "-" }
 
 /**
- * The kernel's SELinux switch. selinuxfs is world-readable on disk but denied to app
- * domains, so ask the server — falling back to reading it directly on the ROMs that do
- * allow an app (and to nothing at all when there is no server to ask).
+ * The kernel's SELinux state, worked out the way KernelSU's manager works it out:
+ * ask `getenforce` as an ordinary app, and treat a refusal as the answer — selinuxfs is
+ * world-readable on disk but denied to app domains, and a permissive policy would have
+ * allowed the read. That is what makes this work with no root, no server and no KSU.
  */
 @StringRes
 private fun readSelinuxStatus(): Int? {
-    val value = runShellCommand("cat /sys/fs/selinux/enforce")
+    // With a server running, read the switch itself rather than infer it.
+    val raw = runShellCommand("cat /sys/fs/selinux/enforce")
         ?: runCatching { File("/sys/fs/selinux/enforce").readText().trim() }.getOrNull()
 
-    return when (value) {
-        "1" -> R.string.selinux_enforcing
-        "0" -> R.string.selinux_permissive
+    when (raw) {
+        "1" -> return R.string.selinux_enforcing
+        "0" -> return R.string.selinux_permissive
+    }
+
+    val (stdout, stderr) = runCatching {
+        val process = ProcessBuilder("/system/bin/sh", "-c", "getenforce").start()
+        val out = process.inputStream.bufferedReader().use { it.readText() }.trim()
+        val err = process.errorStream.bufferedReader().use { it.readText() }.trim()
+        process.waitFor()
+        out to err
+    }.getOrNull() ?: return null
+
+    return when {
+        stdout.equals("Enforcing", true) -> R.string.selinux_enforcing
+        stdout.equals("Permissive", true) -> R.string.selinux_permissive
+        stdout.equals("Disabled", true) -> R.string.selinux_disabled
+        // Refused: only an enforcing policy says no here.
+        stderr.contains("Permission denied") -> R.string.selinux_enforcing
         else -> null
     }
 }
