@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -25,6 +26,7 @@ import androidx.compose.material.icons.rounded.StopCircle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
@@ -302,7 +304,6 @@ fun HomeScreen() {
             item {
                 StatusCard(
                     running = running,
-                    starting = startStatus is StartStatus.Starting,
                     version = version,
                     uid = uid,
                     startMethodLabelRes = startMethodLabelRes(startMethod)
@@ -310,15 +311,24 @@ fun HomeScreen() {
             }
 
             item {
-                // Both actions sit outside the status card and stay on screen in the
+                // The actions sit outside the status card and stay on screen in the
                 // same place, so the buttons don't move around as the state changes.
-                StartStopButtons(
+                ServerActionButtons(
                     running = running,
                     starting = startStatus is StartStatus.Starting,
                     // Uses whichever method is set in Settings; never guesses from the
                     // last one that happened to work.
                     onStart = { ShizukuReceiverStarter.start(context, userInitiated = true) },
-                    onStop = { confirmStop = true }
+                    onStop = { confirmStop = true },
+                    // A bounce: forceStart replaces the running server instead of
+                    // being ignored as "already running".
+                    onRestart = {
+                        ShizukuReceiverStarter.start(
+                            context,
+                            forceStart = true,
+                            userInitiated = true
+                        )
+                    }
                 )
             }
 
@@ -501,7 +511,6 @@ fun HomeScreen() {
 @Composable
 private fun StatusCard(
     running: Boolean,
-    starting: Boolean,
     version: Int,
     uid: Int,
     @StringRes startMethodLabelRes: Int
@@ -556,11 +565,6 @@ private fun StatusCard(
                         style = MaterialTheme.typography.bodyMedium
                     )
 
-                    starting -> Text(
-                        stringResource(R.string.start_waiting_for_service),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-
                     // Say what Start is going to do, instead of leaving the user to
                     // remember the setting.
                     else -> Text(
@@ -575,17 +579,20 @@ private fun StatusCard(
 }
 
 /**
- * Start and Stop side by side below the status card, both always visible. The action
- * that doesn't apply right now is disabled rather than hidden, so neither button
- * moves as the state changes.
+ * Start, Stop and Restart below the status card, all always visible. An action that
+ * doesn't apply right now is disabled rather than hidden, so the row never shifts.
+ * A start in flight shows as progress inside Start, where the eye already is.
  */
 @Composable
-private fun StartStopButtons(
+private fun ServerActionButtons(
     running: Boolean,
     starting: Boolean,
     onStart: () -> Unit,
-    onStop: () -> Unit
+    onStop: () -> Unit,
+    onRestart: () -> Unit
 ) {
+    val outline = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -595,7 +602,17 @@ private fun StartStopButtons(
             enabled = !running && !starting,
             onClick = onStart
         ) {
-            Text(stringResource(R.string.action_start))
+            if (starting) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(18.dp),
+                    strokeWidth = 2.dp,
+                    // The button is disabled while starting, so pick a colour that
+                    // still reads against the disabled container.
+                    color = MaterialTheme.colorScheme.primary
+                )
+            } else {
+                Text(stringResource(R.string.action_start))
+            }
         }
 
         OutlinedButton(
@@ -604,9 +621,18 @@ private fun StartStopButtons(
             onClick = onStop,
             // Explicit outline: the default one is nearly invisible on the plain
             // background.
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+            border = outline
         ) {
             Text(stringResource(R.string.action_stop))
+        }
+
+        OutlinedButton(
+            modifier = Modifier.weight(1f),
+            enabled = running,
+            onClick = onRestart,
+            border = outline
+        ) {
+            Text(stringResource(R.string.action_restart))
         }
     }
 }

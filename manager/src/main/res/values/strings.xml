@@ -331,6 +331,7 @@
      <string name="start">Start</string>
      <string name="stop">Stop</string>
     <string name="action_stop">Stop</string>
+    <string name="action_restart">Restart</string>
     <string name="dialog_stop_message">Shizuku service will be stopped.</string>
 
     <!-- Notification -->
