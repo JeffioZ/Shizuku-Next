@@ -37,7 +37,17 @@ private fun Throwable.isCertificateUnknown(): Boolean {
 }
 
 object AdbStarter {
-    suspend fun startAdb(context: Context, port: Int, log: ((String) -> Unit)? = null) {
+    /**
+     * @param openTcpPort open the classic ADB port as part of this start, even when
+     *   the "TCP mode" setting is off. A USB start asks for exactly that: the port is
+     *   what makes later USB starts work without wireless debugging or a computer.
+     */
+    suspend fun startAdb(
+        context: Context,
+        port: Int,
+        log: ((String) -> Unit)? = null,
+        openTcpPort: Boolean = false
+    ) {
         suspend fun AdbClient.runCommand(cmd: String) {
             command(cmd) { log?.invoke(String(it)) }
         }
@@ -55,7 +65,6 @@ object AdbStarter {
                 }
 
             var activePort = port
-            val tcpMode = ShizukuSettings.getTcpMode()
             val tcpPort = ShizukuSettings.getTcpPort()
             // Classic TCP mode rides on the USB debugging toggle. Only switch adbd
             // into TCP mode when USB debugging is already on — switching during a
@@ -63,9 +72,13 @@ object AdbStarter {
             val usbDebugging = Settings.Global.getInt(
                 context.contentResolver, Settings.Global.ADB_ENABLED, 0
             ) == 1
+            // Only a USB start opens/switches to the classic ADB port. Letting a
+            // wireless start do it turned "Wireless debugging" into a TCP connection
+            // that then reported itself as USB debugging.
+            val keepTcpPort = openTcpPort
             var viaTcp = !EnvironmentUtils.isTlsSupported() ||
                     (activePort > 0 && activePort == EnvironmentUtils.getAdbTcpPort())
-            if (tcpMode && usbDebugging && activePort != tcpPort) {
+            if (keepTcpPort && usbDebugging && activePort != tcpPort) {
                 log?.invoke("Connecting on port $activePort...")
 
                 AdbClient("127.0.0.1", activePort, key).use { client ->

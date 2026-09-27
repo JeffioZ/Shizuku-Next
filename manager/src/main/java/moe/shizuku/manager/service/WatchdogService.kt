@@ -113,11 +113,13 @@ class WatchdogService : Service() {
         serviceScope.launch {
             try {
                 val tcpPort = EnvironmentUtils.getAdbTcpPort()
-                if (tcpPort > 0 && ShizukuSettings.getTcpMode() && EnvironmentUtils.isUsbDebuggingEnabled()) {
-                    // Direct TCP restart — fastest path, no mDNS needed. Classic TCP
-                    // rides on the USB debugging toggle, so this path is only used
-                    // when USB debugging is already on; wireless-only setups restart
-                    // over TLS below.
+                val usbMethod =
+                    ShizukuSettings.getStartMethod() == ShizukuSettings.StartMethod.USB
+                if (usbMethod && tcpPort > 0 && EnvironmentUtils.isUsbDebuggingEnabled()) {
+                    // Direct TCP restart for the USB method — fastest path, no mDNS
+                    // needed. A wireless setup must restart over TLS below: taking the
+                    // classic port here is what made a wireless setup come back
+                    // reporting itself as USB debugging after a crash.
                     pendingRestart = false
                     AdbStarter.startAdb(applicationContext, tcpPort)
                     Starter.waitForBinder()

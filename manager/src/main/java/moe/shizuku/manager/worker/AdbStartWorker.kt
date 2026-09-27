@@ -115,7 +115,13 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 return Result.failure()
             }
 
-            val port = tcpPort.takeIf { usbMethod || !EnvironmentUtils.isWifiRequired() }
+            // A wireless start always goes over the wireless (TLS) port. Taking the
+            // classic ADB port here — which TCP mode keeps open — is what made a
+            // "Wireless debugging" start run over USB debugging's transport and report
+            // itself as USB. Only the USB method, and platforms without wireless
+            // debugging at all, use the classic port.
+            val useClassicPort = usbMethod || !EnvironmentUtils.isTlsSupported()
+            val port = tcpPort.takeIf { useClassicPort }
                 ?: callbackFlow {
                 val adbMdns = AdbMdns(applicationContext, AdbMdns.TLS_CONNECT) { p ->
                     if (p.second > 0) trySend(p.second)
@@ -313,7 +319,9 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             // they shouldn't wait on unmetered Wi-Fi like unattended auto-restarts do,
             // since the discovery flow works without any network connection. A USB
             // start never wants a network constraint at all.
-            if (EnvironmentUtils.isWifiRequired() && !immediate && !usbMethod)
+            // A wireless start always needs a network to keep wireless debugging
+            // alive; the USB method uses the classic port and needs none.
+            if (!usbMethod && !immediate)
                 cb.setRequiredNetworkType(NetworkType.UNMETERED)
             val constraints = cb.build()
 

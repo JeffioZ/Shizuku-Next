@@ -102,7 +102,6 @@ object ShizukuReceiverStarter {
             return
         }
 
-        val needsWifi = EnvironmentUtils.isWifiRequired()
         val hasWifi = EnvironmentUtils.isWifiConnected()
         val television = EnvironmentUtils.isTelevision()
 
@@ -115,15 +114,14 @@ object ShizukuReceiverStarter {
         // USB debugging instead gives a pairing-free port when a computer has run
         // `adb tcpip` (and is the only option on Android 10 and below), so a USB
         // start only complains when it has neither.
-        if (needsWifi && !hasWifi && !television) {
+        // A wireless start always needs a network: the system turns wireless debugging
+        // back off without one, so discovery can never find a port. The USB method runs
+        // over the classic ADB port and needs no network at all — the worker reports a
+        // missing port itself.
+        if (startMethod == ShizukuSettings.StartMethod.WIRELESS && !hasWifi && !television) {
             StartStatusReporter.failed(
-                context.getString(
-                    if (startMethod == ShizukuSettings.StartMethod.USB)
-                        R.string.start_failed_usb_no_port
-                    else R.string.start_failed_wifi_required
-                ),
-                if (startMethod == ShizukuSettings.StartMethod.WIRELESS)
-                    StartFailureKind.WIFI else StartFailureKind.GENERIC
+                context.getString(R.string.start_failed_wifi_required),
+                StartFailureKind.WIFI
             )
             return
         }
