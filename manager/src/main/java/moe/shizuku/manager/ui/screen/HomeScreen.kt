@@ -32,6 +32,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -305,7 +306,6 @@ fun HomeScreen() {
             item {
                 StatusCard(
                     running = running,
-                    version = version,
                     uid = uid,
                     startMethodLabelRes = startMethodLabelRes(startMethod)
                 )
@@ -448,12 +448,6 @@ fun HomeScreen() {
                             supportingContent = { Text(uidLabel(uid)) }
                         )
                     }
-                    item {
-                        SegmentedListItem(
-                            headlineContent = { Text("Transport") },
-                            supportingContent = { Text(transportLabel(uid)) }
-                        )
-                    }
                 }
             }
         }
@@ -498,7 +492,6 @@ fun HomeScreen() {
 @Composable
 private fun StatusCard(
     running: Boolean,
-    version: Int,
     uid: Int,
     @StringRes startMethodLabelRes: Int
 ) {
@@ -559,26 +552,30 @@ private fun StatusCard(
                     ),
                     style = MaterialTheme.typography.titleMedium
                 )
-                when {
-                    running -> Text(
-                        stringResource(
-                            R.string.home_status_service_version,
-                            uidLabel(uid),
-                            version.toString()
-                        ),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-
-                    // Say what Start is going to do, instead of leaving the user to
-                    // remember the setting.
-                    else -> Text(
-                        stringResource(startMethodLabelRes),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
+                // The two facts this card exists to answer: how the server is connected
+                // right now, and what the Start button below will do next.
+                StatusFact(
+                    R.string.home_status_transport_label,
+                    if (running) transportLabel(uid) else stringResource(R.string.status_value_none)
+                )
+                StatusFact(R.string.settings_start_method, stringResource(startMethodLabelRes))
             }
 
         }
+    }
+}
+
+/** A label/value pair inside the status card. */
+@Composable
+private fun StatusFact(@StringRes labelRes: Int, value: String) {
+    Row(modifier = Modifier.padding(top = 2.dp)) {
+        Text(
+            stringResource(labelRes),
+            style = MaterialTheme.typography.bodySmall,
+            color = LocalContentColor.current.copy(alpha = 0.75f)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(value, style = MaterialTheme.typography.bodySmall)
     }
 }
 
@@ -681,11 +678,13 @@ private fun uidLabel(uid: Int): String = when (uid) {
 @Composable
 private fun transportLabel(uid: Int): String = when {
     uid == 0 -> stringResource(R.string.start_method_root)
+    // "adb (...)" rather than the method names, so the transport can't be confused
+    // with the start method shown next to it.
     ShizukuSettings.getLastAdbTransport() == ShizukuSettings.ADB_TRANSPORT_TCP ->
-        stringResource(R.string.start_method_usb)
+        stringResource(R.string.home_status_adb_usb)
 
     ShizukuSettings.getLastAdbTransport() == ShizukuSettings.ADB_TRANSPORT_TLS ->
-        stringResource(R.string.start_method_wireless)
+        stringResource(R.string.home_status_adb_wireless)
 
     else -> stringResource(R.string.transport_unknown)
 }
