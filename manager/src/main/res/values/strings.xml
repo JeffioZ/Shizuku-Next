@@ -124,6 +124,14 @@
     <string name="app_management_sort">Sort</string>
     <string name="app_management_sort_last_added">Last added</string>
     <string name="app_management_sort_alphabetical">Alphabetical</string>
+    <string name="tab_home">Home</string>
+    <string name="tab_apps">Apps</string>
+    <string name="tab_tools">Tools</string>
+    <string name="tab_settings">Settings</string>
+    <string name="status_running_short">Running</string>
+    <string name="status_stopped_short">Stopped</string>
+    <string name="action_start">Start</string>
+    <string name="home_info_title">Info</string>
     <string name="batch_selected_count">%1$d selected</string>
     <string name="app_management_action_select_all">Select all</string>
     <string name="app_management_action_grant">Grant</string>
