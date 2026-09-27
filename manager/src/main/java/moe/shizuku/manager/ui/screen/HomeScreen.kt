@@ -9,8 +9,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -390,57 +392,57 @@ private fun StatusCard(
         contentColor = contentColor,
         shape = MaterialTheme.shapes.large
     ) {
-        Column {
-            ListItem(
-                leadingContent = {
-                    Icon(
-                        if (running) Icons.Rounded.CheckCircle else Icons.Rounded.StopCircle,
-                        contentDescription = null
-                    )
-                },
-                headlineContent = {
-                    Text(
-                        stringResource(
-                            if (running) R.string.status_running_short else R.string.status_stopped_short
-                        ),
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                },
-                supportingContent = {
-                    when {
-                        running -> Text(
-                            stringResource(
-                                R.string.home_status_service_version,
-                                uidLabel(uid),
-                                version.toString()
-                            )
-                        )
-
-                        starting -> Text(stringResource(R.string.start_waiting_for_service))
-                        else -> Unit
-                    }
-                },
-                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+        // Status on the left, action on the right, so the card isn't half empty.
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                if (running) Icons.Rounded.CheckCircle else Icons.Rounded.StopCircle,
+                contentDescription = null
             )
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                if (running) {
-                    OutlinedButton(
-                        onClick = onStop,
-                        // Explicit outline so it reads as a button on the tonal card.
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = contentColor)
-                    ) { Text(stringResource(R.string.action_stop)) }
-                } else {
-                    Button(onClick = onStart) {
-                        Icon(Icons.Filled.PlayArrow, contentDescription = null)
-                        Text(stringResource(R.string.action_start))
-                    }
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    stringResource(
+                        if (running) R.string.status_running_short else R.string.status_stopped_short
+                    ),
+                    style = MaterialTheme.typography.titleMedium
+                )
+                when {
+                    running -> Text(
+                        stringResource(
+                            R.string.home_status_service_version,
+                            uidLabel(uid),
+                            version.toString()
+                        ),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
+                    starting -> Text(
+                        stringResource(R.string.start_waiting_for_service),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            if (running) {
+                OutlinedButton(
+                    onClick = onStop,
+                    // Explicit outline so it reads as a button on the tonal card.
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = contentColor)
+                ) { Text(stringResource(R.string.action_stop)) }
+            } else {
+                Button(onClick = onStart) {
+                    Icon(Icons.Filled.PlayArrow, contentDescription = null)
+                    Text(stringResource(R.string.action_start))
                 }
             }
         }
