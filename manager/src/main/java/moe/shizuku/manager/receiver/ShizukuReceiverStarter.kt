@@ -33,6 +33,8 @@ object ShizukuReceiverStarter {
     enum class WorkerState {
         AWAITING_WIFI,
         AWAITING_RETRY,
+        CONNECTING,
+        WAITING_FOR_UNLOCK,
         RUNNING,
         STOPPED
     }
@@ -117,6 +119,8 @@ object ShizukuReceiverStarter {
         val msgId = when (state) {
             WorkerState.AWAITING_WIFI -> R.string.wadb_notification_wifi_required
             WorkerState.AWAITING_RETRY -> R.string.wadb_notification_retry
+            WorkerState.CONNECTING -> R.string.wadb_notification_connecting
+            WorkerState.WAITING_FOR_UNLOCK -> R.string.wadb_notification_waiting_for_unlock
             else -> null
         }
         val msg = if (msgId != null) context.getString(msgId) else null

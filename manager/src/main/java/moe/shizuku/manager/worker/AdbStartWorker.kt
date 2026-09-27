@@ -121,6 +121,7 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                             notification
                         )
                         setForegroundAsync(foregroundInfo)
+                        updateNotification(applicationContext, WorkerState.WAITING_FOR_UNLOCK)
 
                         val filter = IntentFilter(Intent.ACTION_USER_PRESENT)
                         unlockReceiver = object : BroadcastReceiver() {
@@ -165,6 +166,7 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 }
             }.first()
             
+            updateNotification(applicationContext, WorkerState.CONNECTING)
             AdbStarter.startAdb(applicationContext, port)
             Starter.waitForBinder()
 
