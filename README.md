@@ -41,6 +41,7 @@ This version of Shizuku includes some extra features over the original version, 
 * **One-tap battery-optimization bypass:** "fix" whitelists Shizuku directly through Shizuku/root (`deviceidle whitelist`, `appops`) instead of only opening the system dialog
 * **Duplicate server cleanup:** the starter detects stale Shizuku server processes via multiple `/proc` vectors and terminates them cleanly (with a short yield) before starting a new one
 * **Clearer auto-start progress:** the wireless/boot start notification now shows more states — waiting for Wi-Fi, waiting for unlock, and connecting
+* **Auto wake-up:** when an app requests the Shizuku binder while the server is down, the manager tries to start it in the background (if start on boot is enabled and you did not deliberately stop it)
 * **Start as system (UID 1000):** a "Start (system)" card launches Shizuku under the system UID — either via a built-in device exploit or by copying a command for your own privilege escalation, selected in settings
 * **Restart transport settings:** choose whether restarts may fall back to enabling USB debugging, and whether unattended restarts wait for an unmetered Wi-Fi connection (starts you trigger yourself never wait)
 * **Search and sort authorized apps:** filter the apps list by name and sort it alphabetically or by most recently added
