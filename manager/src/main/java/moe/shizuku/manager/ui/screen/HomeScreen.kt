@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.StopCircle
 import androidx.compose.material3.AlertDialog
@@ -576,8 +575,9 @@ private fun StatusCard(
 }
 
 /**
- * Start and Stop, stacked below the status card and always visible. The action that
- * doesn't apply right now is disabled rather than hidden, so the layout never shifts.
+ * Start and Stop side by side below the status card, both always visible. The action
+ * that doesn't apply right now is disabled rather than hidden, so neither button
+ * moves as the state changes.
  */
 @Composable
 private fun StartStopButtons(
@@ -586,22 +586,20 @@ private fun StartStopButtons(
     onStart: () -> Unit,
     onStop: () -> Unit
 ) {
-    Column(
+    Row(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Button(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.weight(1f),
             enabled = !running && !starting,
             onClick = onStart
         ) {
-            Icon(Icons.Filled.PlayArrow, contentDescription = null)
-            Spacer(modifier = Modifier.width(8.dp))
             Text(stringResource(R.string.action_start))
         }
 
         OutlinedButton(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.weight(1f),
             enabled = running,
             onClick = onStop,
             // Explicit outline: the default one is nearly invisible on the plain
