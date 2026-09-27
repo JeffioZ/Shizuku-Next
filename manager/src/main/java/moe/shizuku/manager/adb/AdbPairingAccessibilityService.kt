@@ -18,7 +18,7 @@ import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.adb.PreferenceAdbKeyStore
 import moe.shizuku.manager.adb.AdbKey
 import moe.shizuku.manager.adb.AdbPairingClient
-import moe.shizuku.manager.home.HomeActivity
+import moe.shizuku.manager.AppConstants
 import moe.shizuku.manager.utils.EnvironmentUtils
 import java.net.ConnectException
 
@@ -44,7 +44,7 @@ class AdbPairingAccessibilityService : AccessibilityService() {
                 Intent.FLAG_ACTIVITY_CLEAR_TOP or
                 Intent.FLAG_ACTIVITY_SINGLE_TOP
             )
-            putExtra(HomeActivity.EXTRA_SHOW_PAIRING_DIALOG, true)
+            putExtra(AppConstants.EXTRA_SHOW_PAIRING_DIALOG, true)
         }
         startActivity(intent)
 

@@ -104,26 +104,8 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".management.ApplicationManagementActivity"
-            android:label="@string/home_app_management_title" />
-        <activity
             android:name=".adb.AdbPairingTutorialActivity"
             android:label="@string/adb_pairing" />
-        <activity
-            android:name=".shell.ShellTutorialActivity"
-            android:label="@string/home_terminal_title" />
-        <activity
-            android:name=".stealth.StealthTutorialActivity"
-            android:label="@string/home_stealth_title"
-            android:windowSoftInputMode="adjustResize" />
-        <activity
-            android:name=".settings.SettingsActivity"
-            android:exported="false"
-            android:label="@string/settings_title">
-            <intent-filter>
-                <action android:name="android.intent.action.APPLICATION_PREFERENCES" />
-            </intent-filter>
-        </activity>
         <activity
             android:name=".starter.StarterActivity"
             android:label="@string/starter" />

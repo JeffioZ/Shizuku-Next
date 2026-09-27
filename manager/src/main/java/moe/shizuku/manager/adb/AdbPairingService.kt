@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
 import moe.shizuku.manager.MainActivity
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ShizukuSettings
-import moe.shizuku.manager.home.HomeActivity
+import moe.shizuku.manager.AppConstants
 import rikka.core.ktx.unsafeLazy
 import java.net.ConnectException
 
@@ -252,7 +252,7 @@ class AdbPairingService : Service() {
 
     private val startNotificationAction by unsafeLazy {
         val startIntent = Intent(launchIntent)
-            .putExtra(HomeActivity.EXTRA_START_SERVICE_VIA_WADB, true)
+            .putExtra(AppConstants.EXTRA_START_SERVICE_VIA_WADB, true)
 
         val pendingIntent = PendingIntent.getActivity(
             this, startRequestId, startIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
