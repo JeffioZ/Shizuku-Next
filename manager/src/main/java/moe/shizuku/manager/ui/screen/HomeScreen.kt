@@ -192,23 +192,23 @@ fun HomeScreen() {
                         contentColor = MaterialTheme.colorScheme.onErrorContainer,
                         shape = MaterialTheme.shapes.large
                     ) {
-                        // Message on top, actions on their own row underneath —
-                        // beside the wrapped text they looked like stray labels.
+                        // Message on top, actions stacked full-width underneath: in a row
+                        // they sat shoulder-to-shoulder and read as one control.
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(
                                 text = "${stringResource(R.string.start_failed)}: ${failed.message}",
                                 style = MaterialTheme.typography.bodyMedium
                             )
 
-                            Row(
+                            Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(top = 12.dp),
-                                horizontalArrangement = Arrangement.End,
-                                verticalAlignment = Alignment.CenterVertically
+                                    .padding(top = 16.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 if (failed.kind == StartFailureKind.WIFI) {
                                     Button(
+                                        modifier = Modifier.fillMaxWidth(),
                                         onClick = {
                                             runCatching {
                                                 context.startActivity(
@@ -223,6 +223,7 @@ fun HomeScreen() {
                                     ) { Text(stringResource(R.string.action_connect_wifi)) }
                                 } else if (failed.kind == StartFailureKind.PAIRING) {
                                     Button(
+                                        modifier = Modifier.fillMaxWidth(),
                                         onClick = {
                                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                                                 runCatching {
@@ -239,6 +240,7 @@ fun HomeScreen() {
                                 }
 
                                 OutlinedButton(
+                                    modifier = Modifier.fillMaxWidth(),
                                     onClick = { StartStatusReporter.clear() },
                                     border = BorderStroke(
                                         1.dp,
@@ -268,13 +270,13 @@ fun HomeScreen() {
                                 style = MaterialTheme.typography.bodyMedium
                             )
 
-                            Row(
+                            Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(top = 12.dp),
-                                horizontalArrangement = Arrangement.End
+                                    .padding(top = 16.dp)
                             ) {
                                 Button(
+                                    modifier = Modifier.fillMaxWidth(),
                                     onClick = {
                                         SettingsHelper.requestIgnoreBatteryOptimizationsPrivileged(context) {
                                             batteryIgnored = SettingsHelper.isIgnoringBatteryOptimizations(context)
