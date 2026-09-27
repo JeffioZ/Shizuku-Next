@@ -382,6 +382,9 @@ fun HomeScreen() {
                             // Restart is how you relaunch it.
                             enabled = !running,
                             headlineContent = { Text(stringResource(R.string.home_wireless_adb_title)) },
+                            supportingContent = {
+                                Text(stringResource(R.string.home_wireless_adb_summary))
+                            },
                             trailingContent = {
                                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
                             },
