@@ -33,6 +33,7 @@ All versions are distributed via [GitHub Releases](https://github.com/thedjchi/S
 ## ✨ Added Features
 
 This version of Shizuku includes some extra features over the original version, such as:
+* **Automated setup:** the separate "Pair" button has been removed pressing "Start" now detects when wireless debugging still needs to be paired and launches the pairing flow automatically
 * **More robust "start on boot":** waits for a Wi-Fi connection before starting the Shizuku service
 * **TCP mode:** (i.e., the `adb tcpip` command) once Shizuku successfully starts with Wi-Fi after a reboot, you can stop/restart Shizuku without a Wi-Fi connection!
 * **Watchdog service:** automatically restarts Shizuku if it stops unexpectedly, and can alert you of crashes/potential fixes

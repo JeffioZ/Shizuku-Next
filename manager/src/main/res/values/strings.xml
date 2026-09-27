@@ -49,6 +49,8 @@
     <string name="adb_stopping_tcp">Closing TCP port</string>
     <string name="adb_error_stop_tcp">Failed to stop ADB over TCP</string>
     <string name="adb_pair_required">Please go through the pairing step first.</string>
+    <string name="dialog_wifi_required_title">Wi-Fi connection required</string>
+    <string name="dialog_wifi_required_message">To start Shizuku via Wireless debugging, you must be connected to a Wi-Fi network.</string>
     <string name="enable">Enable</string>
     <string name="development_settings">Developer options</string>
     <string name="notification_settings">Notification options</string>
