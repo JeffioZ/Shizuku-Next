@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -11,12 +12,14 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -94,6 +97,9 @@ fun SettingsScreen(onOpenDetail: (Detail) -> Unit) {
             verticalArrangement = Arrangement.spacedBy(13.dp)
         ) {
             item {
+                SettingsSectionHeader(R.string.settings_section_startup)
+            }
+            item {
                 SegmentedColumn(modifier = Modifier.fillMaxWidth()) {
                     item {
                         SegmentedListItem(
@@ -170,9 +176,30 @@ fun SettingsScreen(onOpenDetail: (Detail) -> Unit) {
                             }
                         )
                     }
+                    item {
+                        SegmentedListItem(
+                            headlineContent = { Text(stringResource(R.string.settings_system_start_method)) },
+                            supportingContent = {
+                                Text(
+                                    stringResource(
+                                        if (systemStartMethod == ShizukuSettings.SYSTEM_START_EXPLOIT)
+                                            R.string.settings_system_start_method_exploit
+                                        else R.string.settings_system_start_method_custom
+                                    )
+                                )
+                            },
+                            trailingContent = {
+                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+                            },
+                            onClick = { systemStartDialog = true }
+                        )
+                    }
                 }
             }
 
+            item {
+                SettingsSectionHeader(R.string.settings_section_wireless)
+            }
             item {
                 SegmentedColumn(modifier = Modifier.fillMaxWidth()) {
                     item {
@@ -225,27 +252,12 @@ fun SettingsScreen(onOpenDetail: (Detail) -> Unit) {
                             }
                         )
                     }
-                    item {
-                        SegmentedListItem(
-                            headlineContent = { Text(stringResource(R.string.settings_system_start_method)) },
-                            supportingContent = {
-                                Text(
-                                    stringResource(
-                                        if (systemStartMethod == ShizukuSettings.SYSTEM_START_EXPLOIT)
-                                            R.string.settings_system_start_method_exploit
-                                        else R.string.settings_system_start_method_custom
-                                    )
-                                )
-                            },
-                            trailingContent = {
-                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
-                            },
-                            onClick = { systemStartDialog = true }
-                        )
-                    }
                 }
             }
 
+            item {
+                SettingsSectionHeader(R.string.settings_section_tools)
+            }
             item {
                 SegmentedColumn(modifier = Modifier.fillMaxWidth()) {
                     item {
@@ -302,25 +314,10 @@ fun SettingsScreen(onOpenDetail: (Detail) -> Unit) {
             }
 
             item {
+                SettingsSectionHeader(R.string.settings_section_appearance)
+            }
+            item {
                 SegmentedColumn(modifier = Modifier.fillMaxWidth()) {
-                    item {
-                        SegmentedListItem(
-                            headlineContent = { Text(stringResource(R.string.check_for_updates)) },
-                            supportingContent = {
-                                Text(
-                                    when (updateMode) {
-                                        ShizukuSettings.UpdateMode.OFF -> stringResource(R.string.off)
-                                        ShizukuSettings.UpdateMode.BETA -> stringResource(R.string.settings_update_beta)
-                                        else -> stringResource(R.string.settings_update_stable)
-                                    }
-                                )
-                            },
-                            trailingContent = {
-                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
-                            },
-                            onClick = { updateDialog = true }
-                        )
-                    }
                     item {
                         SegmentedListItem(
                             headlineContent = { Text(stringResource(R.string.settings_theme)) },
@@ -382,6 +379,32 @@ fun SettingsScreen(onOpenDetail: (Detail) -> Unit) {
                                     }
                                 }
                             }
+                        )
+                    }
+                }
+            }
+
+            item {
+                SettingsSectionHeader(R.string.settings_section_about)
+            }
+            item {
+                SegmentedColumn(modifier = Modifier.fillMaxWidth()) {
+                    item {
+                        SegmentedListItem(
+                            headlineContent = { Text(stringResource(R.string.check_for_updates)) },
+                            supportingContent = {
+                                Text(
+                                    when (updateMode) {
+                                        ShizukuSettings.UpdateMode.OFF -> stringResource(R.string.off)
+                                        ShizukuSettings.UpdateMode.BETA -> stringResource(R.string.settings_update_beta)
+                                        else -> stringResource(R.string.settings_update_stable)
+                                    }
+                                )
+                            },
+                            trailingContent = {
+                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+                            },
+                            onClick = { updateDialog = true }
                         )
                     }
                     item {
@@ -587,6 +610,17 @@ private fun needsRestart(setting: String, newValue: Any? = null): Boolean {
 
         else -> false
     }
+}
+
+/** Section title above a settings card, so the list reads as deliberate groups. */
+@Composable
+private fun SettingsSectionHeader(@StringRes titleRes: Int) {
+    Text(
+        text = stringResource(titleRes),
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(start = 16.dp, top = 12.dp)
+    )
 }
 
 private fun needsBatteryPrompt(context: android.content.Context): Boolean =
