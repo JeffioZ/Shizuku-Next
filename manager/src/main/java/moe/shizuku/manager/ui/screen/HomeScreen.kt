@@ -3,6 +3,7 @@ package moe.shizuku.manager.ui.screen
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
@@ -57,6 +58,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import moe.shizuku.manager.Helps
 import moe.shizuku.manager.Manifest
+import moe.shizuku.manager.adb.AdbPairingHelper
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter
@@ -219,6 +221,21 @@ fun HomeScreen() {
                                             contentColor = MaterialTheme.colorScheme.onError
                                         )
                                     ) { Text(stringResource(R.string.action_connect_wifi)) }
+                                } else if (failed.kind == StartFailureKind.PAIRING) {
+                                    Button(
+                                        onClick = {
+                                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                                                runCatching {
+                                                    AdbPairingHelper.handlePairing(context)
+                                                    StartStatusReporter.clear()
+                                                }
+                                            }
+                                        },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = MaterialTheme.colorScheme.error,
+                                            contentColor = MaterialTheme.colorScheme.onError
+                                        )
+                                    ) { Text(stringResource(R.string.action_pair)) }
                                 }
 
                                 OutlinedButton(

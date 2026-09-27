@@ -9,7 +9,10 @@ enum class StartFailureKind {
     GENERIC,
 
     /** Wireless debugging can't be enabled without a Wi-Fi connection. */
-    WIFI
+    WIFI,
+
+    /** The ADB TLS handshake was rejected: the device needs pairing. */
+    PAIRING
 }
 
 /** Outcome of the most recent start attempt, surfaced in the manager UI. */

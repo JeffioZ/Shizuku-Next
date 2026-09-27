@@ -31,11 +31,13 @@ import kotlinx.coroutines.withTimeout
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.adb.AdbMdns
+import moe.shizuku.manager.adb.AdbPairingRequiredException
 import moe.shizuku.manager.adb.AdbStarter
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter.WorkerState
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter.updateNotification
 import moe.shizuku.manager.settings.BugReportDialogActivity
+import moe.shizuku.manager.start.StartFailureKind
 import moe.shizuku.manager.start.StartStatusReporter
 import moe.shizuku.manager.starter.Starter
 import moe.shizuku.manager.utils.EnvironmentUtils
@@ -191,18 +193,44 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             throw e
         } catch (e: Exception) {
             // Surface the reason in the app; the worker may still retry.
-            StartStatusReporter.failed(
-                when (e) {
-                    is TimeoutException -> applicationContext.getString(R.string.start_failed_no_port)
-                    is SecurityException -> applicationContext.getString(R.string.start_failed_no_auth)
-                    else -> e.localizedMessage ?: e.javaClass.simpleName
+            val (message, kind) = when (e) {
+                is AdbPairingRequiredException ->
+                    applicationContext.getString(R.string.start_failed_pairing_required) to
+                        StartFailureKind.PAIRING
+
+                is TimeoutException ->
+                    applicationContext.getString(R.string.start_failed_no_port) to
+                        StartFailureKind.GENERIC
+
+                is SecurityException ->
+                    applicationContext.getString(R.string.start_failed_no_auth) to
+                        StartFailureKind.GENERIC
+
+                else -> {
+                    // Safety net: an adbd path we haven't mapped can still surface the
+                    // TLS rejection as a plain SSL string. Never show that raw.
+                    val text = e.localizedMessage.orEmpty()
+                    if (text.contains("CERTIFICATE_UNKNOWN", true) ||
+                        text.contains("CERTIFICATE_VERIFY_FAILED", true) ||
+                        text.contains("SSLV3_ALERT", true)
+                    ) {
+                        applicationContext.getString(R.string.start_failed_pairing_required) to
+                            StartFailureKind.PAIRING
+                    } else {
+                        (e.localizedMessage ?: e.javaClass.simpleName) to
+                            StartFailureKind.GENERIC
+                    }
                 }
-            )
+            }
+            StartStatusReporter.failed(message, kind)
 
             val ignored = listOf(
                 EOFException::class,
                 SecurityException::class,
-                TimeoutException::class
+                TimeoutException::class,
+                // The app already shows this with a Pair action; a bug-report
+                // notification would just be noise.
+                AdbPairingRequiredException::class
             )
             if (ignored.none { it.isInstance(e) }) showErrorNotification(applicationContext, e)
 

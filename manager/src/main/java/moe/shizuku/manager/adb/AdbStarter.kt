@@ -9,6 +9,7 @@ import android.widget.Toast
 import java.io.EOFException
 import java.net.Socket
 import java.net.SocketException
+import javax.net.ssl.SSLException
 import java.net.SocketTimeoutException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -24,6 +25,16 @@ import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.ShizukuStateMachine
 
 private const val TAG = "AdbStarter"
+
+/** The ADB TLS handshake was rejected: the device is not paired with us. */
+class AdbPairingRequiredException(message: String?, cause: Throwable?) :
+    Exception(message, cause)
+
+private fun Throwable.isCertificateUnknown(): Boolean {
+    val text = message ?: return false
+    return text.contains("CERTIFICATE_UNKNOWN", ignoreCase = true) ||
+        text.contains("SSLV3_ALERT", ignoreCase = true)
+}
 
 object AdbStarter {
     suspend fun startAdb(context: Context, port: Int, log: ((String) -> Unit)? = null) {
@@ -58,7 +69,9 @@ object AdbStarter {
                 log?.invoke("Connecting on port $activePort...")
 
                 AdbClient("127.0.0.1", activePort, key).use { client ->
-                    client.connect()
+                    // Same pairing detection as the main path — a TLS rejection here
+                    // must not surface as a raw SSL error either.
+                    client.connectForPairing()
 
                     log?.invoke("Successfully connected on port $activePort...")
                     log?.invoke("\nRestarting in TCP mode port: $tcpPort")
@@ -80,6 +93,7 @@ object AdbStarter {
             log?.invoke("Connecting on port $activePort...")
 
             AdbClient("127.0.0.1", activePort, key).use { client ->
+                // connectWithRetry reports a rejected handshake as pairing-required.
                 connectWithRetry(client)
                 log?.invoke("Successfully connected on port $activePort...\n")
                 client.runCommand("shell:${Starter.internalCommand}")
@@ -156,13 +170,32 @@ object AdbStarter {
         false
     }
 
+    /**
+     * Every connection to adbd goes through here, so a TLS rejection is always
+     * reported as [AdbPairingRequiredException] (the device doesn't trust our key
+     * yet — never paired, or the pairing was invalidated) instead of a raw SSL
+     * error the user can't act on.
+     */
+    private suspend fun AdbClient.connectForPairing() {
+        try {
+            connect()
+        } catch (e: Exception) {
+            if (e is AdbPairingRequiredException) throw e
+            if (e is SSLException || e.isCertificateUnknown()) {
+                Log.w(TAG, "TLS handshake rejected, pairing required", e)
+                throw AdbPairingRequiredException(e.message, e)
+            }
+            throw e
+        }
+    }
+
     private suspend fun connectWithRetry(client: AdbClient) {
         var delayTime = 0L
         val maxAttempts = 5
         for (attempt in 1..maxAttempts) {
             try {
                 delay(delayTime)
-                client.connect()
+                client.connectForPairing()
                 break
             } catch (e: Exception) {
                 if (
