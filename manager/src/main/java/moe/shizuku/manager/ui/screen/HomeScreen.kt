@@ -111,30 +111,48 @@ fun HomeScreen() {
     val startStatus by StartStatusReporter.status.collectAsState()
     val scope = rememberCoroutineScope()
 
+    /**
+     * Reads everything the home screen shows, so no row keeps a value from an earlier
+     * state. Called on resume, on every state change (a start or stop finishing) and
+     * once at first composition.
+     */
+    suspend fun refresh() {
+        ShizukuStateMachine.update()
+        running = ShizukuStateMachine.isRunning()
+        batteryIgnored = SettingsHelper.isIgnoringBatteryOptimizations(context)
+        startMethod = ShizukuSettings.getStartMethod()
+        // A start that is already running has nothing left to report; without this a
+        // "starting" state from a path that finishes elsewhere would stick.
+        if (running) StartStatusReporter.clear()
+
+        withContext(Dispatchers.IO) {
+            // Reset rather than keep: the card must not show the uid or version of a
+            // server that is gone.
+            uid = if (running) runCatching { Shizuku.getUid() }.getOrDefault(-1) else -1
+            version = if (running) runCatching { Shizuku.getVersion() }.getOrDefault(0) else 0
+            // Shell.getShell() can block and triggers the root request.
+            rooted = runCatching { EnvironmentUtils.isRooted() }.getOrDefault(false)
+            val (selinux, seccomp) = readDeviceStatus()
+            selinuxRes = selinux
+            seccompRes = seccomp
+        }
+    }
+
     DisposableEffect(Unit) {
         val listener: (ShizukuStateMachine.State) -> Unit = {
-            running = it == ShizukuStateMachine.State.RUNNING
-            if (running) {
-                uid = runCatching { Shizuku.getUid() }.getOrDefault(-1)
-                version = runCatching { Shizuku.getVersion() }.getOrDefault(0)
-            }
+            // Covers "after each start": refresh every row, not just the state flag.
+            scope.launch { refresh() }
         }
         ShizukuStateMachine.addListener(listener)
         onDispose { ShizukuStateMachine.removeListener(listener) }
     }
 
-    // Refresh on every resume, like the old home screen did.
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
-        ShizukuStateMachine.update()
-        batteryIgnored = SettingsHelper.isIgnoringBatteryOptimizations(context)
-        startMethod = ShizukuSettings.getStartMethod()
-        // A start that is already running has nothing left to report; without this a
-        // "starting" state from a path that finishes elsewhere would stick.
-        if (ShizukuStateMachine.isRunning()) StartStatusReporter.clear()
+        scope.launch { refresh() }
     }
 
     LaunchedEffect(Unit) {
-        ShizukuStateMachine.update()
+        refresh()
 
         // After reinstalling under a different package name (stealth mode) the
         // system may not recognize the Shizuku permission until a reboot, or a
@@ -154,25 +172,7 @@ fun HomeScreen() {
         }.getOrDefault(false)
         if (updateAvailable) {
             runCatching { UpdateHelper.updateLastPromptedVersion() }
-        }
-
-        // Shell.getShell() can block and triggers the root request, so probe it
-        // once off the main thread instead of on every recomposition.
-        rooted = withContext(Dispatchers.IO) {
-            runCatching { EnvironmentUtils.isRooted() }.getOrDefault(false)
-        }
-    }
-
-    // Re-read when the server comes up: the SELinux row is answered by the server, so it
-    // only has a value while one is running.
-    LaunchedEffect(running) {
-        withContext(Dispatchers.IO) {
-            val (selinux, seccomp) = readDeviceStatus()
-            selinuxRes = selinux
-            seccompRes = seccomp
-        }
-
-    }
+        }    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
