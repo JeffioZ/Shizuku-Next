@@ -102,17 +102,28 @@ object ShizukuReceiverStarter {
             return
         }
 
+        val needsWifi = EnvironmentUtils.isWifiRequired()
+        val hasWifi = EnvironmentUtils.isWifiConnected()
+        val television = EnvironmentUtils.isTelevision()
+
         // Wireless debugging cannot stay enabled without a Wi-Fi connection — the
         // system reverts it moments after we enable it, so mDNS never finds a port.
-        // Fail loudly instead of waiting forever. A USB start doesn't need Wi-Fi.
-        if (startMethod == ShizukuSettings.StartMethod.WIRELESS &&
-            EnvironmentUtils.isWifiRequired() &&
-            !EnvironmentUtils.isWifiConnected() &&
-            !EnvironmentUtils.isTelevision()
-        ) {
+        // Fail loudly instead of waiting forever.
+        //
+        // Neither start method can connect with no port at all, and on Android 11+
+        // the only port the app can raise by itself is the wireless-debugging one.
+        // USB debugging instead gives a pairing-free port when a computer has run
+        // `adb tcpip` (and is the only option on Android 10 and below), so a USB
+        // start only complains when it has neither.
+        if (needsWifi && !hasWifi && !television) {
             StartStatusReporter.failed(
-                context.getString(R.string.start_failed_wifi_required),
-                StartFailureKind.WIFI
+                context.getString(
+                    if (startMethod == ShizukuSettings.StartMethod.USB)
+                        R.string.start_failed_usb_no_port
+                    else R.string.start_failed_wifi_required
+                ),
+                if (startMethod == ShizukuSettings.StartMethod.WIRELESS)
+                    StartFailureKind.WIFI else StartFailureKind.GENERIC
             )
             return
         }

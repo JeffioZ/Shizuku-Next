@@ -99,16 +99,6 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 AdbStarter.stopTcp(applicationContext, tcpPort)
             }
 
-            if (usbMethod && EnvironmentUtils.isWifiRequired()) {
-                // USB debugging on its own gives us nothing to connect to: adbd only
-                // accepts a local connection on the classic TCP port, which a computer
-                // has to open with `adb tcpip`. Say so instead of discovering nothing.
-                StartStatusReporter.failed(
-                    applicationContext.getString(R.string.start_failed_usb_no_port)
-                )
-                notify(WorkerState.AWAITING_RETRY)
-                return Result.failure()
-            }
 
             val port = tcpPort.takeIf { !EnvironmentUtils.isWifiRequired() } ?: callbackFlow {
                 val adbMdns = AdbMdns(applicationContext, AdbMdns.TLS_CONNECT) { p ->
