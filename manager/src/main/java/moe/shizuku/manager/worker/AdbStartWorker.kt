@@ -95,12 +95,28 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             // below writes adb_wifi_enabled=1 so the start proceeds over wireless.
 
             val tcpPort = EnvironmentUtils.getAdbTcpPort()
-            if (tcpPort > 0 && !ShizukuSettings.getTcpMode()) {
+            // "TCP mode off" means don't keep a port open for wireless restarts — but
+            // a USB start exists to use that port, so it opens and keeps it instead of
+            // closing the very thing it needs.
+            if (tcpPort > 0 && !ShizukuSettings.getTcpMode() && !usbMethod) {
                 AdbStarter.stopTcp(applicationContext, tcpPort)
             }
 
 
-            val port = tcpPort.takeIf { !EnvironmentUtils.isWifiRequired() } ?: callbackFlow {
+            // A USB start is USB only: the classic ADB port, where the connection
+            // authenticates itself and Android asks to allow USB debugging. It never
+            // falls back to wireless discovery — going through the wireless port is
+            // what used to make a "USB" start depend on Wi-Fi and pairing.
+            if (usbMethod && tcpPort <= 0) {
+                StartStatusReporter.failed(
+                    applicationContext.getString(R.string.start_failed_usb_no_port)
+                )
+                notify(WorkerState.AWAITING_RETRY)
+                return Result.failure()
+            }
+
+            val port = tcpPort.takeIf { usbMethod || !EnvironmentUtils.isWifiRequired() }
+                ?: callbackFlow {
                 val adbMdns = AdbMdns(applicationContext, AdbMdns.TLS_CONNECT) { p ->
                     if (p.second > 0) trySend(p.second)
                 }
@@ -177,7 +193,7 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             }.first()
             
             notify(WorkerState.CONNECTING)
-            AdbStarter.startAdb(applicationContext, port)
+            AdbStarter.startAdb(applicationContext, port, openTcpPort = usbMethod)
             Starter.waitForBinder()
 
             val nm = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
