@@ -36,6 +36,7 @@ import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.settings.BugReportDialogActivity
 import moe.shizuku.manager.ui.Detail
 import moe.shizuku.manager.ui.component.SegmentedColumn
+import moe.shizuku.manager.ui.theme.ThemeState
 import moe.shizuku.manager.ui.component.SegmentedListItem
 import moe.shizuku.manager.utils.CustomTabsHelper
 
@@ -55,6 +56,12 @@ fun SettingsScreen(onOpenDetail: (Detail) -> Unit) {
     var updateMode by remember { mutableStateOf(ShizukuSettings.getUpdateMode()) }
     var nightMode by remember { mutableStateOf(ShizukuSettings.getNightMode()) }
     var themeDialog by remember { mutableStateOf(false) }
+    var useSystemColor by remember {
+        mutableStateOf(ShizukuSettings.getPreferences().getBoolean(ShizukuSettings.Keys.KEY_USE_SYSTEM_COLOR, false))
+    }
+    var blackNight by remember {
+        mutableStateOf(ShizukuSettings.getPreferences().getBoolean(ShizukuSettings.Keys.KEY_BLACK_NIGHT_THEME, false))
+    }
 
     var tcpPortDialog by remember { mutableStateOf(false) }
     var systemStartDialog by remember { mutableStateOf(false) }
@@ -217,6 +224,33 @@ fun SettingsScreen(onOpenDetail: (Detail) -> Unit) {
                     }
                     item {
                         SegmentedListItem(
+                            headlineContent = { Text(stringResource(R.string.settings_use_system_color)) },
+                            trailingContent = {
+                                Switch(checked = useSystemColor, onCheckedChange = {
+                                    ShizukuSettings.getPreferences().edit()
+                                        .putBoolean(ShizukuSettings.Keys.KEY_USE_SYSTEM_COLOR, it).apply()
+                                    useSystemColor = it
+                                    ThemeState.refresh()
+                                })
+                            }
+                        )
+                    }
+                    item {
+                        SegmentedListItem(
+                            headlineContent = { Text(stringResource(R.string.settings_black_night_theme)) },
+                            supportingContent = { Text(stringResource(R.string.settings_black_night_theme_summary)) },
+                            trailingContent = {
+                                Switch(checked = blackNight, onCheckedChange = {
+                                    ShizukuSettings.getPreferences().edit()
+                                        .putBoolean(ShizukuSettings.Keys.KEY_BLACK_NIGHT_THEME, it).apply()
+                                    blackNight = it
+                                    ThemeState.refresh()
+                                })
+                            }
+                        )
+                    }
+                    item {
+                        SegmentedListItem(
                             headlineContent = { Text(stringResource(R.string.settings_language)) },
                             trailingContent = {
                                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
@@ -286,6 +320,7 @@ fun SettingsScreen(onOpenDetail: (Detail) -> Unit) {
                     .putInt(ShizukuSettings.Keys.KEY_NIGHT_MODE, value).apply()
                 AppCompatDelegate.setDefaultNightMode(value)
                 nightMode = value
+                ThemeState.refresh()
                 themeDialog = false
             }
         )
