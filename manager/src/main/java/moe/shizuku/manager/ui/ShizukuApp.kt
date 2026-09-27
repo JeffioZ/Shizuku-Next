@@ -19,7 +19,9 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -69,21 +71,29 @@ private val tabs = listOf(
 @Composable
 fun ShizukuApp() {
     ShizukuTheme {
-        var detail by remember { mutableStateOf<Detail?>(null) }
-        val current = detail
+        // Detail screens are shown outside the Scaffold, so wrap everything in a
+        // Surface — otherwise LocalContentColor falls back to black and plain
+        // Text becomes unreadable in dark themes.
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            var detail by remember { mutableStateOf<Detail?>(null) }
+            val current = detail
 
-        if (current != null) {
-            BackHandler { detail = null }
-            CenteredContent {
-                when (current) {
-                    Detail.STEALTH -> StealthScreen(onBack = { detail = null })
-                    Detail.TERMINAL -> TerminalScreen(onBack = { detail = null })
-                    Detail.INTENTS -> IntentsScreen(onBack = { detail = null })
-                    Detail.ABOUT -> AboutScreen(onBack = { detail = null })
+            if (current != null) {
+                BackHandler { detail = null }
+                CenteredContent {
+                    when (current) {
+                        Detail.STEALTH -> StealthScreen(onBack = { detail = null })
+                        Detail.TERMINAL -> TerminalScreen(onBack = { detail = null })
+                        Detail.INTENTS -> IntentsScreen(onBack = { detail = null })
+                        Detail.ABOUT -> AboutScreen(onBack = { detail = null })
+                    }
                 }
+            } else {
+                MainTabs(onOpenDetail = { detail = it })
             }
-        } else {
-            MainTabs(onOpenDetail = { detail = it })
         }
     }
 }
