@@ -4,6 +4,8 @@ import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import java.io.File
+import moe.shizuku.manager.BuildConfig
 import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
@@ -81,6 +83,7 @@ import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.SettingsHelper
 import moe.shizuku.manager.utils.SettingsPage
 import moe.shizuku.manager.utils.ShizukuStateMachine
+import moe.shizuku.manager.utils.runShellCommand
 import moe.shizuku.manager.utils.UpdateHelper
 import rikka.core.util.ClipboardUtils
 import rikka.shizuku.Shizuku
@@ -102,6 +105,8 @@ fun HomeScreen() {
     var updateAvailable by remember { mutableStateOf(false) }
     var rooted by remember { mutableStateOf(false) }
     var startMethod by remember { mutableStateOf(ShizukuSettings.getStartMethod()) }
+    var selinuxRes by remember { mutableStateOf<Int?>(null) }
+    var seccompRes by remember { mutableStateOf<Int?>(null) }
     val startStatus by StartStatusReporter.status.collectAsState()
     val scope = rememberCoroutineScope()
 
@@ -155,6 +160,17 @@ fun HomeScreen() {
         rooted = withContext(Dispatchers.IO) {
             runCatching { EnvironmentUtils.isRooted() }.getOrDefault(false)
         }
+    }
+
+    // Re-read when the server comes up: the SELinux row is answered by the server, so it
+    // only has a value while one is running.
+    LaunchedEffect(running) {
+        withContext(Dispatchers.IO) {
+            val (selinux, seccomp) = readDeviceStatus()
+            selinuxRes = selinux
+            seccompRes = seccomp
+        }
+
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -321,6 +337,7 @@ fun HomeScreen() {
             item {
                 StatusCard(
                     running = running,
+                    version = version,
                     uid = uid,
                     startMethodLabelRes = startMethodLabelRes(startMethod)
                 )
@@ -451,16 +468,42 @@ fun HomeScreen() {
 
             item {
                 SegmentedColumn(modifier = Modifier.fillMaxWidth()) {
+                    // Same rows KernelSU's manager shows, so the device is described the
+                    // same way in both apps.
                     item {
                         SegmentedListItem(
-                            headlineContent = { Text(stringResource(R.string.home_info_title)) },
-                            supportingContent = { Text(if (running) "v$version" else "-") }
+                            headlineContent = { Text(stringResource(R.string.home_device_manager_version)) },
+                            supportingContent = { Text(BuildConfig.VERSION_NAME) }
                         )
                     }
                     item {
                         SegmentedListItem(
-                            headlineContent = { Text("UID") },
-                            supportingContent = { Text(uidLabel(uid)) }
+                            headlineContent = { Text(stringResource(R.string.home_device_kernel_version)) },
+                            supportingContent = { Text(kernelVersion()) }
+                        )
+                    }
+                    item {
+                        SegmentedListItem(
+                            headlineContent = { Text(stringResource(R.string.home_device_model)) },
+                            supportingContent = { Text(deviceModel()) }
+                        )
+                    }
+                    item {
+                        SegmentedListItem(
+                            headlineContent = { Text(stringResource(R.string.home_device_fingerprint)) },
+                            supportingContent = { Text(Build.FINGERPRINT ?: "-") }
+                        )
+                    }
+                    item {
+                        SegmentedListItem(
+                            headlineContent = { Text(stringResource(R.string.home_device_selinux)) },
+                            supportingContent = { Text(selinuxRes?.let { stringResource(it) } ?: "-") }
+                        )
+                    }
+                    item {
+                        SegmentedListItem(
+                            headlineContent = { Text(stringResource(R.string.home_device_seccomp)) },
+                            supportingContent = { Text(seccompRes?.let { stringResource(it) } ?: "-") }
                         )
                     }
                 }
@@ -507,6 +550,7 @@ fun HomeScreen() {
 @Composable
 private fun StatusCard(
     running: Boolean,
+    version: Int,
     uid: Int,
     @StringRes startMethodLabelRes: Int
 ) {
@@ -567,18 +611,70 @@ private fun StatusCard(
                     ),
                     style = MaterialTheme.typography.titleMedium
                 )
-                // The two facts this card exists to answer: how the server is running
-                // right now, and what the Start button below will do next.
+                // Everything about the server at a glance: how it is running now, what
+                // the Start button below will do next, and what it is running as.
                 StatusFact(
                     R.string.home_status_started_with,
                     if (running) runningMethodLabel(uid) else stringResource(R.string.status_value_none)
                 )
                 StatusFact(R.string.settings_start_method, stringResource(startMethodLabelRes))
+                StatusFact(
+                    R.string.home_info_title,
+                    if (running) "v$version" else stringResource(R.string.status_value_none)
+                )
+                StatusFact(R.string.uid_label, uidLabel(uid))
             }
 
         }
     }
 }
+
+/** "Nothing Phone (2)" style label, without repeating the maker when it's already in the model. */
+private fun deviceModel(): String {
+    val manufacturer = Build.MANUFACTURER.replaceFirstChar { it.uppercase() }
+    val model = Build.MODEL
+    return if (model.startsWith(manufacturer, ignoreCase = true)) model else "$manufacturer $model"
+}
+
+private fun kernelVersion(): String = System.getProperty("os.version").orEmpty().ifEmpty { "-" }
+
+/**
+ * The kernel's SELinux switch. selinuxfs is world-readable on disk but denied to app
+ * domains, so ask the server — falling back to reading it directly on the ROMs that do
+ * allow an app (and to nothing at all when there is no server to ask).
+ */
+@StringRes
+private fun readSelinuxStatus(): Int? {
+    val value = runShellCommand("cat /sys/fs/selinux/enforce")
+        ?: runCatching { File("/sys/fs/selinux/enforce").readText().trim() }.getOrNull()
+
+    return when (value) {
+        "1" -> R.string.selinux_enforcing
+        "0" -> R.string.selinux_permissive
+        else -> null
+    }
+}
+
+/** Seccomp mode for this process, from our own /proc entry. */
+@StringRes
+private fun readSeccompStatus(): Int? {
+    val mode = runCatching {
+        File("/proc/self/status").readLines()
+            .firstOrNull { it.startsWith("Seccomp:") }
+            ?.substringAfter(':')
+            ?.trim()
+    }.getOrNull()
+
+    return when (mode) {
+        "0" -> R.string.seccomp_disabled
+        "1" -> R.string.seccomp_strict
+        "2" -> R.string.seccomp_filter
+        else -> null
+    }
+}
+
+/** Reads what the device card shows, off the main thread. */
+private fun readDeviceStatus(): Pair<Int?, Int?> = readSelinuxStatus() to readSeccompStatus()
 
 /** A label/value pair inside the status card. */
 @Composable
