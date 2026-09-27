@@ -440,6 +440,7 @@ fun HomeScreen() {
                     item {
                         SegmentedListItem(
                             headlineContent = { Text(stringResource(R.string.home_system_title)) },
+                            supportingContent = { Text(stringResource(R.string.home_system_summary)) },
                             trailingContent = {
                                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
                             },
@@ -455,9 +456,9 @@ fun HomeScreen() {
                     item {
                         SegmentedListItem(
                             headlineContent = { Text(stringResource(R.string.intents_adb_command)) },
-                            supportingContent = {
-                                Text(Starter.adbCommand, fontFamily = FontFamily.Monospace)
-                            },
+                            // The command itself is long enough to swamp the row; it is in
+                            // the dialog this opens, where it can be copied.
+                            supportingContent = { Text(stringResource(R.string.home_adb_command_summary)) },
                             trailingContent = {
                                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
                             },

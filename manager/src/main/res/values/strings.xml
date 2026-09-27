@@ -262,6 +262,8 @@
     <string name="settings_system_start_method_custom">Custom command (external)</string>
 
     <string name="home_system_title">Start (system)</string>
+    <string name="home_system_summary">Run Shizuku as the system user (UID 1000) instead of as adb — only works on devices with the built-in exploit</string>
+    <string name="home_adb_command_summary">Start Shizuku from a computer over ADB. Tap to copy the command</string>
     <string name="home_system_description_exploit">Start Shizuku as system (UID 1000) using the built-in device exploit.</string>
     <string name="home_system_description_custom">Launch Shizuku as system (UID 1000) with your own privilege escalation; Shizuku will detect it. Tap to see the command.</string>
     <string name="home_system_button_start">Start</string>
