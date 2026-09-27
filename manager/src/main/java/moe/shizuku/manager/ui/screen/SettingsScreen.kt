@@ -35,17 +35,21 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import moe.shizuku.manager.BuildConfig
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ShizukuSettings
+import moe.shizuku.manager.settings.BugReportDialogActivity
 import moe.shizuku.manager.ui.Detail
 import moe.shizuku.manager.ui.component.SegmentedColumn
 import moe.shizuku.manager.ui.theme.ThemeState
 import moe.shizuku.manager.ui.component.SegmentedListItem
 import moe.shizuku.manager.adb.AdbStarter
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter
+import moe.shizuku.manager.utils.CustomTabsHelper
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.SettingsHelper
 import moe.shizuku.manager.utils.ShizukuStateMachine
+import moe.shizuku.manager.utils.UpdateHelper
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
 
@@ -391,6 +395,18 @@ fun SettingsScreen(onOpenDetail: (Detail) -> Unit) {
                 SegmentedColumn(modifier = Modifier.fillMaxWidth()) {
                     item {
                         SegmentedListItem(
+                            headlineContent = { Text(stringResource(R.string.app_name)) },
+                            supportingContent = { Text(BuildConfig.VERSION_NAME) }
+                        )
+                    }
+                    item {
+                        SegmentedListItem(
+                            headlineContent = { Text(stringResource(R.string.about_package)) },
+                            supportingContent = { Text(context.packageName) }
+                        )
+                    }
+                    item {
+                        SegmentedListItem(
                             headlineContent = { Text(stringResource(R.string.check_for_updates)) },
                             supportingContent = {
                                 Text(
@@ -409,15 +425,26 @@ fun SettingsScreen(onOpenDetail: (Detail) -> Unit) {
                     }
                     item {
                         SegmentedListItem(
-                            headlineContent = { Text(stringResource(R.string.about_title)) },
+                            headlineContent = { Text(stringResource(R.string.settings_help)) },
                             trailingContent = {
                                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
                             },
-                            onClick = { onOpenDetail(Detail.ABOUT) }
+                            onClick = {
+                                CustomTabsHelper.launchUrlOrCopy(context, context.getString(R.string.help_url))
+                            }
                         )
                     }
-                    // Help and "Report a bug" live on the About screen, so they are
-                    // not repeated here.
+                    item {
+                        SegmentedListItem(
+                            headlineContent = { Text(stringResource(R.string.settings_report_bug)) },
+                            trailingContent = {
+                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+                            },
+                            onClick = {
+                                context.startActivity(Intent(context, BugReportDialogActivity::class.java))
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -594,6 +621,14 @@ fun SettingsScreen(onOpenDetail: (Detail) -> Unit) {
                     .putInt(ShizukuSettings.Keys.KEY_UPDATE_MODE, value).apply()
                 updateMode = value
                 updateDialog = false
+            },
+            // Picking a mode only says when to look; this is the "look now" that
+            // the About screen used to offer.
+            confirmButton = {
+                TextButton(onClick = {
+                    updateDialog = false
+                    scope.launch { runCatching { UpdateHelper.checkAndInstallUpdates() } }
+                }) { Text(stringResource(R.string.check_for_updates_now)) }
             }
         )
     }
@@ -632,7 +667,8 @@ private fun ChoiceDialog(
     options: List<Pair<String, String>>,
     selected: String,
     onDismiss: () -> Unit,
-    onSelect: (String) -> Unit
+    onSelect: (String) -> Unit,
+    confirmButton: (@Composable () -> Unit)? = null
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -646,7 +682,7 @@ private fun ChoiceDialog(
                 }
             }
         },
-        confirmButton = {},
+        confirmButton = { confirmButton?.invoke() },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(android.R.string.cancel)) }
         }
