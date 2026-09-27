@@ -190,26 +190,47 @@ fun HomeScreen() {
                         contentColor = MaterialTheme.colorScheme.onErrorContainer,
                         shape = MaterialTheme.shapes.large
                     ) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
+                        // Message on top, actions on their own row underneath —
+                        // beside the wrapped text they looked like stray labels.
+                        Column(modifier = Modifier.padding(16.dp)) {
                             Text(
                                 text = "${stringResource(R.string.start_failed)}: ${failed.message}",
-                                modifier = Modifier.weight(1f),
                                 style = MaterialTheme.typography.bodyMedium
                             )
-                            if (failed.kind == StartFailureKind.WIFI) {
-                                TextButton(onClick = {
-                                    runCatching {
-                                        context.startActivity(
-                                            SettingsPage.InternetPanel.buildIntent(context)
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 12.dp),
+                                horizontalArrangement = Arrangement.End,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                if (failed.kind == StartFailureKind.WIFI) {
+                                    Button(
+                                        onClick = {
+                                            runCatching {
+                                                context.startActivity(
+                                                    SettingsPage.InternetPanel.buildIntent(context)
+                                                )
+                                            }
+                                        },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = MaterialTheme.colorScheme.error,
+                                            contentColor = MaterialTheme.colorScheme.onError
                                         )
-                                    }
-                                }) { Text(stringResource(R.string.action_connect_wifi)) }
-                            }
-                            TextButton(onClick = { StartStatusReporter.clear() }) {
-                                Text(stringResource(R.string.action_dismiss))
+                                    ) { Text(stringResource(R.string.action_connect_wifi)) }
+                                }
+
+                                OutlinedButton(
+                                    onClick = { StartStatusReporter.clear() },
+                                    border = BorderStroke(
+                                        1.dp,
+                                        MaterialTheme.colorScheme.onErrorContainer
+                                    ),
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                                    )
+                                ) { Text(stringResource(R.string.action_dismiss)) }
                             }
                         }
                     }
@@ -224,20 +245,30 @@ fun HomeScreen() {
                         contentColor = MaterialTheme.colorScheme.onErrorContainer,
                         shape = MaterialTheme.shapes.large
                     ) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
                             Text(
                                 text = stringResource(R.string.home_battery_warning),
-                                modifier = Modifier.weight(1f),
                                 style = MaterialTheme.typography.bodyMedium
                             )
-                            TextButton(onClick = {
-                                SettingsHelper.requestIgnoreBatteryOptimizationsPrivileged(context) {
-                                    batteryIgnored = SettingsHelper.isIgnoringBatteryOptimizations(context)
-                                }
-                            }) { Text(stringResource(R.string.snackbar_action_fix)) }
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 12.dp),
+                                horizontalArrangement = Arrangement.End
+                            ) {
+                                Button(
+                                    onClick = {
+                                        SettingsHelper.requestIgnoreBatteryOptimizationsPrivileged(context) {
+                                            batteryIgnored = SettingsHelper.isIgnoringBatteryOptimizations(context)
+                                        }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.error,
+                                        contentColor = MaterialTheme.colorScheme.onError
+                                    )
+                                ) { Text(stringResource(R.string.snackbar_action_fix)) }
+                            }
                         }
                     }
                 }
