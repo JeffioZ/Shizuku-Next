@@ -16,6 +16,8 @@ import kotlinx.coroutines.launch
 import moe.shizuku.manager.authorization.AuthorizationManager
 import rikka.lifecycle.Resource
 
+enum class SortOrder { LAST_ADDED, ALPHABETICAL }
+
 class AppsViewModel(application: Application) : AndroidViewModel(application) {
 
     private val appContext = getApplication<Application>().applicationContext
@@ -25,6 +27,11 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _grantedCount = MutableLiveData<Resource<Int>>()
     val grantedCount = _grantedCount as LiveData<Resource<Int>>
+
+    private var fullList: List<PackageInfo> = emptyList()
+    private var searchQuery: String = ""
+    var sortOrder: SortOrder = SortOrder.LAST_ADDED
+        private set
 
     fun load(onlyCount: Boolean = false) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -37,7 +44,10 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
                     list.add(pi)
                     if (AuthorizationManager.granted(pi.packageName, pi.applicationInfo!!.uid)) count++
                 }
-                if (!onlyCount) _packages.postValue(Resource.success(list))
+                if (!onlyCount) {
+                    fullList = list
+                    _packages.postValue(Resource.success(applyFilterAndSort(fullList)))
+                }
                 _grantedCount.postValue(Resource.success(count))
             } catch (e: CancellationException) {
 
@@ -47,5 +57,40 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
     }
-    
+
+    fun setSearchQuery(query: String) {
+        if (searchQuery == query) return
+        searchQuery = query
+        viewModelScope.launch(Dispatchers.Default) {
+            _packages.postValue(Resource.success(applyFilterAndSort(fullList)))
+        }
+    }
+
+    fun setSortOrder(order: SortOrder) {
+        if (sortOrder == order) return
+        sortOrder = order
+        viewModelScope.launch(Dispatchers.Default) {
+            _packages.postValue(Resource.success(applyFilterAndSort(fullList)))
+        }
+    }
+
+    private fun applyFilterAndSort(list: List<PackageInfo>): List<PackageInfo> {
+        val pm = appContext.packageManager
+        var result = if (searchQuery.isBlank()) {
+            list
+        } else {
+            val q = searchQuery.trim()
+            list.filter { pi ->
+                val label = pi.applicationInfo?.loadLabel(pm)?.toString() ?: ""
+                label.contains(q, ignoreCase = true) || pi.packageName.contains(q, ignoreCase = true)
+            }
+        }
+        if (sortOrder == SortOrder.ALPHABETICAL) {
+            result = result.sortedBy { pi ->
+                pi.applicationInfo?.loadLabel(pm)?.toString()?.lowercase() ?: pi.packageName.lowercase()
+            }
+        }
+        return result
+    }
+
 }

@@ -2,9 +2,11 @@ package moe.shizuku.manager.management
 
 import android.os.Bundle
 import android.util.TypedValue
+import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
 import androidx.activity.viewModels
+import androidx.core.widget.addTextChangedListener
 import androidx.recyclerview.widget.RecyclerView.AdapterDataObserver
 import moe.shizuku.manager.Helps
 import moe.shizuku.manager.R
@@ -69,7 +71,27 @@ class ApplicationManagementActivity : AppBarActivity() {
             }
         })
 
+        binding.searchInput.addTextChangedListener { editable ->
+            viewModel.setSearchQuery(editable?.toString() ?: "")
+        }
+
         ShizukuStateMachine.addListener(stateListener)
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.apps_management, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        val sortOrder = when (item.itemId) {
+            R.id.action_sort_last_added -> SortOrder.LAST_ADDED
+            R.id.action_sort_alphabetical -> SortOrder.ALPHABETICAL
+            else -> return super.onOptionsItemSelected(item)
+        }
+        item.isChecked = true
+        viewModel.setSortOrder(sortOrder)
+        return true
     }
 
     override fun onDestroy() {
