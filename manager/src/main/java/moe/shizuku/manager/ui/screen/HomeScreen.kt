@@ -426,7 +426,7 @@ fun HomeScreen() {
                     item {
                         SegmentedListItem(
                             headlineContent = { Text("Transport") },
-                            supportingContent = { Text(transportLabel()) }
+                            supportingContent = { Text(transportLabel(uid)) }
                         )
                     }
                 }
@@ -605,8 +605,19 @@ private fun uidLabel(uid: Int): String = when (uid) {
     else -> "uid $uid"
 }
 
-private fun transportLabel(): String = when (ShizukuSettings.getLastAdbTransport()) {
-    ShizukuSettings.ADB_TRANSPORT_TLS -> "Wireless debugging"
-    ShizukuSettings.ADB_TRANSPORT_TCP -> "USB debugging"
-    else -> "Unknown"
+/**
+ * How the server was launched. Shows "Root" for a root start (which uses no ADB
+ * transport at all), and the last ADB transport otherwise — that value describes the
+ * launch, so it is kept rather than cleared when the server stops.
+ */
+@Composable
+private fun transportLabel(uid: Int): String = when {
+    uid == 0 -> stringResource(R.string.start_method_root)
+    ShizukuSettings.getLastAdbTransport() == ShizukuSettings.ADB_TRANSPORT_TCP ->
+        stringResource(R.string.start_method_usb)
+
+    ShizukuSettings.getLastAdbTransport() == ShizukuSettings.ADB_TRANSPORT_TLS ->
+        stringResource(R.string.start_method_wireless)
+
+    else -> stringResource(R.string.transport_unknown)
 }

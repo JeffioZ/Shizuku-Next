@@ -52,11 +52,11 @@ object ShizukuStateMachine {
                     )
                 }
             }
-            // The launch transport is only meaningful while that launch is alive;
-            // clear it so an external restart doesn't show a stale transport.
-            if (newState == State.STOPPED || newState == State.CRASHED) {
-                ShizukuSettings.setLastAdbTransport(ShizukuSettings.ADB_TRANSPORT_UNKNOWN)
-            }
+            // Deliberately NOT clearing the recorded transport when the server stops.
+            // It describes how the server was launched, so it stays true after the
+            // launch ends — and clearing it here also wiped it on every transient
+            // STOPPED while a start was still coming up (the binder is not up yet),
+            // which left a running server being reported as "Unknown".
             listeners.forEach { it(newState) }
             Log.d("ShizukuStateMachine", newState.toString())
             when (newState) {

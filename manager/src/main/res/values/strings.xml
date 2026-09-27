@@ -238,6 +238,7 @@
     <string name="start_method_usb">USB debugging</string>
     <string name="start_method_system">System (UID 1000)</string>
     <string name="start_method_root">Root</string>
+    <string name="transport_unknown">Unknown</string>
     <string name="settings_wait_for_wifi">Wait for Wi-Fi before restarting</string>
     <string name="settings_wait_for_wifi_summary">Unattended restarts wait for an unmetered Wi-Fi connection before attempting to start. Starts you trigger yourself never wait.</string>
     <string name="settings_system_start_method">System start method</string>
