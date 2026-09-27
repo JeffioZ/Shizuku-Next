@@ -62,13 +62,29 @@ fun ShizukuTheme(content: @Composable () -> Unit) {
         BrandColor
     }
 
-    val colorScheme = rememberDynamicColorScheme(
+    val baseScheme = rememberDynamicColorScheme(
         seedColor = seed,
         isDark = darkTheme,
         isAmoled = amoled,
         style = PaletteStyle.TonalSpot,
         specVersion = ColorSpec.SpecVersion.SPEC_2021,
     )
+
+    // The AMOLED switch only repaints the base surface roles, while the container
+    // roles that the cards and the navigation bar actually use kept the standard
+    // dark greys — a black page with grey cards. Spread the black across every
+    // surface role; row dividers keep the list readable without the card shape.
+    val colorScheme = if (amoled) baseScheme.copy(
+        background = Color.Black,
+        surface = Color.Black,
+        surfaceDim = Color.Black,
+        surfaceBright = Color.Black,
+        surfaceContainerLowest = Color.Black,
+        surfaceContainerLow = Color.Black,
+        surfaceContainer = Color.Black,
+        surfaceContainerHigh = Color.Black,
+        surfaceContainerHighest = Color.Black,
+    ) else baseScheme
 
     // Match the status/navigation bar icons to the app's theme, not the system's;
     // otherwise a white in-app theme gets light icons on a white bar (invisible).
