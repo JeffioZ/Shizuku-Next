@@ -10,7 +10,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
@@ -25,6 +27,13 @@ import moe.shizuku.manager.ShizukuSettings
 
 /** Shizuku brand indigo, matching the XML theme's primaryColor. */
 private val BrandColor = Color(0xFF3F51B5)
+
+/**
+ * True while the pure black (AMOLED) scheme is in use. Cards and the page are the
+ * same colour in that scheme, so surfaces need something else to stay visible — see
+ * [moe.shizuku.manager.ui.component.SegmentedColumn].
+ */
+val LocalAmoledTheme = staticCompositionLocalOf { false }
 
 /** Bumped when a theme preference changes so the theme re-reads the prefs. */
 object ThemeState {
@@ -99,10 +108,12 @@ fun ShizukuTheme(content: @Composable () -> Unit) {
         }
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        content = content
-    )
+    CompositionLocalProvider(LocalAmoledTheme provides amoled) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            content = content
+        )
+    }
 }
 
 private fun Context.findActivity(): Activity? {
