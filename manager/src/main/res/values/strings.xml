@@ -252,6 +252,8 @@
     <string name="settings_use_system_color">Use system theme color</string>
     <string name="settings_watchdog">Watchdog</string>
     <string name="settings_watchdog_summary">Automatically restart Shizuku if it crashes</string>
+    <string name="settings_auto_disable_wireless_debugging">Auto-disable wireless debugging</string>
+    <string name="settings_auto_disable_wireless_debugging_summary">Disable wireless debugging when stopping Shizuku. Left off, it stays enabled so Shizuku can restart without Wi-Fi.</string>
     <string name="settings_start_method">Start method</string>
     <string name="settings_start_method_summary">How Start, start on boot and the watchdog launch Shizuku</string>
     <string name="start_method_wireless">Wireless debugging</string>

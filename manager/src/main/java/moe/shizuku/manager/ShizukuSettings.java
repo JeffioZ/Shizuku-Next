@@ -29,6 +29,7 @@ public class ShizukuSettings {
         public static final String KEY_TCP_MODE = "tcp_mode";
         public static final String KEY_TCP_PORT = "tcp_port";
         public static final String KEY_AUTO_DISABLE_USB_DEBUGGING = "auto_disable_usb_debugging";
+        public static final String KEY_AUTO_DISABLE_WIRELESS_DEBUGGING = "auto_disable_wireless_debugging";
         public static final String KEY_LANGUAGE = "language";
         public static final String KEY_TRANSLATION = "translation";
         public static final String KEY_TRANSLATION_CONTRIBUTORS = "translation_contributors";
@@ -163,6 +164,14 @@ public class ShizukuSettings {
 
     public static boolean getAutoDisableUsbDebugging() {
         return getPreferences().getBoolean(Keys.KEY_AUTO_DISABLE_USB_DEBUGGING, false);
+    }
+
+    /**
+     * Wireless debugging is left on by default — that is what lets Shizuku restart with
+     * no Wi-Fi and USB debugging off — so turning it off when stopping is opt-in.
+     */
+    public static boolean getAutoDisableWirelessDebugging() {
+        return getPreferences().getBoolean(Keys.KEY_AUTO_DISABLE_WIRELESS_DEBUGGING, false);
     }
     
     public static String getLastPromptedVersion() {

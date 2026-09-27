@@ -52,6 +52,12 @@ object ShizukuStateMachine {
                     )
                 }
             }
+            // A deliberate stop (STOPPING -> STOPPED) is where the debugging toggles get
+            // switched off, if the settings ask for it.
+            if (oldState == State.STOPPING && newState == State.STOPPED) {
+                disableDebuggingTogglesIfAsked()
+            }
+
             // Deliberately NOT clearing the recorded transport when the server stops.
             // It describes how the server was launched, so it stays true after the
             // launch ends — and clearing it here also wiped it on every transient
@@ -81,19 +87,35 @@ object ShizukuStateMachine {
     fun setDead() = transition {
         when (it) {
             State.RUNNING -> State.CRASHED
-            State.STOPPING -> {
-                try {
-                    val permissionGranted = appContext.checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED
-                    val shouldDisableUsbDebugging = permissionGranted && ShizukuSettings.getAutoDisableUsbDebugging()
-                    if (shouldDisableUsbDebugging) {
-                        Settings.Global.putInt(appContext.contentResolver, Settings.Global.ADB_ENABLED, 0)
-                    }
-                } catch (e: Exception) {
-                    Log.w("ShizukuStateMachine", "Failed to disable USB debugging", e)
-                }
-                State.STOPPED
-            }
+            State.STOPPING -> State.STOPPED
             else -> it
+        }
+    }
+
+    /**
+     * Turns the debugging toggles off after a deliberate stop, when the user asked for
+     * that in settings.
+     *
+     * Called from the transition rather than from [setDead] because the binder dying can
+     * be noticed by [update] first — which reaches STOPPED from STOPPING just the same,
+     * and used to skip this entirely.
+     */
+    private fun disableDebuggingTogglesIfAsked() {
+        try {
+            val granted = appContext.checkSelfPermission(WRITE_SECURE_SETTINGS) ==
+                PackageManager.PERMISSION_GRANTED
+            if (!granted) return
+
+            if (ShizukuSettings.getAutoDisableUsbDebugging()) {
+                Settings.Global.putInt(appContext.contentResolver, Settings.Global.ADB_ENABLED, 0)
+            }
+            // Wireless debugging is kept on by default — that is what lets Shizuku restart
+            // with no Wi-Fi — so turning it off with Shizuku is opt-in.
+            if (ShizukuSettings.getAutoDisableWirelessDebugging()) {
+                Settings.Global.putInt(appContext.contentResolver, "adb_wifi_enabled", 0)
+            }
+        } catch (e: Exception) {
+            Log.w("ShizukuStateMachine", "Failed to disable the debugging toggles", e)
         }
     }
 

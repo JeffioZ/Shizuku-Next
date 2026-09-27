@@ -62,6 +62,7 @@ fun SettingsScreen(onOpenDetail: (Detail) -> Unit) {
     var startOnBoot by remember { mutableStateOf(ShizukuSettings.getStartOnBoot(context)) }
     var watchdog by remember { mutableStateOf(ShizukuSettings.getWatchdog()) }
     var autoDisableUsb by remember { mutableStateOf(ShizukuSettings.getAutoDisableUsbDebugging()) }
+    var autoDisableWireless by remember { mutableStateOf(ShizukuSettings.getAutoDisableWirelessDebugging()) }
     var startMethod by remember { mutableStateOf(ShizukuSettings.getStartMethod()) }
     var waitForWifi by remember { mutableStateOf(ShizukuSettings.getWaitForWifi()) }
     var tcpMode by remember { mutableStateOf(ShizukuSettings.getTcpMode()) }
@@ -154,6 +155,19 @@ fun SettingsScreen(onOpenDetail: (Detail) -> Unit) {
                                     ShizukuSettings.getPreferences().edit()
                                         .putBoolean(ShizukuSettings.Keys.KEY_AUTO_DISABLE_USB_DEBUGGING, it).apply()
                                     autoDisableUsb = it
+                                })
+                            }
+                        )
+                    }
+                    item {
+                        SegmentedListItem(
+                            headlineContent = { Text(stringResource(R.string.settings_auto_disable_wireless_debugging)) },
+                            supportingContent = { Text(stringResource(R.string.settings_auto_disable_wireless_debugging_summary)) },
+                            trailingContent = {
+                                Switch(checked = autoDisableWireless, onCheckedChange = {
+                                    ShizukuSettings.getPreferences().edit()
+                                        .putBoolean(ShizukuSettings.Keys.KEY_AUTO_DISABLE_WIRELESS_DEBUGGING, it).apply()
+                                    autoDisableWireless = it
                                 })
                             }
                         )
