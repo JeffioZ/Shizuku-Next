@@ -53,6 +53,9 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import moe.shizuku.manager.Helps
 import moe.shizuku.manager.Manifest
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ShizukuSettings
@@ -63,6 +66,7 @@ import moe.shizuku.manager.starter.Starter
 import moe.shizuku.manager.starter.StarterActivity
 import moe.shizuku.manager.ui.component.SegmentedColumn
 import moe.shizuku.manager.ui.component.SegmentedListItem
+import moe.shizuku.manager.ui.component.stripHtmlTags
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.SettingsHelper
 import moe.shizuku.manager.utils.ShizukuStateMachine
@@ -86,6 +90,7 @@ fun HomeScreen() {
     var rebootRequired by remember { mutableStateOf(false) }
     var duplicateApp by remember { mutableStateOf(false) }
     var updateAvailable by remember { mutableStateOf(false) }
+    var rooted by remember { mutableStateOf(false) }
     val startStatus by StartStatusReporter.status.collectAsState()
     val scope = rememberCoroutineScope()
 
@@ -128,6 +133,12 @@ fun HomeScreen() {
         }.getOrDefault(false)
         if (updateAvailable) {
             runCatching { UpdateHelper.updateLastPromptedVersion() }
+        }
+
+        // Shell.getShell() can block and triggers the root request, so probe it
+        // once off the main thread instead of on every recomposition.
+        rooted = withContext(Dispatchers.IO) {
+            runCatching { EnvironmentUtils.isRooted() }.getOrDefault(false)
         }
     }
 
@@ -243,10 +254,24 @@ fun HomeScreen() {
                             onClick = { ShizukuReceiverStarter.start(context, userInitiated = true) }
                         )
                     }
-                    if (EnvironmentUtils.isRooted()) {
+                    if (rooted) {
+                        val rootDescription = stringResource(
+                            R.string.home_root_description,
+                            "<b><a href=\"${Helps.SUI.get()}\">Sui</a></b>",
+                            "Sui"
+                        ).stripHtmlTags()
+
                         item {
                             SegmentedListItem(
-                                headlineContent = { Text(stringResource(R.string.home_root_title)) },
+                                headlineContent = {
+                                    Text(
+                                        stringResource(
+                                            if (running && uid == 0) R.string.home_root_button_restart
+                                            else R.string.home_root_title
+                                        )
+                                    )
+                                },
+                                supportingContent = { Text(rootDescription) },
                                 trailingContent = {
                                     Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
                                 },

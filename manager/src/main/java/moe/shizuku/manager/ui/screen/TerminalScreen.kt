@@ -31,6 +31,7 @@ import moe.shizuku.manager.Helps
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ui.component.SegmentedColumn
 import moe.shizuku.manager.ui.component.SegmentedListItem
+import moe.shizuku.manager.ui.component.stripHtmlTags
 import moe.shizuku.manager.utils.CustomTabsHelper
 import rikka.compatibility.DeviceCompatibility
 
@@ -64,7 +65,7 @@ fun TerminalScreen(onBack: () -> Unit) {
             item {
                 // The source string is HTML; render it as plain text.
                 Text(
-                    text = stringResource(R.string.rish_description, SH_NAME).stripHtml(),
+                    text = stringResource(R.string.rish_description, SH_NAME).stripHtmlTags(),
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
@@ -150,13 +151,6 @@ fun TerminalScreen(onBack: () -> Unit) {
         }
     }
 }
-
-/** Minimal HTML tag removal so strings that contain markup don't show raw tags. */
-private fun String.stripHtml(): String =
-    replace(Regex("(?i)<\\s*br\\s*/?\\s*>"), "\n")
-        .replace(Regex("(?i)<\\s*/?\\s*p\\s*>"), "\n")
-        .replace(Regex("<[^>]*>"), "")
-        .trim()
 
 private fun writeRish(context: Context, tree: Uri) {
     val cr = context.contentResolver
