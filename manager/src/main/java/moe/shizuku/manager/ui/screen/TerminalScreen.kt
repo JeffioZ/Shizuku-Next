@@ -31,7 +31,6 @@ import moe.shizuku.manager.Helps
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ui.component.SegmentedColumn
 import moe.shizuku.manager.ui.component.SegmentedListItem
-import moe.shizuku.manager.ui.component.stripHtmlTags
 import moe.shizuku.manager.utils.CustomTabsHelper
 import rikka.compatibility.DeviceCompatibility
 
@@ -62,14 +61,8 @@ fun TerminalScreen(onBack: () -> Unit) {
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(13.dp)
         ) {
-            item {
-                // The source string is HTML; render it as plain text.
-                Text(
-                    text = stringResource(R.string.rish_description, SH_NAME).stripHtmlTags(),
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-
+            // What rish is lives on the settings row; the screen goes straight to
+            // the steps.
             item {
                 SegmentedColumn(modifier = Modifier.fillMaxWidth()) {
                     item {

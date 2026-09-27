@@ -144,13 +144,8 @@ fun StealthScreen(onBack: () -> Unit) {
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(13.dp)
         ) {
-            item {
-                Text(
-                    text = stringResource(R.string.stealth_description),
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-
+            // The description lives on the settings row; repeating it here would
+            // just push the actual content down.
             // Tapping this card copies a snippet the user can send to a developer
             // whose "is Shizuku installed" check breaks while hidden.
             item {
