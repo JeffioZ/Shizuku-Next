@@ -376,6 +376,10 @@ fun HomeScreen() {
                 SegmentedColumn(modifier = Modifier.fillMaxWidth()) {
                     item {
                         SegmentedListItem(
+                            // The start options are disabled while Shizuku is running: starting
+                            // again does nothing, so say that instead of ignoring the tap.
+                            // Restart is how you relaunch it.
+                            enabled = !running,
                             headlineContent = { Text(stringResource(R.string.home_wireless_adb_title)) },
                             trailingContent = {
                                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
@@ -391,6 +395,7 @@ fun HomeScreen() {
                     }
                     item {
                         SegmentedListItem(
+                            enabled = !running,
                             headlineContent = { Text(stringResource(R.string.home_usb_adb_title)) },
                             supportingContent = {
                                 Text(stringResource(R.string.home_usb_adb_summary).stripHtmlTags())
@@ -421,6 +426,7 @@ fun HomeScreen() {
                                 // just duplicated the Restart button above (and hid the
                                 // fact that this row starts over root whatever the start
                                 // method is set to).
+                                enabled = !running,
                                 headlineContent = { Text(stringResource(R.string.home_root_title)) },
                                 supportingContent = { Text(rootDescription) },
                                 trailingContent = {
@@ -437,6 +443,9 @@ fun HomeScreen() {
                     }
                     item {
                         SegmentedListItem(
+                            // Disabled while running, like the other start options — but the
+                            // command row below stays enabled: it only copies a command.
+                            enabled = !running,
                             headlineContent = { Text(stringResource(R.string.home_system_title)) },
                             supportingContent = { Text(stringResource(R.string.home_system_summary)) },
                             trailingContent = {

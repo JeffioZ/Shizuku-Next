@@ -10,6 +10,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
 import moe.shizuku.manager.ui.theme.LocalAmoledTheme
 
@@ -69,10 +70,13 @@ fun SegmentedListItem(
     supportingContent: (@Composable () -> Unit)? = null,
     leadingContent: (@Composable () -> Unit)? = null,
     trailingContent: (@Composable () -> Unit)? = null,
-    onClick: (() -> Unit)? = null
+    onClick: (() -> Unit)? = null,
+    enabled: Boolean = true
 ) {
+    val dimmed = if (enabled) modifier else modifier.alpha(0.45f)
+
     ListItem(
-        modifier = if (onClick != null) modifier.clickable(onClick = onClick) else modifier,
+        modifier = if (onClick != null) dimmed.clickable(enabled = enabled, onClick = onClick) else dimmed,
         headlineContent = headlineContent,
         supportingContent = supportingContent,
         leadingContent = leadingContent,
