@@ -97,7 +97,6 @@ fun HomeScreen() {
 
     var running by remember { mutableStateOf(ShizukuStateMachine.isRunning()) }
     var uid by remember { mutableStateOf(if (running) runCatching { Shizuku.getUid() }.getOrDefault(-1) else -1) }
-    var version by remember { mutableStateOf(if (running) runCatching { Shizuku.getVersion() }.getOrDefault(0) else 0) }
     var batteryIgnored by remember {
         mutableStateOf(SettingsHelper.isIgnoringBatteryOptimizations(context))
     }
@@ -127,10 +126,9 @@ fun HomeScreen() {
         if (running) StartStatusReporter.clear()
 
         withContext(Dispatchers.IO) {
-            // Reset rather than keep: the card must not show the uid or version of a
-            // server that is gone.
+            // Reset rather than keep: the card must not show the uid of a server that is
+            // gone.
             uid = if (running) runCatching { Shizuku.getUid() }.getOrDefault(-1) else -1
-            version = if (running) runCatching { Shizuku.getVersion() }.getOrDefault(0) else 0
             // Shell.getShell() can block and triggers the root request.
             rooted = runCatching { EnvironmentUtils.isRooted() }.getOrDefault(false)
             val (selinux, seccomp) = readDeviceStatus()
@@ -339,7 +337,6 @@ fun HomeScreen() {
             item {
                 StatusCard(
                     running = running,
-                    version = version,
                     uid = uid,
                     startMethodLabelRes = startMethodLabelRes(startMethod)
                 )
@@ -563,7 +560,6 @@ fun HomeScreen() {
 @Composable
 private fun StatusCard(
     running: Boolean,
-    version: Int,
     uid: Int,
     @StringRes startMethodLabelRes: Int
 ) {
@@ -630,8 +626,10 @@ private fun StatusCard(
                     R.string.home_status_started_with to
                         (if (running) runningMethodLabel(uid) else stringResource(R.string.status_value_none)),
                     R.string.settings_start_method to stringResource(startMethodLabelRes),
-                    R.string.home_info_title to
-                        (if (running) "v$version" else stringResource(R.string.status_value_none)),
+                    // The wire, as opposed to the method above it: a wireless start can ride
+                    // the classic port (and a system start uses no adb at all).
+                    R.string.home_status_transport_label to
+                        (if (running) transportLabel(uid) else stringResource(R.string.status_value_none)),
                     R.string.uid_label to uidLabel(uid)
                 )
             }
