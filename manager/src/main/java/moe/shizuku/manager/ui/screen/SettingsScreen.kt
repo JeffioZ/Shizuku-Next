@@ -34,14 +34,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ShizukuSettings
-import moe.shizuku.manager.settings.BugReportDialogActivity
 import moe.shizuku.manager.ui.Detail
 import moe.shizuku.manager.ui.component.SegmentedColumn
 import moe.shizuku.manager.ui.theme.ThemeState
 import moe.shizuku.manager.ui.component.SegmentedListItem
 import moe.shizuku.manager.adb.AdbStarter
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter
-import moe.shizuku.manager.utils.CustomTabsHelper
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.SettingsHelper
 import moe.shizuku.manager.utils.ShizukuStateMachine
@@ -395,29 +393,8 @@ fun SettingsScreen(onOpenDetail: (Detail) -> Unit) {
                             onClick = { onOpenDetail(Detail.ABOUT) }
                         )
                     }
-                    item {
-                        SegmentedListItem(
-                            headlineContent = { Text(stringResource(R.string.settings_help)) },
-                            supportingContent = { Text(stringResource(R.string.tab_settings)) },
-                            trailingContent = {
-                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
-                            },
-                            onClick = {
-                                CustomTabsHelper.launchUrlOrCopy(context, context.getString(R.string.help_url))
-                            }
-                        )
-                    }
-                    item {
-                        SegmentedListItem(
-                            headlineContent = { Text(stringResource(R.string.settings_report_bug)) },
-                            trailingContent = {
-                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
-                            },
-                            onClick = {
-                                context.startActivity(Intent(context, BugReportDialogActivity::class.java))
-                            }
-                        )
-                    }
+                    // Help and "Report a bug" live on the About screen, so they are
+                    // not repeated here.
                 }
             }
         }
