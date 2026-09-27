@@ -38,6 +38,8 @@ This version of Shizuku includes some extra features over the original version, 
 * **TCP mode:** (i.e., the `adb tcpip` command) once Shizuku successfully starts with Wi-Fi after a reboot, you can stop/restart Shizuku without a Wi-Fi connection!
 * **Watchdog service:** automatically restarts Shizuku if it stops unexpectedly, and can alert you of crashes/potential fixes
 * **Start/stop intents:** toggle Shizuku on-demand using automation apps (e.g., Tasker, MacroDroid, Automate)
+* **Watchdog control intents:** enable/disable the watchdog via `moe.shizuku.privileged.api.WATCHDOG_ON`, `...WATCHDOG_OFF`, or `...WATCHDOG_TOGGLE`
+* **Status broadcasts:** automation apps can react to `moe.shizuku.privileged.api.SHIZUKU_CHANGED` and `...WATCHDOG_CHANGED`, each carrying a `status` extra (1 = on, 0 = off)
 * **[BETA] Stealth mode:** hide Shizuku from other apps that don't work when Shizuku is installed
 * **[BETA] In-app updates:** option to automatically check for new updates, and can automatically download/install the latest version from GitHub
 * **Android/Google TV and VR headset support:** UI is now compatible with D-Pad remotes, all TVs are supported (including Android 14+ TVs that require pairing), and the multi-window pairing dialog is toggleable in settings for VR headsets

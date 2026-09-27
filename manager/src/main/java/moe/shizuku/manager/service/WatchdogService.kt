@@ -34,6 +34,7 @@ class WatchdogService : Service() {
     override fun onCreate() {
         super.onCreate()
         isRunning.set(true)
+        sendWatchdogChangedBroadcast(applicationContext, true)
         ShizukuStateMachine.addListener(stateListener)
     }
 
@@ -60,6 +61,7 @@ class WatchdogService : Service() {
     override fun onDestroy() {
         ShizukuStateMachine.removeListener(stateListener)
         isRunning.set(false)
+        sendWatchdogChangedBroadcast(applicationContext, false)
         ShizukuSettings.setWatchdog(applicationContext, false)
         super.onDestroy()
     }
@@ -146,8 +148,21 @@ class WatchdogService : Service() {
         private const val NOTIFICATION_ID_WATCHDOG = 1001
         private const val NOTIFICATION_ID_CRASH = 1002
         const val CRASH_CHANNEL_ID = "crash_reports"
+        const val ACTION_WATCHDOG_CHANGED = "WATCHDOG_CHANGED"
+        const val EXTRA_WATCHDOG_STATUS = "status"
 
         private val isRunning = AtomicBoolean(false)
+
+        // Broadcast so automation apps (e.g. MacroDroid/Tasker) can react to
+        // the watchdog being enabled or disabled.
+        @JvmStatic
+        fun sendWatchdogChangedBroadcast(context: Context, enabled: Boolean) {
+            val intent = Intent("${context.packageName}.$ACTION_WATCHDOG_CHANGED").apply {
+                putExtra(EXTRA_WATCHDOG_STATUS, if (enabled) 1 else 0)
+                addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
+            }
+            context.sendBroadcast(intent)
+        }
 
         @JvmStatic
         fun start(context: Context) {
