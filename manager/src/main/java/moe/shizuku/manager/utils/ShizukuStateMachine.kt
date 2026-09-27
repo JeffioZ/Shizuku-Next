@@ -40,7 +40,18 @@ object ShizukuStateMachine {
         if(oldState != newState) {
             // A confirmed running server lifts manual-stop suppression, so a
             // later crash is auto-restarted by the watchdog.
-            if (newState == State.RUNNING) ShizukuSettings.setManuallyStopped(false)
+            if (newState == State.RUNNING) {
+                ShizukuSettings.setManuallyStopped(false)
+                // Remember how the server was launched so later background starts
+                // know whether to use root or wireless debugging (previously done by
+                // the removed HomeViewModel).
+                runCatching {
+                    ShizukuSettings.setLastLaunchMode(
+                        if (Shizuku.getUid() == 0) ShizukuSettings.LaunchMethod.ROOT
+                        else ShizukuSettings.LaunchMethod.ADB
+                    )
+                }
+            }
             // The launch transport is only meaningful while that launch is alive;
             // clear it so an external restart doesn't show a stale transport.
             if (newState == State.STOPPED || newState == State.CRASHED) {

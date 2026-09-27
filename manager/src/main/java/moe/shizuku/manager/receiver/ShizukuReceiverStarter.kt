@@ -47,8 +47,12 @@ object ShizukuReceiverStarter {
 
         if (ShizukuSettings.getLastLaunchMode() == LaunchMethod.ROOT) {
             rootStart(context)
-        } else if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.R || EnvironmentUtils.isTelevision() || EnvironmentUtils.getAdbTcpPort() > 0)
-            && ShizukuSettings.getLastLaunchMode() == LaunchMethod.ADB) {
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
+            || EnvironmentUtils.isTelevision()
+            || EnvironmentUtils.getAdbTcpPort() > 0
+        ) {
+            // UNKNOWN (e.g. after a fresh install) is treated as ADB so a start
+            // request still works instead of silently doing nothing.
                 if (context.checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED) {
                     // Falling back to USB debugging is controlled by settings.
                     val allowUsbFallback = ShizukuSettings.getAllowUsbFallback()
