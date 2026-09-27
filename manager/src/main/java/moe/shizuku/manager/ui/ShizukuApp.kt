@@ -1,7 +1,12 @@
 package moe.shizuku.manager.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
@@ -22,9 +27,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ui.screen.AboutScreen
@@ -38,6 +45,14 @@ import moe.shizuku.manager.ui.theme.ShizukuTheme
 
 /** A secondary screen shown on top of the tab pager. */
 enum class Detail { STEALTH, TERMINAL, INTENTS, ABOUT }
+
+/**
+ * On wide windows (tablets, foldables, desktop mode, mirrored displays) a
+ * single-column layout stretched edge to edge looks sparse, so the content is
+ * capped at this width and centred. On a phone the window is narrower than the
+ * cap, so this has no effect.
+ */
+private val MaxContentWidth = 600.dp
 
 private data class Tab(
     val label: Int,
@@ -59,14 +74,38 @@ fun ShizukuApp() {
 
         if (current != null) {
             BackHandler { detail = null }
-            when (current) {
-                Detail.STEALTH -> StealthScreen(onBack = { detail = null })
-                Detail.TERMINAL -> TerminalScreen(onBack = { detail = null })
-                Detail.INTENTS -> IntentsScreen(onBack = { detail = null })
-                Detail.ABOUT -> AboutScreen(onBack = { detail = null })
+            CenteredContent {
+                when (current) {
+                    Detail.STEALTH -> StealthScreen(onBack = { detail = null })
+                    Detail.TERMINAL -> TerminalScreen(onBack = { detail = null })
+                    Detail.INTENTS -> IntentsScreen(onBack = { detail = null })
+                    Detail.ABOUT -> AboutScreen(onBack = { detail = null })
+                }
             }
         } else {
             MainTabs(onOpenDetail = { detail = it })
+        }
+    }
+}
+
+@Composable
+private fun CenteredContent(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    Box(
+        modifier = Modifier.fillMaxSize().then(modifier),
+        contentAlignment = Alignment.TopCenter
+    ) {
+        Box(
+            modifier = Modifier
+                // widthIn must come first: fillMaxWidth sets min == max, which
+                // would defeat a later widthIn cap.
+                .widthIn(max = MaxContentWidth)
+                .fillMaxWidth()
+                .fillMaxHeight()
+        ) {
+            content()
         }
     }
 }
@@ -98,14 +137,16 @@ private fun MainTabs(onOpenDetail: (Detail) -> Unit) {
             }
         }
     ) { padding ->
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier.padding(padding)
-        ) { page ->
-            when (page) {
-                0 -> HomeScreen()
-                1 -> AppsScreen()
-                2 -> SettingsScreen(onOpenDetail = onOpenDetail)
+        CenteredContent(modifier = Modifier.padding(padding)) {
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize()
+            ) { page ->
+                when (page) {
+                    0 -> HomeScreen()
+                    1 -> AppsScreen()
+                    2 -> SettingsScreen(onOpenDetail = onOpenDetail)
+                }
             }
         }
     }
