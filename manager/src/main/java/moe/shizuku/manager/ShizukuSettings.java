@@ -43,6 +43,7 @@ public class ShizukuSettings {
         public static final String KEY_CATEGORY_ADVANCED = "category_advanced";
         public static final String KEY_MANUALLY_STOPPED = "manually_stopped";
         public static final String KEY_LAST_ADB_TRANSPORT = "last_adb_transport";
+        public static final String KEY_WIRELESS_ONLY_RESTART = "wireless_only_restart";
     }
 
     public static class UpdateMode {
@@ -185,6 +186,18 @@ public class ShizukuSettings {
 
     public static void setLastAdbTransport(int transport) {
         getPreferences().edit().putInt(Keys.KEY_LAST_ADB_TRANSPORT, transport).apply();
+    }
+
+    /**
+     * When enabled, background restarts go through the wireless-debugging path
+     * (no USB fallback) and do not wait for an unmetered Wi-Fi connection.
+     */
+    public static boolean getWirelessOnlyRestart() {
+        return getPreferences().getBoolean(Keys.KEY_WIRELESS_ONLY_RESTART, false);
+    }
+
+    public static void setWirelessOnlyRestart(boolean enable) {
+        getPreferences().edit().putBoolean(Keys.KEY_WIRELESS_ONLY_RESTART, enable).apply();
     }
 
     public static void setWatchdog(Context context, boolean enable) {

@@ -48,7 +48,14 @@ object ShizukuReceiverStarter {
         } else if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.R || EnvironmentUtils.isTelevision() || EnvironmentUtils.getAdbTcpPort() > 0)
             && ShizukuSettings.getLastLaunchMode() == LaunchMethod.ADB) {
                 if (context.checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED) {
-                    AdbStartWorker.enqueue(context)
+                    // "Wireless-only restart" setting: prefer wireless debugging
+                    // (never fall back to USB) and don't wait for unmetered Wi-Fi.
+                    val wirelessOnly = ShizukuSettings.getWirelessOnlyRestart()
+                    AdbStartWorker.enqueue(
+                        context,
+                        enableWirelessDebugging = wirelessOnly,
+                        immediate = wirelessOnly
+                    )
                     updateNotification(context, WorkerState.AWAITING_WIFI)
                 } else {
                     showPermissionErrorNotification(context)

@@ -49,6 +49,7 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             )
 
             val cr = applicationContext.contentResolver
+            val enableWirelessDebugging = inputData.getBoolean(KEY_ENABLE_WIFI, true)
 
             // Do NOT unconditionally force USB debugging on. On some devices (e.g.
             // Xiaomi/OPPO/Lenovo) that kills Shizuku when the USB mode is File
@@ -76,11 +77,14 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                     // cancellation it avoids leaving wireless disabled.
                     Settings.Global.putInt(cr, "adb_wifi_enabled", 1)
                 }
-            } else {
-                // Neither is on — enable USB debugging for the start.
+            } else if (!enableWirelessDebugging) {
+                // Neither is on and wireless is not requested — fall back to USB.
                 Settings.Global.putInt(cr, Settings.Global.ADB_ENABLED, 1)
                 Settings.Global.putLong(cr, "adb_allowed_connection_time", 0L)
             }
+            // else: neither is on but wireless is requested — do not touch USB; let
+            // the callbackFlow below write adb_wifi_enabled=1 so the start proceeds
+            // over wireless only.
 
             val tcpPort = EnvironmentUtils.getAdbTcpPort()
             if (tcpPort > 0 && !ShizukuSettings.getTcpMode()) {
@@ -124,7 +128,9 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                                 if (intent.action == Intent.ACTION_USER_PRESENT) {
                                     context.unregisterReceiver(this)
                                     unlockReceiver = null
-                                    Settings.Global.putInt(cr, "adb_wifi_enabled", 1)
+                                    if (enableWirelessDebugging) {
+                                        Settings.Global.putInt(cr, "adb_wifi_enabled", 1)
+                                    }
                                 }
                             }
                         }
@@ -145,7 +151,9 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                     }
                 }
 
-                Settings.Global.putInt(cr, "adb_wifi_enabled", 1)
+                if (enableWirelessDebugging) {
+                    Settings.Global.putInt(cr, "adb_wifi_enabled", 1)
+                }
                 cr.registerContentObserver(Settings.Global.getUriFor("adb_wifi_enabled"), false, observer)
                 startDiscoveryWithTimeout()
 
@@ -231,14 +239,26 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
     }
 
     companion object {
-        fun enqueue(context: Context) {
+        const val KEY_ENABLE_WIFI = "enable_wifi"
+
+        fun enqueue(
+            context: Context,
+            enableWirelessDebugging: Boolean = false,
+            immediate: Boolean = false
+        ) {
             val cb = Constraints.Builder()
-            if (EnvironmentUtils.isWifiRequired())
+            // `immediate` is for user-initiated starts (manual broadcast, GUI button):
+            // they shouldn't wait on unmetered Wi-Fi like unattended auto-restarts do,
+            // since the discovery flow works without any network connection.
+            if (EnvironmentUtils.isWifiRequired() && !immediate)
                 cb.setRequiredNetworkType(NetworkType.UNMETERED)
             val constraints = cb.build()
 
+            val inputData = workDataOf(KEY_ENABLE_WIFI to enableWirelessDebugging)
+
             val request = OneTimeWorkRequestBuilder<AdbStartWorker>()
                 .setConstraints(constraints)
+                .setInputData(inputData)
                 .build()
 
             WorkManager.getInstance(context).enqueueUniqueWork(

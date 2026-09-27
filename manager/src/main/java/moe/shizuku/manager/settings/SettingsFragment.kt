@@ -66,6 +66,7 @@ class SettingsFragment : PreferenceFragmentCompat(), SharedPreferences.OnSharedP
 
     private lateinit var startOnBootPreference: TwoStatePreference
     private lateinit var watchdogPreference: TwoStatePreference
+    private lateinit var wirelessOnlyRestartPreference: TwoStatePreference
     private lateinit var tcpModePreference: TwoStatePreference
     private lateinit var tcpPortPreference: EditTextPreference
     private lateinit var languagePreference: ListPreference
@@ -100,6 +101,7 @@ class SettingsFragment : PreferenceFragmentCompat(), SharedPreferences.OnSharedP
 
         startOnBootPreference = findPreference(KEY_START_ON_BOOT)!!
         watchdogPreference = findPreference(KEY_WATCHDOG)!!
+        wirelessOnlyRestartPreference = findPreference(KEY_WIRELESS_ONLY_RESTART)!!
         tcpModePreference = findPreference(KEY_TCP_MODE)!!
         tcpPortPreference = findPreference(KEY_TCP_PORT)!!
         languagePreference = findPreference(KEY_LANGUAGE)!!
@@ -172,6 +174,18 @@ class SettingsFragment : PreferenceFragmentCompat(), SharedPreferences.OnSharedP
                             isChecked = newValue
                         }
                     }
+                }
+                false
+            }
+        }
+
+        wirelessOnlyRestartPreference.apply {
+            isChecked = ShizukuSettings.getWirelessOnlyRestart()
+
+            setOnPreferenceChangeListener { _, newValue ->
+                if (newValue is Boolean) {
+                    ShizukuSettings.setWirelessOnlyRestart(newValue)
+                    isChecked = newValue
                 }
                 false
             }

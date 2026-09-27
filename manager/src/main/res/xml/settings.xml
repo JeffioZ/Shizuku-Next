@@ -22,6 +22,11 @@
             android:title="@string/settings_watchdog" />
 
         <SwitchPreferenceCompat
+            android:key="wireless_only_restart"
+            android:summary="@string/settings_wireless_only_restart_summary"
+            android:title="@string/settings_wireless_only_restart" />
+
+        <SwitchPreferenceCompat
             android:key="tcp_mode"
             android:title="@string/settings_tcp_mode" 
             android:defaultValue="true" />
