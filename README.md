@@ -33,7 +33,8 @@ All versions are distributed via [GitHub Releases](https://github.com/thedjchi/S
 ## ✨ Added Features
 
 This version of Shizuku includes some extra features over the original version, such as:
-* **Automated setup:** the separate "Pair" button has been removed pressing "Start" now detects when wireless debugging still needs to be paired and launches the pairing flow automatically
+* **Automated setup:** the separate "Pair" button has been removed — pressing "Start" detects when wireless debugging still needs to be paired and launches the pairing flow automatically
+* **Pair without typing:** Shizuku reads the pairing code and port straight out of the system's "Pair with device" dialog, pairs, and starts itself — so the code never has to be typed, and can't expire while you switch apps. Manual pairing (notification + typed code) stays one tap away as a fallback
 * **More robust "start on boot":** waits for a Wi-Fi connection before starting the Shizuku service
 * **TCP mode:** (i.e., the `adb tcpip` command) once Shizuku successfully starts with Wi-Fi after a reboot, you can stop/restart Shizuku without a Wi-Fi connection!
 * **Wireless debugging stays enabled:** starting Shizuku no longer turns off wireless debugging, so it can restart with USB debugging off and no Wi-Fi connection; the status card shows whether it runs over wireless or USB debugging
@@ -44,7 +45,7 @@ This version of Shizuku includes some extra features over the original version, 
 * **Auto wake-up:** when an app requests the Shizuku binder while the server is down, the manager tries to start it in the background (if start on boot is enabled and you did not deliberately stop it)
 * **Reliable TCP-port rebinding:** after switching adbd to the configured TCP/IP port, Shizuku waits until the new port is actually listening before connecting (custom ports avoid the 5555 conflict)
 * **Batch permission management:** long-press an app to enter multi-select, then grant or revoke permission for many apps at once, with select-all and a confirmation
-* **New Material 3 interface:** the manager UI is rebuilt in Jetpack Compose with a KernelSU-style layout — a bottom tab bar (Home · Apps · Tools · Settings), tonal status cards, and dynamic color
+* **New Material 3 interface:** the manager UI is rebuilt in Jetpack Compose with a KernelSU-style layout — a bottom tab bar (Home · Apps · Settings), tonal status cards, and dynamic color
 * **Start as system (UID 1000):** a "Start (system)" card launches Shizuku under the system UID — either via a built-in device exploit or by copying a command for your own privilege escalation, selected in settings
 * **Restart transport settings:** choose whether restarts may fall back to enabling USB debugging, and whether unattended restarts wait for an unmetered Wi-Fi connection (starts you trigger yourself never wait)
 * **Search and sort authorized apps:** filter the apps list by name and sort it alphabetically or by most recently added

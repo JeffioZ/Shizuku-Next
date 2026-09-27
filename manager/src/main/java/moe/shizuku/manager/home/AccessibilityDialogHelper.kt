@@ -2,6 +2,7 @@ package moe.shizuku.manager.home
 
 import android.Manifest.permission.WRITE_SECURE_SETTINGS
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
@@ -12,6 +13,8 @@ import android.text.style.TypefaceSpan
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import moe.shizuku.manager.R
 import moe.shizuku.manager.adb.AdbPairingAccessibilityService
+import moe.shizuku.manager.adb.AdbPairingTutorialActivity
+import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.SettingsHelper
 import moe.shizuku.manager.utils.SettingsPage
 
@@ -25,7 +28,13 @@ fun Context.showAccessibilityDialog() {
     if (isAccessibilityEnabled()) {
         showNavigateDialog()
     } else if (hasWriteSecureSettings) {
-        if (enableAccessibilityService()) return
+        // Switching it on silently leaves the user with no next step to follow (on TV
+        // the service drives the rest itself; on a phone the user has to open the
+        // pairing dialog), so always explain what to do next.
+        if (enableAccessibilityService()) {
+            showNavigateDialog()
+            return
+        }
         showPermissionDialog()
     } else if (!hasAccessRestrictedSettings) {
         showPermissionDialog()
@@ -66,13 +75,34 @@ private fun Context.showEnableDialog() {
 }
 
 private fun Context.showNavigateDialog() {
+    val isTelevision = EnvironmentUtils.isTelevision() && EnvironmentUtils.isTlsSupported()
+
     MaterialAlertDialogBuilder(this)
         .setTitle(R.string.dialog_adb_pairing_title)
-        .setMessage(R.string.dialog_adb_pairing_accessibility_navigate)
+        .setMessage(
+            if (isTelevision) R.string.dialog_adb_pairing_accessibility_navigate
+            else R.string.auto_pair_instructions
+        )
         .setPositiveButton(R.string.development_settings) { _, _ ->
             SettingsPage.Developer.HighlightWirelessDebugging.launch(this)
-        }.setNegativeButton(android.R.string.cancel, null)
+        }
+        .setNegativeButton(R.string.auto_pair_manual) { _, _ ->
+            // Reading the code can still fail (OEM dialog, service killed) — keep the
+            // notification flow one tap away as the fallback.
+            runCatching {
+                startActivity(Intent(this, AdbPairingTutorialActivity::class.java))
+            }
+        }
         .show()
+}
+
+/**
+ * True when the pairing accessibility service is switched on, i.e. codes can be read
+ * out of the pairing dialog without the user typing them.
+ */
+fun Context.isAccessibilityEnabled(): Boolean {
+    val accessibilityServiceName = "$packageName/${AdbPairingAccessibilityService::class.java.canonicalName}"
+    return getEnabledAccessibilityServices()?.any { it.equals(accessibilityServiceName) } ?: false
 }
 
 private fun Context.getEnabledAccessibilityServices(): List<String>? {
@@ -82,11 +112,6 @@ private fun Context.getEnabledAccessibilityServices(): List<String>? {
             Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
         )
     return enabledServices?.split(":")
-}
-
-private fun Context.isAccessibilityEnabled(): Boolean {
-    val accessibilityServiceName = "$packageName/${AdbPairingAccessibilityService::class.java.canonicalName}"
-    return getEnabledAccessibilityServices()?.any { it.equals(accessibilityServiceName) } ?: false
 }
 
 private fun Context.enableAccessibilityService(): Boolean {

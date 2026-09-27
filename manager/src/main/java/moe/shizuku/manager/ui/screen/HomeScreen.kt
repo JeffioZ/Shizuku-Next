@@ -58,9 +58,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import moe.shizuku.manager.Helps
 import moe.shizuku.manager.Manifest
-import moe.shizuku.manager.adb.AdbPairingHelper
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ShizukuSettings
+import moe.shizuku.manager.home.showAccessibilityDialog
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter
 import moe.shizuku.manager.start.StartFailureKind
 import moe.shizuku.manager.start.StartStatus
@@ -226,10 +226,10 @@ fun HomeScreen() {
                                         modifier = Modifier.fillMaxWidth(),
                                         onClick = {
                                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                                                runCatching {
-                                                    AdbPairingHelper.handlePairing(context)
-                                                    StartStatusReporter.clear()
-                                                }
+                                                // Pair without typing: the code is read out
+                                                // of the system dialog. The manual flow
+                                                // stays one tap away in that dialog.
+                                                runCatching { context.showAccessibilityDialog() }
                                             }
                                         },
                                         colors = ButtonDefaults.buttonColors(
