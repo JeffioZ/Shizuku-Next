@@ -28,9 +28,6 @@ private fun Placeholder(titleRes: Int) {
 }
 
 @Composable
-fun AppsScreen() = Placeholder(R.string.tab_apps)
-
-@Composable
 fun ToolsScreen() = Placeholder(R.string.tab_tools)
 
 @Composable
