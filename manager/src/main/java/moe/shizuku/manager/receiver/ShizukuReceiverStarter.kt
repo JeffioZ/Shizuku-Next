@@ -111,20 +111,17 @@ object ShizukuReceiverStarter {
         val hasWifi = EnvironmentUtils.isWifiConnected()
         val television = EnvironmentUtils.isTelevision()
 
-        // Wireless debugging cannot stay enabled without a Wi-Fi connection — the
-        // system reverts it moments after we enable it, so mDNS never finds a port.
-        // Fail loudly instead of waiting forever.
-        //
-        // Neither start method can connect with no port at all, and on Android 11+
-        // the only port the app can raise by itself is the wireless-debugging one.
-        // USB debugging instead gives a pairing-free port when a computer has run
-        // `adb tcpip` (and is the only option on Android 10 and below), so a USB
-        // start only complains when it has neither.
-        // A wireless start always needs a network: the system turns wireless debugging
-        // back off without one, so discovery can never find a port. The USB method runs
-        // over the classic ADB port and needs no network at all — the worker reports a
-        // missing port itself.
-        if (startMethod == ShizukuSettings.StartMethod.WIRELESS && !hasWifi && !television) {
+        // A wireless start needs a network — the system turns wireless debugging back off
+        // without one, so discovery can never find a port. Only fail the start the user
+        // asked for, though: an unattended one (boot, watchdog) must keep trying instead,
+        // because Wi-Fi routinely arrives a few seconds after boot and failing it there
+        // just leaves Shizuku down. The worker carries a Wi-Fi constraint and retries, so
+        // it starts by itself once the network is up.
+        if (userInitiated &&
+            startMethod == ShizukuSettings.StartMethod.WIRELESS &&
+            !hasWifi &&
+            !television
+        ) {
             StartStatusReporter.failed(
                 context.getString(R.string.start_failed_wifi_required),
                 StartFailureKind.WIFI

@@ -17,6 +17,7 @@ import androidx.core.app.NotificationCompat
 import androidx.lifecycle.asFlow
 import androidx.work.*
 import java.io.EOFException
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -333,14 +334,11 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
         ) {
             val usbMethod = startMethod == ShizukuSettings.StartMethod.USB
             val cb = Constraints.Builder()
-            // `immediate` is for user-initiated starts (manual broadcast, GUI button):
-            // they shouldn't wait on unmetered Wi-Fi like unattended auto-restarts do,
-            // since the discovery flow works without any network connection. A USB
-            // start never wants a network constraint at all.
-            // A wireless start always needs a network to keep wireless debugging alive.
-            // A USB start normally needs none — except when it has no port and would
-            // have to reopen one over the wireless connection, which is worth waiting
-            // for rather than failing at boot.
+            // A wireless start needs a network to keep wireless debugging alive. A USB
+            // start normally needs none — except when it has no port and would have to
+            // reopen one over the wireless connection, which is worth waiting for rather
+            // than failing at boot. `immediate` (a start the user asked for) skips the
+            // wait: they get an answer now instead of a job that sits there.
             val needsNetwork =
                 !usbMethod || EnvironmentUtils.getAdbTcpPort() <= 0
             if (needsNetwork && !immediate)
@@ -352,6 +350,10 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             val request = OneTimeWorkRequestBuilder<AdbStartWorker>()
                 .setConstraints(constraints)
                 .setInputData(inputData)
+                // Retry about once a minute, doubling as it keeps failing: a boot start
+                // usually just needs to wait for Wi-Fi to associate, and giving up after
+                // one attempt is what left Shizuku down until the next manual start.
+                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 1, TimeUnit.MINUTES)
                 .build()
 
             WorkManager.getInstance(context).enqueueUniqueWork(
