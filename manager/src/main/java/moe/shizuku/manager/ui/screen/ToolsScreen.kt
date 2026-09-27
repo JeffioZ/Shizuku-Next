@@ -1,6 +1,5 @@
 package moe.shizuku.manager.ui.screen
 
-import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -27,15 +26,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ShizukuSettings
-import moe.shizuku.manager.shell.ShellTutorialActivity
-import moe.shizuku.manager.stealth.StealthTutorialActivity
+import moe.shizuku.manager.ui.Detail
 import moe.shizuku.manager.ui.component.SegmentedColumn
 import moe.shizuku.manager.ui.component.SegmentedListItem
 import moe.shizuku.manager.utils.SettingsHelper
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ToolsScreen() {
+fun ToolsScreen(onOpenDetail: (Detail) -> Unit) {
     val context = LocalContext.current
 
     var watchdog by remember { mutableStateOf(ShizukuSettings.getWatchdog()) }
@@ -115,9 +113,7 @@ fun ToolsScreen() {
                             trailingContent = {
                                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
                             },
-                            onClick = {
-                                context.startActivity(Intent(context, StealthTutorialActivity::class.java))
-                            }
+                            onClick = { onOpenDetail(Detail.STEALTH) }
                         )
                     }
                     item {
@@ -126,9 +122,7 @@ fun ToolsScreen() {
                             trailingContent = {
                                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
                             },
-                            onClick = {
-                                context.startActivity(Intent(context, ShellTutorialActivity::class.java))
-                            }
+                            onClick = { onOpenDetail(Detail.TERMINAL) }
                         )
                     }
                 }

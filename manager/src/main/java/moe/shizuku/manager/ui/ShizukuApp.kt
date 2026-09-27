@@ -1,5 +1,6 @@
 package moe.shizuku.manager.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -18,7 +19,11 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -27,8 +32,13 @@ import moe.shizuku.manager.R
 import moe.shizuku.manager.ui.screen.AppsScreen
 import moe.shizuku.manager.ui.screen.HomeScreen
 import moe.shizuku.manager.ui.screen.SettingsScreen
+import moe.shizuku.manager.ui.screen.StealthScreen
+import moe.shizuku.manager.ui.screen.TerminalScreen
 import moe.shizuku.manager.ui.screen.ToolsScreen
 import moe.shizuku.manager.ui.theme.ShizukuTheme
+
+/** A secondary screen shown on top of the tab pager. */
+enum class Detail { STEALTH, TERMINAL }
 
 private data class Tab(
     val label: Int,
@@ -46,41 +56,57 @@ private val tabs = listOf(
 @Composable
 fun ShizukuApp() {
     ShizukuTheme {
-        val pagerState = rememberPagerState(pageCount = { tabs.size })
-        val scope = rememberCoroutineScope()
+        var detail by remember { mutableStateOf<Detail?>(null) }
+        val current = detail
 
-        Scaffold(
-            bottomBar = {
-                NavigationBar {
-                    tabs.forEachIndexed { index, tab ->
-                        val selected = pagerState.currentPage == index
-                        NavigationBarItem(
-                            selected = selected,
-                            onClick = {
-                                if (!selected) scope.launch { pagerState.animateScrollToPage(index) }
-                            },
-                            icon = {
-                                Icon(
-                                    if (selected) tab.selectedIcon else tab.unselectedIcon,
-                                    contentDescription = stringResource(tab.label)
-                                )
-                            },
-                            label = { Text(stringResource(tab.label)) }
-                        )
-                    }
+        if (current != null) {
+            BackHandler { detail = null }
+            when (current) {
+                Detail.STEALTH -> StealthScreen(onBack = { detail = null })
+                Detail.TERMINAL -> TerminalScreen(onBack = { detail = null })
+            }
+        } else {
+            MainTabs(onOpenDetail = { detail = it })
+        }
+    }
+}
+
+@Composable
+private fun MainTabs(onOpenDetail: (Detail) -> Unit) {
+    val pagerState = rememberPagerState(pageCount = { tabs.size })
+    val scope = rememberCoroutineScope()
+
+    Scaffold(
+        bottomBar = {
+            NavigationBar {
+                tabs.forEachIndexed { index, tab ->
+                    val selected = pagerState.currentPage == index
+                    NavigationBarItem(
+                        selected = selected,
+                        onClick = {
+                            if (!selected) scope.launch { pagerState.animateScrollToPage(index) }
+                        },
+                        icon = {
+                            Icon(
+                                if (selected) tab.selectedIcon else tab.unselectedIcon,
+                                contentDescription = stringResource(tab.label)
+                            )
+                        },
+                        label = { Text(stringResource(tab.label)) }
+                    )
                 }
             }
-        ) { padding ->
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier.padding(padding)
-            ) { page ->
-                when (page) {
-                    0 -> HomeScreen()
-                    1 -> AppsScreen()
-                    2 -> ToolsScreen()
-                    3 -> SettingsScreen()
-                }
+        }
+    ) { padding ->
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.padding(padding)
+        ) { page ->
+            when (page) {
+                0 -> HomeScreen()
+                1 -> AppsScreen()
+                2 -> ToolsScreen(onOpenDetail = onOpenDetail)
+                3 -> SettingsScreen()
             }
         }
     }
