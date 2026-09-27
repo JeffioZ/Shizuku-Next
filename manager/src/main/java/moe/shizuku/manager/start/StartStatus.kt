@@ -15,7 +15,10 @@ enum class StartFailureKind {
     WIFI,
 
     /** The ADB TLS handshake was rejected: the device needs pairing. */
-    PAIRING
+    PAIRING,
+
+    /** No local ADB port is open — it can be opened from the card. */
+    PORT
 }
 
 /** Outcome of the most recent start attempt, surfaced in the manager UI. */

@@ -334,6 +334,7 @@
      <string name="stop">Stop</string>
     <string name="action_stop">Stop</string>
     <string name="action_restart">Restart</string>
+    <string name="action_open_adb_port">Open ADB port</string>
     <string name="dialog_stop_message">Shizuku service will be stopped.</string>
 
     <!-- Notification -->

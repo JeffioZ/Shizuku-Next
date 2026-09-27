@@ -69,6 +69,7 @@ import moe.shizuku.manager.receiver.ShizukuReceiverStarter
 import moe.shizuku.manager.start.StartFailureKind
 import moe.shizuku.manager.start.StartStatus
 import moe.shizuku.manager.start.StartStatusReporter
+import moe.shizuku.manager.start.openAdbPortAndStart
 import moe.shizuku.manager.start.startMethodLabelRes
 import moe.shizuku.manager.starter.Starter
 import moe.shizuku.manager.starter.StarterActivity
@@ -231,6 +232,20 @@ fun HomeScreen() {
                                             contentColor = MaterialTheme.colorScheme.onError
                                         )
                                     ) { Text(stringResource(R.string.action_connect_wifi)) }
+                                } else if (failed.kind == StartFailureKind.PORT) {
+                                    Button(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        onClick = {
+                                            // Opens the port and starts over it; if that
+                                            // needs Wi-Fi, the card comes back offering
+                                            // Connect instead.
+                                            scope.launch { openAdbPortAndStart(context) }
+                                        },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = MaterialTheme.colorScheme.error,
+                                            contentColor = MaterialTheme.colorScheme.onError
+                                        )
+                                    ) { Text(stringResource(R.string.action_open_adb_port)) }
                                 } else if (failed.kind == StartFailureKind.PAIRING) {
                                     Button(
                                         modifier = Modifier.fillMaxWidth(),
