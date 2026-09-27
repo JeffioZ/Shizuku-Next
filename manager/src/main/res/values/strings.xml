@@ -132,6 +132,11 @@
     <string name="status_stopped_short">Stopped</string>
     <string name="action_start">Start</string>
     <string name="home_info_title">Info</string>
+    <string name="tools_stealth">Stealth mode</string>
+    <string name="tools_terminal">Terminal apps</string>
+    <string name="tools_battery">Battery optimization</string>
+    <string name="tools_battery_ignored">Ignored</string>
+    <string name="tools_battery_not_ignored">Not ignored</string>
     <string name="batch_selected_count">%1$d selected</string>
     <string name="app_management_action_select_all">Select all</string>
     <string name="app_management_action_grant">Grant</string>

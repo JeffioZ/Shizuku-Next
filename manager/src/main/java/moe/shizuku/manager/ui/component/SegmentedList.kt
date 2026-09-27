@@ -1,5 +1,6 @@
 package moe.shizuku.manager.ui.component
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.HorizontalDivider
@@ -51,7 +52,7 @@ fun SegmentedListItem(
     onClick: (() -> Unit)? = null
 ) {
     ListItem(
-        modifier = modifier,
+        modifier = if (onClick != null) modifier.clickable(onClick = onClick) else modifier,
         headlineContent = headlineContent,
         supportingContent = supportingContent,
         leadingContent = leadingContent,
