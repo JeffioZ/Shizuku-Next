@@ -136,6 +136,11 @@
     <string name="tools_terminal">Terminal apps</string>
     <string name="tools_battery">Battery optimization</string>
     <string name="intents_title">Intents</string>
+    <string name="about_title">About</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_system">System default</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
     <string name="intents_description">Automation apps can control Shizuku with these broadcasts. The auth token must be passed in the \"auth\" extra.</string>
     <string name="intents_token">Auth token</string>
     <string name="intents_copy">Copy</string>

@@ -1,6 +1,10 @@
 package moe.shizuku.manager.ui.screen
 
 import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -30,13 +34,14 @@ import androidx.compose.ui.unit.dp
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.settings.BugReportDialogActivity
+import moe.shizuku.manager.ui.Detail
 import moe.shizuku.manager.ui.component.SegmentedColumn
 import moe.shizuku.manager.ui.component.SegmentedListItem
 import moe.shizuku.manager.utils.CustomTabsHelper
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen() {
+fun SettingsScreen(onOpenDetail: (Detail) -> Unit) {
     val context = LocalContext.current
 
     var startOnBoot by remember { mutableStateOf(ShizukuSettings.getStartOnBoot(context)) }
@@ -48,6 +53,8 @@ fun SettingsScreen() {
     var tcpPort by remember { mutableStateOf(ShizukuSettings.getTcpPort().toString()) }
     var systemStartMethod by remember { mutableStateOf(ShizukuSettings.getSystemStartMethod()) }
     var updateMode by remember { mutableStateOf(ShizukuSettings.getUpdateMode()) }
+    var nightMode by remember { mutableStateOf(ShizukuSettings.getNightMode()) }
+    var themeDialog by remember { mutableStateOf(false) }
 
     var tcpPortDialog by remember { mutableStateOf(false) }
     var systemStartDialog by remember { mutableStateOf(false) }
@@ -192,6 +199,51 @@ fun SettingsScreen() {
                     }
                     item {
                         SegmentedListItem(
+                            headlineContent = { Text(stringResource(R.string.settings_theme)) },
+                            supportingContent = {
+                                Text(
+                                    when (nightMode) {
+                                        AppCompatDelegate.MODE_NIGHT_NO -> stringResource(R.string.settings_theme_light)
+                                        AppCompatDelegate.MODE_NIGHT_YES -> stringResource(R.string.settings_theme_dark)
+                                        else -> stringResource(R.string.settings_theme_system)
+                                    }
+                                )
+                            },
+                            trailingContent = {
+                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+                            },
+                            onClick = { themeDialog = true }
+                        )
+                    }
+                    item {
+                        SegmentedListItem(
+                            headlineContent = { Text(stringResource(R.string.settings_language)) },
+                            trailingContent = {
+                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+                            },
+                            onClick = {
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                    runCatching {
+                                        context.startActivity(
+                                            Intent(Settings.ACTION_APP_LOCALE_SETTINGS)
+                                                .setData(Uri.fromParts("package", context.packageName, null))
+                                        )
+                                    }
+                                }
+                            }
+                        )
+                    }
+                    item {
+                        SegmentedListItem(
+                            headlineContent = { Text(stringResource(R.string.about_title)) },
+                            trailingContent = {
+                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+                            },
+                            onClick = { onOpenDetail(Detail.ABOUT) }
+                        )
+                    }
+                    item {
+                        SegmentedListItem(
                             headlineContent = { Text(stringResource(R.string.settings_help)) },
                             supportingContent = { Text(stringResource(R.string.tab_settings)) },
                             trailingContent = {
@@ -216,6 +268,27 @@ fun SettingsScreen() {
                 }
             }
         }
+    }
+
+    if (themeDialog) {
+        ChoiceDialog(
+            title = stringResource(R.string.settings_theme),
+            options = listOf(
+                AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM.toString() to stringResource(R.string.settings_theme_system),
+                AppCompatDelegate.MODE_NIGHT_NO.toString() to stringResource(R.string.settings_theme_light),
+                AppCompatDelegate.MODE_NIGHT_YES.toString() to stringResource(R.string.settings_theme_dark),
+            ),
+            selected = nightMode.toString(),
+            onDismiss = { themeDialog = false },
+            onSelect = {
+                val value = it.toIntOrNull() ?: AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+                ShizukuSettings.getPreferences().edit()
+                    .putInt(ShizukuSettings.Keys.KEY_NIGHT_MODE, value).apply()
+                AppCompatDelegate.setDefaultNightMode(value)
+                nightMode = value
+                themeDialog = false
+            }
+        )
     }
 
     if (tcpPortDialog) {

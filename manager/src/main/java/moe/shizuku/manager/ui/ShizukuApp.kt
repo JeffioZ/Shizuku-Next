@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.launch
 import moe.shizuku.manager.R
+import moe.shizuku.manager.ui.screen.AboutScreen
 import moe.shizuku.manager.ui.screen.AppsScreen
 import moe.shizuku.manager.ui.screen.HomeScreen
 import moe.shizuku.manager.ui.screen.IntentsScreen
@@ -39,7 +40,7 @@ import moe.shizuku.manager.ui.screen.ToolsScreen
 import moe.shizuku.manager.ui.theme.ShizukuTheme
 
 /** A secondary screen shown on top of the tab pager. */
-enum class Detail { STEALTH, TERMINAL, INTENTS }
+enum class Detail { STEALTH, TERMINAL, INTENTS, ABOUT }
 
 private data class Tab(
     val label: Int,
@@ -66,6 +67,7 @@ fun ShizukuApp() {
                 Detail.STEALTH -> StealthScreen(onBack = { detail = null })
                 Detail.TERMINAL -> TerminalScreen(onBack = { detail = null })
                 Detail.INTENTS -> IntentsScreen(onBack = { detail = null })
+                Detail.ABOUT -> AboutScreen(onBack = { detail = null })
             }
         } else {
             MainTabs(onOpenDetail = { detail = it })
@@ -108,7 +110,7 @@ private fun MainTabs(onOpenDetail: (Detail) -> Unit) {
                 0 -> HomeScreen()
                 1 -> AppsScreen()
                 2 -> ToolsScreen(onOpenDetail = onOpenDetail)
-                3 -> SettingsScreen()
+                3 -> SettingsScreen(onOpenDetail = onOpenDetail)
             }
         }
     }
