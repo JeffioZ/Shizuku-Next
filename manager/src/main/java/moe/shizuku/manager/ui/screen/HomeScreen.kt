@@ -733,19 +733,24 @@ private fun StatusFacts(vararg facts: Pair<Int, String>) {
     }
 }
 
-/** One label/value pair, centred in its half of the row. */
+/**
+ * One label/value pair, left-aligned in its half of the row so the columns line up with
+ * the title above them instead of each pair drifting to its own centre.
+ */
 @Composable
 private fun StatusFact(@StringRes labelRes: Int, value: String, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             stringResource(labelRes),
             style = MaterialTheme.typography.bodySmall,
             color = LocalContentColor.current.copy(alpha = 0.75f),
-            maxLines = 1
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            // Fixed width so the values stack under one another in a column.
+            modifier = Modifier.width(78.dp)
         )
         Spacer(modifier = Modifier.width(6.dp))
         Text(
@@ -753,7 +758,6 @@ private fun StatusFact(@StringRes labelRes: Int, value: String, modifier: Modifi
             style = MaterialTheme.typography.bodySmall,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            // Take only the space the value needs, so a short one stays centred.
             modifier = Modifier.weight(1f, fill = false)
         )
     }
