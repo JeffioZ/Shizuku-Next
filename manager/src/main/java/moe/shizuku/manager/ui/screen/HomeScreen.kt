@@ -306,7 +306,16 @@ fun HomeScreen() {
                     starting = startStatus is StartStatus.Starting,
                     version = version,
                     uid = uid,
-                    startMethodLabelRes = startMethodLabelRes(startMethod),
+                    startMethodLabelRes = startMethodLabelRes(startMethod)
+                )
+            }
+
+            item {
+                // Both actions sit outside the status card and stay on screen in the
+                // same place, so the buttons don't move around as the state changes.
+                StartStopButtons(
+                    running = running,
+                    starting = startStatus is StartStatus.Starting,
                     // Uses whichever method is set in Settings; never guesses from the
                     // last one that happened to work.
                     onStart = { ShizukuReceiverStarter.start(context, userInitiated = true) },
@@ -496,9 +505,7 @@ private fun StatusCard(
     starting: Boolean,
     version: Int,
     uid: Int,
-    @StringRes startMethodLabelRes: Int,
-    onStart: () -> Unit,
-    onStop: () -> Unit
+    @StringRes startMethodLabelRes: Int
 ) {
     // "Stopped" is a normal state, not an error — a red container made the
     // primary action clash. Use a neutral surface instead.
@@ -564,21 +571,44 @@ private fun StatusCard(
                 }
             }
 
-            Spacer(modifier = Modifier.width(8.dp))
+        }
+    }
+}
 
-            if (running) {
-                OutlinedButton(
-                    onClick = onStop,
-                    // Explicit outline so it reads as a button on the tonal card.
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = contentColor)
-                ) { Text(stringResource(R.string.action_stop)) }
-            } else {
-                Button(onClick = onStart) {
-                    Icon(Icons.Filled.PlayArrow, contentDescription = null)
-                    Text(stringResource(R.string.action_start))
-                }
-            }
+/**
+ * Start and Stop, stacked below the status card and always visible. The action that
+ * doesn't apply right now is disabled rather than hidden, so the layout never shifts.
+ */
+@Composable
+private fun StartStopButtons(
+    running: Boolean,
+    starting: Boolean,
+    onStart: () -> Unit,
+    onStop: () -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Button(
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !running && !starting,
+            onClick = onStart
+        ) {
+            Icon(Icons.Filled.PlayArrow, contentDescription = null)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(stringResource(R.string.action_start))
+        }
+
+        OutlinedButton(
+            modifier = Modifier.fillMaxWidth(),
+            enabled = running,
+            onClick = onStop,
+            // Explicit outline: the default one is nearly invisible on the plain
+            // background.
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+        ) {
+            Text(stringResource(R.string.action_stop))
         }
     }
 }
