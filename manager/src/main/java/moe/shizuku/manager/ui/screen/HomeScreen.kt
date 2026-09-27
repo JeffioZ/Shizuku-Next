@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -18,6 +19,7 @@ import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.StopCircle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
@@ -338,15 +340,17 @@ private fun StatusCard(
     onStart: () -> Unit,
     onStop: () -> Unit
 ) {
+    // "Stopped" is a normal state, not an error — a red container made the
+    // primary action clash. Use a neutral surface instead.
     val containerColor = if (running) {
         MaterialTheme.colorScheme.secondaryContainer
     } else {
-        MaterialTheme.colorScheme.errorContainer
+        MaterialTheme.colorScheme.surfaceContainerHigh
     }
     val contentColor = if (running) {
         MaterialTheme.colorScheme.onSecondaryContainer
     } else {
-        MaterialTheme.colorScheme.onErrorContainer
+        MaterialTheme.colorScheme.onSurface
     }
 
     Surface(
@@ -386,7 +390,12 @@ private fun StatusCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 if (running) {
-                    OutlinedButton(onClick = onStop) { Text(stringResource(R.string.action_stop)) }
+                    OutlinedButton(
+                        onClick = onStop,
+                        // Explicit outline so it reads as a button on the tonal card.
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = contentColor)
+                    ) { Text(stringResource(R.string.action_stop)) }
                 } else {
                     Button(onClick = onStart) {
                         Icon(Icons.Filled.PlayArrow, contentDescription = null)
