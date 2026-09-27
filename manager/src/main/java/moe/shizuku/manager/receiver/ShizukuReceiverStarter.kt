@@ -57,6 +57,20 @@ object ShizukuReceiverStarter {
             // UNKNOWN (e.g. after a fresh install) is treated as ADB so a start
             // request still works instead of silently doing nothing.
                 if (context.checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED) {
+                    // Wireless debugging cannot stay enabled without a Wi-Fi
+                    // connection — the system reverts it moments after we enable
+                    // it, so mDNS never finds a port. Fail loudly instead of
+                    // waiting forever.
+                    if (EnvironmentUtils.isWifiRequired() &&
+                        !EnvironmentUtils.isWifiConnected() &&
+                        !EnvironmentUtils.isTelevision()
+                    ) {
+                        StartStatusReporter.failed(
+                            context.getString(R.string.start_failed_wifi_required)
+                        )
+                        return
+                    }
+
                     // Falling back to USB debugging is controlled by settings.
                     val allowUsbFallback = ShizukuSettings.getAllowUsbFallback()
                     // User-initiated starts never wait for Wi-Fi; unattended

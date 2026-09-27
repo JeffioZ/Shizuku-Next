@@ -141,6 +141,7 @@
     <string name="start_waiting_for_service">Starting Shizuku…</string>
     <string name="start_failed_write_secure_settings">WRITE_SECURE_SETTINGS permission is required to start in the background</string>
     <string name="start_failed_unsupported">Background start is not supported on this device</string>
+    <string name="start_failed_wifi_required">Connect to a Wi-Fi network first — wireless debugging is turned off by the system without one.</string>
     <string name="start_failed_no_port">No wireless debugging port was found. Make sure wireless debugging is enabled and Wi-Fi is connected.</string>
     <string name="start_failed_no_auth">The network is not authorized for wireless debugging. Re-pair the device.</string>
     <string name="action_dismiss">Dismiss</string>
