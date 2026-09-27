@@ -93,7 +93,6 @@ fun HomeScreen() {
         mutableStateOf(SettingsHelper.isIgnoringBatteryOptimizations(context))
     }
     var showAdbCommand by remember { mutableStateOf(false) }
-    var confirmStop by remember { mutableStateOf(false) }
     var rebootRequired by remember { mutableStateOf(false) }
     var duplicateApp by remember { mutableStateOf(false) }
     var updateAvailable by remember { mutableStateOf(false) }
@@ -319,7 +318,13 @@ fun HomeScreen() {
                     // Uses whichever method is set in Settings; never guesses from the
                     // last one that happened to work.
                     onStart = { ShizukuReceiverStarter.start(context, userInitiated = true) },
-                    onStop = { confirmStop = true },
+                    // One tap, no confirmation: stopping is a normal action and the
+                    // dialog only slowed it down.
+                    onStop = {
+                        ShizukuSettings.setManuallyStopped(true)
+                        ShizukuStateMachine.set(ShizukuStateMachine.State.STOPPING)
+                        runCatching { Shizuku.exit() }
+                    },
                     // A bounce: forceStart replaces the running server instead of
                     // being ignored as "already running".
                     onRestart = {
@@ -450,26 +455,6 @@ fun HomeScreen() {
                 }
             }
         }
-    }
-
-    if (confirmStop) {
-        AlertDialog(
-            onDismissRequest = { confirmStop = false },
-            text = { Text(stringResource(R.string.dialog_stop_message)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    confirmStop = false
-                    ShizukuSettings.setManuallyStopped(true)
-                    ShizukuStateMachine.set(ShizukuStateMachine.State.STOPPING)
-                    runCatching { Shizuku.exit() }
-                }) { Text(stringResource(android.R.string.ok)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { confirmStop = false }) {
-                    Text(stringResource(android.R.string.cancel))
-                }
-            }
-        )
     }
 
     if (rebootRequired) {
