@@ -38,6 +38,7 @@ import moe.shizuku.manager.receiver.ShizukuReceiverStarter.WorkerState
 import moe.shizuku.manager.settings.BugReportDialogActivity
 import moe.shizuku.manager.start.StartFailureKind
 import moe.shizuku.manager.start.StartStatusReporter
+import moe.shizuku.manager.start.startMethodLabelRes
 import moe.shizuku.manager.starter.Starter
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.ShizukuStateMachine
@@ -298,7 +299,9 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
 
         val nb = NotificationCompat.Builder(context, CHANNEL_ID)
 
-        val msgNotif = "$e. ${context.getString(R.string.wadb_error_notify_dev)}"
+        // Name the method this start was using, like the other status notifications.
+        val msgNotif = "${context.getString(startMethodLabelRes(requestedMethod))} · " +
+            "$e. ${context.getString(R.string.wadb_error_notify_dev)}"
 
         val intent = Intent(context, BugReportDialogActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK

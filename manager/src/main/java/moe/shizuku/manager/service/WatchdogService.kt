@@ -27,6 +27,8 @@ import moe.shizuku.manager.MainActivity
 import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.adb.AdbStarter
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter
+import moe.shizuku.manager.start.runningMethodLabel
+import moe.shizuku.manager.start.runningMethodSuffix
 import moe.shizuku.manager.starter.Starter
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.SettingsPage
@@ -217,8 +219,12 @@ class WatchdogService : Service() {
             this, 1, stopIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        // Say how Shizuku is running, like every other status notification does.
+        val runningMethod = runningMethodLabel()
+
         return NotificationCompat.Builder(this, channelId)
             .setContentTitle(getString(R.string.watchdog_running))
+            .apply { if (runningMethod != null) setContentText(runningMethod) }
             .setSmallIcon(R.drawable.ic_system_icon)
             .setContentIntent(launchPendingIntent)
             .addAction(
@@ -252,7 +258,9 @@ class WatchdogService : Service() {
 
         val notification = NotificationCompat.Builder(this, channelId)
             .setContentTitle(getString(R.string.watchdog_shizuku_crashed_title))
-            .setContentText(getString(R.string.watchdog_shizuku_crashed_text))
+            .setContentText(
+                getString(R.string.watchdog_shizuku_crashed_text) + runningMethodSuffix()
+            )
             .setSmallIcon(R.drawable.ic_system_icon)
             .setContentIntent(learnMorePendingIntent)
             .setAutoCancel(true)

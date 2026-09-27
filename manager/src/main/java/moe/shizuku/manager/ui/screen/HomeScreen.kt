@@ -72,6 +72,7 @@ import moe.shizuku.manager.start.StartFailureKind
 import moe.shizuku.manager.start.StartStatus
 import moe.shizuku.manager.start.StartStatusReporter
 import moe.shizuku.manager.start.openAdbPortAndStart
+import moe.shizuku.manager.start.runningStartMethodLabelRes
 import moe.shizuku.manager.start.startMethodLabelRes
 import moe.shizuku.manager.starter.Starter
 import moe.shizuku.manager.starter.StarterActivity
@@ -813,17 +814,8 @@ private fun uidLabel(uid: Int): String = when (uid) {
  */
 @Composable
 private fun runningMethodLabel(uid: Int): String =
-    runningMethodRes()?.let { stringResource(it) } ?: transportLabel(uid)
-
-/** The recorded method as a label, or null when it wasn't recorded. */
-@StringRes
-private fun runningMethodRes(): Int? = when (ShizukuSettings.getRunningStartMethod()) {
-    ShizukuSettings.StartMethod.WIRELESS -> R.string.start_method_wireless
-    ShizukuSettings.StartMethod.USB -> R.string.start_method_usb
-    ShizukuSettings.StartMethod.SYSTEM -> R.string.start_method_system
-    ShizukuSettings.StartMethod.ROOT -> R.string.start_method_root
-    else -> null
-}
+    // Shared with the notifications, so both name the method the same way.
+    runningStartMethodLabelRes()?.let { stringResource(it) } ?: transportLabel(uid)
 
 /**
  * The wire the last launch used. Only reached when no method was recorded, so it keeps

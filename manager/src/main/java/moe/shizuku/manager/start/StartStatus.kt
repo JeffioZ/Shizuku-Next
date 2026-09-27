@@ -1,5 +1,6 @@
 package moe.shizuku.manager.start
 
+import android.content.Context
 import androidx.annotation.StringRes
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -45,6 +46,29 @@ fun startMethodLabelRes(@ShizukuSettings.StartMethod method: Int): Int = when (m
     ShizukuSettings.StartMethod.ROOT -> R.string.start_method_root
     else -> R.string.start_method_wireless
 }
+
+/**
+ * The method the running server was started with, or null when no launch of ours was
+ * recorded (e.g. something outside the app started it).
+ */
+@StringRes
+fun runningStartMethodLabelRes(): Int? = when (ShizukuSettings.getRunningStartMethod()) {
+    ShizukuSettings.StartMethod.WIRELESS -> R.string.start_method_wireless
+    ShizukuSettings.StartMethod.USB -> R.string.start_method_usb
+    ShizukuSettings.StartMethod.SYSTEM -> R.string.start_method_system
+    ShizukuSettings.StartMethod.ROOT -> R.string.start_method_root
+    else -> null
+}
+
+/** "Wireless debugging", or null when it isn't known. */
+fun Context.runningMethodLabel(): String? = runningStartMethodLabelRes()?.let { getString(it) }
+
+/**
+ * The same, ready to append to a notification: " · Wireless debugging", or nothing at
+ * all when the method isn't known — so every status notification can say how Shizuku is
+ * running without inventing a value.
+ */
+fun Context.runningMethodSuffix(): String = runningMethodLabel()?.let { " · $it" } ?: ""
 
 object StartStatusReporter {
     private val _status = MutableStateFlow<StartStatus>(StartStatus.Idle)

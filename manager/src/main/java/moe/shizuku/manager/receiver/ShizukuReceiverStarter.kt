@@ -104,7 +104,7 @@ object ShizukuReceiverStarter {
 
         if (context.checkSelfPermission(WRITE_SECURE_SETTINGS) != PackageManager.PERMISSION_GRANTED) {
             StartStatusReporter.failed(context.getString(R.string.start_failed_write_secure_settings))
-            showPermissionErrorNotification(context)
+            showPermissionErrorNotification(context, startMethod)
             return
         }
 
@@ -229,7 +229,10 @@ object ShizukuReceiverStarter {
         }
     }
 
-    private fun showPermissionErrorNotification(context: Context) {
+    private fun showPermissionErrorNotification(
+        context: Context,
+        @ShizukuSettings.StartMethod startMethod: Int
+    ) {
 
         val channel = NotificationChannel(
             CHANNEL_ID,
@@ -244,7 +247,9 @@ object ShizukuReceiverStarter {
             context, 0, webpageIntent, PendingIntent.FLAG_IMMUTABLE
         )
 
-        val msg = context.getString(R.string.wadb_permission_error_notification_content)
+        // Name the method this start was using, like the other status notifications.
+        val msg = context.getString(R.string.wadb_permission_error_notification_content) +
+            " · " + context.getString(startMethodLabelRes(startMethod))
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_system_icon)
