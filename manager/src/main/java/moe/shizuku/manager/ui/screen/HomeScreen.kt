@@ -416,14 +416,12 @@ fun HomeScreen() {
 
                         item {
                             SegmentedListItem(
-                                headlineContent = {
-                                    Text(
-                                        stringResource(
-                                            if (running && uid == 0) R.string.home_root_button_restart
-                                            else R.string.home_root_title
-                                        )
-                                    )
-                                },
+                                // Always says what it does: start over root. It used to
+                                // flip to "Restart" once a root server was running, which
+                                // just duplicated the Restart button above (and hid the
+                                // fact that this row starts over root whatever the start
+                                // method is set to).
+                                headlineContent = { Text(stringResource(R.string.home_root_title)) },
                                 supportingContent = { Text(rootDescription) },
                                 trailingContent = {
                                     Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
