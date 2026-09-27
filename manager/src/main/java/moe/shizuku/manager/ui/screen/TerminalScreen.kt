@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -23,12 +24,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import moe.shizuku.manager.Helps
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ui.component.SegmentedColumn
 import moe.shizuku.manager.ui.component.SegmentedListItem
 import moe.shizuku.manager.utils.CustomTabsHelper
+import rikka.compatibility.DeviceCompatibility
 
 private const val SH_NAME = "rish"
 private const val DEX_NAME = "rish_shizuku.dex"
@@ -57,26 +60,87 @@ fun TerminalScreen(onBack: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(13.dp)
         ) {
             item {
+                // The source string is HTML; render it as plain text.
                 Text(
-                    text = stringResource(R.string.rish_description, SH_NAME),
+                    text = stringResource(R.string.rish_description, SH_NAME).stripHtml(),
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
+
             item {
                 SegmentedColumn(modifier = Modifier.fillMaxWidth()) {
                     item {
                         SegmentedListItem(
                             headlineContent = { Text(stringResource(R.string.terminal_tutorial_1)) },
                             supportingContent = {
-                                Text(stringResource(R.string.terminal_tutorial_1_description, SH_NAME, DEX_NAME))
+                                Text(
+                                    stringResource(
+                                        R.string.terminal_tutorial_1_description,
+                                        SH_NAME,
+                                        DEX_NAME
+                                    )
+                                )
                             },
                             onClick = { picker.launch(null) }
                         )
                     }
                     item {
                         SegmentedListItem(
+                            headlineContent = { Text(stringResource(R.string.terminal_tutorial_2)) },
+                            supportingContent = {
+                                Column {
+                                    Text(
+                                        stringResource(
+                                            R.string.terminal_tutorial_2_description,
+                                            SH_NAME,
+                                            SH_NAME,
+                                            ".bashrc"
+                                        )
+                                    )
+                                    Text(
+                                        text = "cp /sdcard/chosen-folder/* /data/data/terminal.package.name/files",
+                                        fontFamily = FontFamily.Monospace,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                            }
+                        )
+                    }
+                    item {
+                        SegmentedListItem(
+                            headlineContent = { Text(stringResource(R.string.terminal_tutorial_3)) },
+                            supportingContent = {
+                                Text(
+                                    text = "sh /path/to/$SH_NAME",
+                                    fontFamily = FontFamily.Monospace,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        )
+                    }
+                    item {
+                        SegmentedListItem(
                             headlineContent = { Text(stringResource(R.string.settings_help)) },
-                            onClick = { CustomTabsHelper.launchUrlOrCopy(context, Helps.RISH.get()) }
+                            onClick = {
+                                CustomTabsHelper.launchUrlOrCopy(context, Helps.RISH.get())
+                            }
+                        )
+                    }
+                }
+            }
+
+            if (runCatching { DeviceCompatibility.isMiui() }.getOrDefault(false)) {
+                item {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(
+                            text = stringResource(R.string.terminal_tutorial_miui),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = stringResource(R.string.terminal_tutorial_miui_2),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -84,6 +148,13 @@ fun TerminalScreen(onBack: () -> Unit) {
         }
     }
 }
+
+/** Minimal HTML tag removal so strings that contain markup don't show raw tags. */
+private fun String.stripHtml(): String =
+    replace(Regex("(?i)<\\s*br\\s*/?\\s*>"), "\n")
+        .replace(Regex("(?i)<\\s*/?\\s*p\\s*>"), "\n")
+        .replace(Regex("<[^>]*>"), "")
+        .trim()
 
 private fun writeRish(context: Context, tree: Uri) {
     val cr = context.contentResolver
