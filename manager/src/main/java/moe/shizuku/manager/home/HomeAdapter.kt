@@ -29,6 +29,7 @@ class HomeAdapter(private val homeModel: HomeViewModel, private val appsModel: A
         private const val ID_ADB_PERMISSION_LIMITED = 7L
         private const val ID_AUTOMATION = 8L
         private const val ID_STEALTH = 9L
+        private const val ID_START_SYSTEM = 10L
     }
 
     override fun onCreateCreatorPool(): IndexCreatorPool {
@@ -58,6 +59,8 @@ class HomeAdapter(private val homeModel: HomeViewModel, private val appsModel: A
             val rootRestart = running && status.uid == 0
 
             if (EnvironmentUtils.isRooted()) addItem(StartRootViewHolder.CREATOR, rootRestart, ID_START_ROOT)
+
+            addItem(StartSystemViewHolder.CREATOR, null, ID_START_SYSTEM)
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ||
                 EnvironmentUtils.isTelevision() ||

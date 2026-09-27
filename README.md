@@ -38,6 +38,7 @@ This version of Shizuku includes some extra features over the original version, 
 * **TCP mode:** (i.e., the `adb tcpip` command) once Shizuku successfully starts with Wi-Fi after a reboot, you can stop/restart Shizuku without a Wi-Fi connection!
 * **Wireless debugging stays enabled:** starting Shizuku no longer turns off wireless debugging, so it can restart with USB debugging off and no Wi-Fi connection; the status card shows whether it runs over wireless or USB debugging
 * **Accurate status label:** the home status card shows the server's real UID (e.g. `uid 1000`) instead of always assuming adb
+* **Start as system (UID 1000):** a "Start (system)" card launches Shizuku under the system UID — either via a built-in device exploit or by copying a command for your own privilege escalation, selected in settings
 * **Restart transport settings:** choose whether restarts may fall back to enabling USB debugging, and whether unattended restarts wait for an unmetered Wi-Fi connection (starts you trigger yourself never wait)
 * **Search and sort authorized apps:** filter the apps list by name and sort it alphabetically or by most recently added
 * **Watchdog service:** automatically restarts Shizuku if it stops unexpectedly, and can alert you of crashes/potential fixes

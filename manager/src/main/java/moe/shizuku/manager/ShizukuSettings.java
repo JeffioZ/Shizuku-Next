@@ -45,6 +45,7 @@ public class ShizukuSettings {
         public static final String KEY_LAST_ADB_TRANSPORT = "last_adb_transport";
         public static final String KEY_ALLOW_USB_FALLBACK = "allow_usb_fallback";
         public static final String KEY_WAIT_FOR_WIFI = "wait_for_wifi";
+        public static final String KEY_SYSTEM_START_METHOD = "system_start_method";
     }
 
     public static class UpdateMode {
@@ -211,6 +212,21 @@ public class ShizukuSettings {
 
     public static void setWaitForWifi(boolean enable) {
         getPreferences().edit().putBoolean(Keys.KEY_WAIT_FOR_WIFI, enable).apply();
+    }
+
+    /**
+     * Which method the "Start (system)" card uses to launch Shizuku under the
+     * system UID: the built-in device exploit, or an external/custom launch.
+     */
+    public static final String SYSTEM_START_EXPLOIT = "exploit";
+    public static final String SYSTEM_START_CUSTOM = "custom";
+
+    public static String getSystemStartMethod() {
+        return getPreferences().getString(Keys.KEY_SYSTEM_START_METHOD, SYSTEM_START_EXPLOIT);
+    }
+
+    public static void setSystemStartMethod(String method) {
+        getPreferences().edit().putString(Keys.KEY_SYSTEM_START_METHOD, method).apply();
     }
 
     public static void setWatchdog(Context context, boolean enable) {
