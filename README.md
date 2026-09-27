@@ -38,7 +38,7 @@ This version of Shizuku includes some extra features over the original version, 
 * **More robust "start on boot":** waits for a Wi-Fi connection before starting the Shizuku service
 * **TCP mode:** keep the classic ADB port open (i.e. the `adb tcpip` command) so the USB start and the watchdog can restart Shizuku without Wi-Fi or pairing. With it off, an open port is closed whenever Shizuku starts over wireless
 * **Wireless debugging stays enabled:** starting Shizuku no longer turns off wireless debugging, so it can restart with USB debugging off and no Wi-Fi connection; the status card shows whether it runs over wireless or USB debugging
-* **Accurate status label:** the home status card shows the server's real UID (e.g. `uid 1000`) instead of always assuming adb
+* **Accurate status label:** the home status card shows the server's real UID (e.g. `uid 1000`) instead of always assuming adb, plus the method this launch used — "Started with: USB debugging" — next to the method the next Start will use, so wireless, USB, system and root are never confused. The start notification says the same ("USB debugging · Waiting to retry")
 * **One-tap battery-optimization bypass:** "fix" whitelists Shizuku directly through Shizuku/root (`deviceidle whitelist`, `appops`) instead of only opening the system dialog
 * **Duplicate server cleanup:** the starter detects stale Shizuku server processes via multiple `/proc` vectors and terminates them cleanly (with a short yield) before starting a new one
 * **Clearer auto-start progress:** the wireless/boot start notification now shows more states — waiting for Wi-Fi, waiting for unlock, and connecting

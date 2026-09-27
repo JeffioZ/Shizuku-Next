@@ -44,6 +44,7 @@ public class ShizukuSettings {
         public static final String KEY_MANUALLY_STOPPED = "manually_stopped";
         public static final String KEY_LAST_ADB_TRANSPORT = "last_adb_transport";
         public static final String KEY_START_METHOD = "start_method";
+        public static final String KEY_RUNNING_START_METHOD = "running_start_method";
         public static final String KEY_WAIT_FOR_WIFI = "wait_for_wifi";
         public static final String KEY_SYSTEM_START_METHOD = "system_start_method";
     }
@@ -120,6 +121,22 @@ public class ShizukuSettings {
 
     public static void setStartMethod(@StartMethod int method) {
         getPreferences().edit().putInt(Keys.KEY_START_METHOD, method).apply();
+    }
+
+    private static final int START_METHOD_UNRECORDED = -1;
+
+    /**
+     * How the server that is running now was started. Kept separately from
+     * [getStartMethod] (which is what the next start will use), so the UI can show both
+     * and they can't be mistaken for each other. [START_METHOD_UNRECORDED] means no
+     * start of ours launched it — e.g. it was started by another tool.
+     */
+    public static int getRunningStartMethod() {
+        return getPreferences().getInt(Keys.KEY_RUNNING_START_METHOD, START_METHOD_UNRECORDED);
+    }
+
+    public static void setRunningStartMethod(@StartMethod int method) {
+        getPreferences().edit().putInt(Keys.KEY_RUNNING_START_METHOD, method).apply();
     }
 
     @IntDef({

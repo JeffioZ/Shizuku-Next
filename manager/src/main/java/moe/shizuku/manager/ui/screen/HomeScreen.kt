@@ -567,11 +567,11 @@ private fun StatusCard(
                     ),
                     style = MaterialTheme.typography.titleMedium
                 )
-                // The two facts this card exists to answer: how the server is connected
+                // The two facts this card exists to answer: how the server is running
                 // right now, and what the Start button below will do next.
                 StatusFact(
-                    R.string.home_status_transport_label,
-                    if (running) transportLabel(uid) else stringResource(R.string.status_value_none)
+                    R.string.home_status_started_with,
+                    if (running) runningMethodLabel(uid) else stringResource(R.string.status_value_none)
                 )
                 StatusFact(R.string.settings_start_method, stringResource(startMethodLabelRes))
             }
@@ -686,9 +686,26 @@ private fun uidLabel(uid: Int): String = when (uid) {
 }
 
 /**
- * How the server was launched. Shows "Root" for a root start (which uses no ADB
- * transport at all), and the last ADB transport otherwise — that value describes the
- * launch, so it is kept rather than cleared when the server stops.
+ * The method the running server was started with. Falls back to the ADB transport when
+ * no launch of ours was recorded — e.g. the server was started by another tool.
+ */
+@Composable
+private fun runningMethodLabel(uid: Int): String =
+    runningMethodRes()?.let { stringResource(it) } ?: transportLabel(uid)
+
+/** The recorded method as a label, or null when it wasn't recorded. */
+@StringRes
+private fun runningMethodRes(): Int? = when (ShizukuSettings.getRunningStartMethod()) {
+    ShizukuSettings.StartMethod.WIRELESS -> R.string.start_method_wireless
+    ShizukuSettings.StartMethod.USB -> R.string.start_method_usb
+    ShizukuSettings.StartMethod.SYSTEM -> R.string.start_method_system
+    ShizukuSettings.StartMethod.ROOT -> R.string.start_method_root
+    else -> null
+}
+
+/**
+ * The wire the last launch used. Only reached when no method was recorded, so it keeps
+ * the "adb (...)" wording that can't be confused with a start method.
  */
 @Composable
 private fun transportLabel(uid: Int): String = when {

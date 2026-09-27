@@ -29,6 +29,7 @@ import moe.shizuku.manager.R
 import moe.shizuku.manager.adb.AdbKeyException
 import moe.shizuku.manager.adb.AdbPairingHelper
 import moe.shizuku.manager.adb.AdbStarter
+import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.app.AppBarActivity
 import moe.shizuku.manager.utils.ShizukuStateMachine
 import moe.shizuku.manager.databinding.StarterActivityBinding
@@ -135,6 +136,17 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
     fun start(root: Boolean, isSystem: Boolean, port: Int) {
         if (started) return
         started = true
+
+        // Recorded here too: this activity is an entry point of its own (the root and
+        // system rows start it directly), and the card reports the method that started
+        // the running server.
+        ShizukuSettings.setRunningStartMethod(
+            when {
+                root -> ShizukuSettings.StartMethod.ROOT
+                isSystem -> ShizukuSettings.StartMethod.SYSTEM
+                else -> ShizukuSettings.StartMethod.USB
+            }
+        )
 
         viewModelScope.launch(handler) {
             when {

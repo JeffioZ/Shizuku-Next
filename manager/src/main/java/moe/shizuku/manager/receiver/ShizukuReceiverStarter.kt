@@ -19,6 +19,7 @@ import moe.shizuku.manager.AppConstants
 import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.start.StartFailureKind
 import moe.shizuku.manager.start.StartStatusReporter
+import moe.shizuku.manager.start.startMethodLabelRes
 import moe.shizuku.manager.starter.Starter
 import moe.shizuku.manager.starter.StarterActivity
 import moe.shizuku.manager.utils.EnvironmentUtils
@@ -59,6 +60,11 @@ object ShizukuReceiverStarter {
         if ((UserHandleCompat.myUserId() > 0 || ShizukuStateMachine.isRunning()) && !forceStart) return
 
         StartStatusReporter.starting()
+
+        // Remember how this launch was started: the status card and the notification
+        // report the method the server is actually running under, which isn't always
+        // the one configured for the next start.
+        ShizukuSettings.setRunningStartMethod(startMethod)
 
         when (startMethod) {
             ShizukuSettings.StartMethod.ROOT -> rootStart(context)
@@ -169,8 +175,13 @@ object ShizukuReceiverStarter {
         )
 
         val nb = NotificationCompat.Builder(context, CHANNEL_ID)
-        
-        if (msg != null) nb.setContentText(msg)
+
+        // Say which method this start is using, next to the state, so the notification
+        // answers "over wireless, USB, system or root?" on its own.
+        nb.setContentText(
+            listOfNotNull(context.getString(startMethodLabelRes(startMethod)), msg)
+                .joinToString(" · ")
+        )
 
         return nb
             .setSmallIcon(R.drawable.ic_system_icon)
