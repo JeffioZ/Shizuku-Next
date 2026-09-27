@@ -247,6 +247,7 @@ fun SettingsScreen(onOpenDetail: (Detail) -> Unit) {
                     item {
                         SegmentedListItem(
                             headlineContent = { Text(stringResource(R.string.settings_legacy_pairing)) },
+                            supportingContent = { Text(stringResource(R.string.settings_legacy_pairing_summary)) },
                             trailingContent = {
                                 Switch(checked = legacyPairing, onCheckedChange = {
                                     ShizukuSettings.getPreferences().edit()
@@ -289,6 +290,7 @@ fun SettingsScreen(onOpenDetail: (Detail) -> Unit) {
                     item {
                         SegmentedListItem(
                             headlineContent = { Text(stringResource(R.string.tools_stealth)) },
+                            supportingContent = { Text(stringResource(R.string.stealth_description)) },
                             trailingContent = {
                                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
                             },
@@ -298,6 +300,7 @@ fun SettingsScreen(onOpenDetail: (Detail) -> Unit) {
                     item {
                         SegmentedListItem(
                             headlineContent = { Text(stringResource(R.string.tools_terminal)) },
+                            supportingContent = { Text(stringResource(R.string.tools_terminal_summary)) },
                             trailingContent = {
                                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
                             },

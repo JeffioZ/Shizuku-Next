@@ -136,6 +136,7 @@
     <string name="home_info_title">Info</string>
     <string name="tools_stealth">Stealth mode</string>
     <string name="tools_terminal">Terminal apps</string>
+    <string name="tools_terminal_summary">Run shell commands in any terminal app, using rish</string>
     <string name="tools_battery">Battery optimization</string>
     <string name="intents_title">Intents</string>
     <string name="about_title">About</string>
@@ -193,7 +194,7 @@
     <string name="terminal_tutorial_2">Use your terminal app to copy the files to its private files directory.</string>
     <string name="terminal_tutorial_2_description">Tip: If your terminal app\'s home directory (~) is in the private files directory, placing the files there will allow you to run %1$s without writing the path.\n\nOtherwise, you can create an alias for %2$s in your terminal app\'s %3$s configuration file.</string>
     <string name="terminal_tutorial_3">Open a shell with the following command:</string>
-    <string name="rish_description"><![CDATA[With %1$s, you can run shell commands in any terminal app.<p>Tap to learn more about how to use it.]]></string>
+    <string name="rish_description"><![CDATA[With %1$s, you can run shell commands in any terminal app.]]></string>
 
     <!-- Stealth -->
     <string name="stealth_description">Hide Shizuku from apps that refuse to run when it is installed. A clone with a different package name is exported for you to install.</string>
