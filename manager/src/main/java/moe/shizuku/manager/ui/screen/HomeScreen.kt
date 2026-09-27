@@ -33,6 +33,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,6 +53,8 @@ import moe.shizuku.manager.Manifest
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter
+import moe.shizuku.manager.start.StartStatus
+import moe.shizuku.manager.start.StartStatusReporter
 import moe.shizuku.manager.starter.Starter
 import moe.shizuku.manager.starter.StarterActivity
 import moe.shizuku.manager.ui.component.SegmentedColumn
@@ -79,6 +82,7 @@ fun HomeScreen() {
     var rebootRequired by remember { mutableStateOf(false) }
     var duplicateApp by remember { mutableStateOf(false) }
     var updateAvailable by remember { mutableStateOf(false) }
+    val startStatus by StartStatusReporter.status.collectAsState()
     val scope = rememberCoroutineScope()
 
     DisposableEffect(Unit) {
@@ -158,6 +162,31 @@ fun HomeScreen() {
                 }
             }
 
+            (startStatus as? StartStatus.Failed)?.let { failed ->
+                item {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                        shape = MaterialTheme.shapes.large
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "${stringResource(R.string.start_failed)}: ${failed.message}",
+                                modifier = Modifier.weight(1f),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            TextButton(onClick = { StartStatusReporter.clear() }) {
+                                Text(stringResource(R.string.action_dismiss))
+                            }
+                        }
+                    }
+                }
+            }
+
             if (!batteryIgnored) {
                 item {
                     Surface(
@@ -188,6 +217,7 @@ fun HomeScreen() {
             item {
                 StatusCard(
                     running = running,
+                    starting = startStatus is StartStatus.Starting,
                     version = version,
                     uid = uid,
                     onStart = { ShizukuReceiverStarter.start(context, userInitiated = true) },
@@ -335,6 +365,7 @@ fun HomeScreen() {
 @Composable
 private fun StatusCard(
     running: Boolean,
+    starting: Boolean,
     version: Int,
     uid: Int,
     onStart: () -> Unit,
@@ -376,8 +407,17 @@ private fun StatusCard(
                     )
                 },
                 supportingContent = {
-                    if (running) {
-                        Text(stringResource(R.string.home_status_service_version, uidLabel(uid), version.toString()))
+                    when {
+                        running -> Text(
+                            stringResource(
+                                R.string.home_status_service_version,
+                                uidLabel(uid),
+                                version.toString()
+                            )
+                        )
+
+                        starting -> Text(stringResource(R.string.start_waiting_for_service))
+                        else -> Unit
                     }
                 },
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent)

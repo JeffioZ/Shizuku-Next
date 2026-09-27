@@ -18,6 +18,7 @@ import moe.shizuku.manager.R
 import moe.shizuku.manager.AppConstants
 import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.ShizukuSettings.LaunchMethod
+import moe.shizuku.manager.start.StartStatusReporter
 import moe.shizuku.manager.starter.Starter
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.SettingsPage
@@ -45,6 +46,8 @@ object ShizukuReceiverStarter {
 
         if ((UserHandleCompat.myUserId() > 0 || ShizukuStateMachine.isRunning()) && !forceStart) return
 
+        StartStatusReporter.starting()
+
         if (ShizukuSettings.getLastLaunchMode() == LaunchMethod.ROOT) {
             rootStart(context)
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
@@ -66,9 +69,13 @@ object ShizukuReceiverStarter {
                     )
                     updateNotification(context, WorkerState.AWAITING_WIFI)
                 } else {
+                    StartStatusReporter.failed(
+                        context.getString(R.string.start_failed_write_secure_settings)
+                    )
                     showPermissionErrorNotification(context)
                 }
         } else {
+            StartStatusReporter.failed(context.getString(R.string.start_failed_unsupported))
             Log.w(AppConstants.TAG, "Background start not supported")
         }
     }

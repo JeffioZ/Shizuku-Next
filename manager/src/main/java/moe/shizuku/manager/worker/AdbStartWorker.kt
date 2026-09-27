@@ -36,6 +36,7 @@ import moe.shizuku.manager.receiver.ShizukuReceiverStarter
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter.WorkerState
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter.updateNotification
 import moe.shizuku.manager.settings.BugReportDialogActivity
+import moe.shizuku.manager.start.StartStatusReporter
 import moe.shizuku.manager.starter.Starter
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.ShizukuStateMachine
@@ -129,9 +130,9 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                                 if (intent.action == Intent.ACTION_USER_PRESENT) {
                                     context.unregisterReceiver(this)
                                     unlockReceiver = null
-                                    if (enableWirelessDebugging) {
-                                        Settings.Global.putInt(cr, "adb_wifi_enabled", 1)
-                                    }
+                                    // Wireless debugging must be on for the TLS port to be
+                                    // advertised, otherwise mDNS discovery can never find it.
+                                    Settings.Global.putInt(cr, "adb_wifi_enabled", 1)
                                 }
                             }
                         }
@@ -152,9 +153,9 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                     }
                 }
 
-                if (enableWirelessDebugging) {
-                    Settings.Global.putInt(cr, "adb_wifi_enabled", 1)
-                }
+                // Always required for discovery — without it the device never
+                // advertises _adb-tls-connect and the worker just times out.
+                Settings.Global.putInt(cr, "adb_wifi_enabled", 1)
                 cr.registerContentObserver(Settings.Global.getUriFor("adb_wifi_enabled"), false, observer)
                 startDiscoveryWithTimeout()
 
@@ -173,6 +174,7 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             val nm = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             nm.cancel(ShizukuReceiverStarter.NOTIFICATION_ID)
 
+            StartStatusReporter.succeeded()
             return Result.success()
         } catch (e: CancellationException) {
             val state = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
@@ -188,6 +190,15 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
 
             throw e
         } catch (e: Exception) {
+            // Surface the reason in the app; the worker may still retry.
+            StartStatusReporter.failed(
+                when (e) {
+                    is TimeoutException -> applicationContext.getString(R.string.start_failed_no_port)
+                    is SecurityException -> applicationContext.getString(R.string.start_failed_no_auth)
+                    else -> e.localizedMessage ?: e.javaClass.simpleName
+                }
+            )
+
             val ignored = listOf(
                 EOFException::class,
                 SecurityException::class,
