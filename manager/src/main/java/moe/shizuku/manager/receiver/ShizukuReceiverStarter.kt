@@ -18,6 +18,7 @@ import moe.shizuku.manager.R
 import moe.shizuku.manager.AppConstants
 import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.ShizukuSettings.LaunchMethod
+import moe.shizuku.manager.start.StartFailureKind
 import moe.shizuku.manager.start.StartStatusReporter
 import moe.shizuku.manager.starter.Starter
 import moe.shizuku.manager.utils.EnvironmentUtils
@@ -66,7 +67,8 @@ object ShizukuReceiverStarter {
                         !EnvironmentUtils.isTelevision()
                     ) {
                         StartStatusReporter.failed(
-                            context.getString(R.string.start_failed_wifi_required)
+                            context.getString(R.string.start_failed_wifi_required),
+                            StartFailureKind.WIFI
                         )
                         return
                     }

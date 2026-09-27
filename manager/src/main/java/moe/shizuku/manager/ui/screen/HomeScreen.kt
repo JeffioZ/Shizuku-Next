@@ -60,6 +60,7 @@ import moe.shizuku.manager.Manifest
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter
+import moe.shizuku.manager.start.StartFailureKind
 import moe.shizuku.manager.start.StartStatus
 import moe.shizuku.manager.start.StartStatusReporter
 import moe.shizuku.manager.starter.Starter
@@ -69,6 +70,7 @@ import moe.shizuku.manager.ui.component.SegmentedListItem
 import moe.shizuku.manager.ui.component.stripHtmlTags
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.SettingsHelper
+import moe.shizuku.manager.utils.SettingsPage
 import moe.shizuku.manager.utils.ShizukuStateMachine
 import moe.shizuku.manager.utils.UpdateHelper
 import rikka.core.util.ClipboardUtils
@@ -197,6 +199,15 @@ fun HomeScreen() {
                                 modifier = Modifier.weight(1f),
                                 style = MaterialTheme.typography.bodyMedium
                             )
+                            if (failed.kind == StartFailureKind.WIFI) {
+                                TextButton(onClick = {
+                                    runCatching {
+                                        context.startActivity(
+                                            SettingsPage.InternetPanel.buildIntent(context)
+                                        )
+                                    }
+                                }) { Text(stringResource(R.string.action_connect_wifi)) }
+                            }
                             TextButton(onClick = { StartStatusReporter.clear() }) {
                                 Text(stringResource(R.string.action_dismiss))
                             }
