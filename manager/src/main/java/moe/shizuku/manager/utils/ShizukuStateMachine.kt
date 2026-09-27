@@ -38,6 +38,9 @@ object ShizukuStateMachine {
         val oldState = state.getAndUpdate(transform)
         val newState = transform(oldState)
         if(oldState != newState) {
+            // A confirmed running server lifts manual-stop suppression, so a
+            // later crash is auto-restarted by the watchdog.
+            if (newState == State.RUNNING) ShizukuSettings.setManuallyStopped(false)
             listeners.forEach { it(newState) }
             Log.d("ShizukuStateMachine", newState.toString())
             when (newState) {

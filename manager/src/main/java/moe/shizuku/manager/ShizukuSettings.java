@@ -41,6 +41,7 @@ public class ShizukuSettings {
         public static final String KEY_REPORT_BUG = "report_bug";
         public static final String KEY_LEGACY_PAIRING = "legacy_pairing";
         public static final String KEY_CATEGORY_ADVANCED = "category_advanced";
+        public static final String KEY_MANUALLY_STOPPED = "manually_stopped";
     }
 
     public static class UpdateMode {
@@ -155,6 +156,20 @@ public class ShizukuSettings {
 
     public static boolean isWatchdogRunning() {
         return WatchdogService.isRunning();
+    }
+
+    /**
+     * True while the last stop was requested by the user (as opposed to a crash or
+     * the system killing the server). Suppresses the watchdog's proactive
+     * "server is dead, restart it" check. Cleared whenever a start is requested
+     * from any entry point and whenever the server is confirmed RUNNING.
+     */
+    public static boolean getManuallyStopped() {
+        return getPreferences().getBoolean(Keys.KEY_MANUALLY_STOPPED, false);
+    }
+
+    public static void setManuallyStopped(boolean stopped) {
+        getPreferences().edit().putBoolean(Keys.KEY_MANUALLY_STOPPED, stopped).apply();
     }
 
     public static void setWatchdog(Context context, boolean enable) {

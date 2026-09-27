@@ -38,6 +38,9 @@ object ShizukuReceiverStarter {
     }
 
     fun start(context: Context, forceStart: Boolean = false) {
+        // A start request from any entry point clears manual-stop suppression.
+        ShizukuSettings.setManuallyStopped(false)
+
         if ((UserHandleCompat.myUserId() > 0 || ShizukuStateMachine.isRunning()) && !forceStart) return
 
         if (ShizukuSettings.getLastLaunchMode() == LaunchMethod.ROOT) {

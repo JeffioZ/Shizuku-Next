@@ -5,29 +5,133 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.ServiceInfo
 import android.net.Uri
 import android.os.Build
 import android.os.IBinder
-import android.provider.Settings
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.work.WorkManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import moe.shizuku.manager.R
 import moe.shizuku.manager.MainActivity
 import moe.shizuku.manager.ShizukuSettings
+import moe.shizuku.manager.adb.AdbStarter
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter
+import moe.shizuku.manager.starter.Starter
+import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.SettingsPage
 import moe.shizuku.manager.utils.ShizukuStateMachine
 import java.util.concurrent.atomic.AtomicBoolean
 
 class WatchdogService : Service() {
 
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private var pendingRestart = false
+
     private val stateListener: (ShizukuStateMachine.State) -> Unit = {
-        if (it == ShizukuStateMachine.State.CRASHED) {
-            showCrashNotification()
-            ShizukuReceiverStarter.start(applicationContext)
+        when (it) {
+            ShizukuStateMachine.State.CRASHED -> {
+                showCrashNotification()
+                attemptRestart()
+            }
+            ShizukuStateMachine.State.RUNNING -> {
+                // Server is back — no longer need the screen-on retry
+                pendingRestart = false
+            }
+            else -> Unit
+        }
+    }
+
+    /**
+     * Screen-on receiver: when the user turns the screen on after a crash, trigger
+     * a fresh restart. Crash-time restart attempts frequently fail (mDNS / wireless
+     * debugging don't work with the screen off) and WorkManager then accumulates
+     * exponential backoff, making the restart indefinitely slow.
+     */
+    private val screenOnReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            if (intent.action != Intent.ACTION_USER_PRESENT) return
+            if (pendingRestart) {
+                Log.d(TAG, "Screen unlocked with pending restart — retrying now")
+                attemptRestart()
+            } else {
+                // Self-heal on unlock: catches deaths whose CRASHED transition was
+                // never observed (e.g. the manager process was dead at the time).
+                checkServerAndRestartIfDead()
+            }
+        }
+    }
+
+    /**
+     * Event-based crash detection alone is not enough: the CRASHED transition is
+     * lost if the manager process was dead when the server died, and the state
+     * machine boots as STOPPED after every process restart. So whenever the
+     * watchdog (re)starts — and on screen unlock — probe whether the server is
+     * actually running and restart it if not, unless the user stopped it on
+     * purpose (manual stop sets the suppression flag; any start request or a
+     * confirmed RUNNING state clears it).
+     */
+    private fun checkServerAndRestartIfDead() {
+        serviceScope.launch {
+            // Grace period so a sticky binder delivered right after process start
+            // can flip the state to RUNNING before we probe it.
+            delay(BINDER_GRACE_MS)
+            if (ShizukuSettings.getManuallyStopped()) return@launch
+            when (ShizukuStateMachine.get()) {
+                // A start/stop appears to be in flight. Give it ample time to
+                // resolve instead of skipping outright — a state stuck at
+                // STARTING/STOPPING from a silently failed operation would
+                // otherwise disable this check forever.
+                ShizukuStateMachine.State.STARTING,
+                ShizukuStateMachine.State.STOPPING -> {
+                    delay(IN_FLIGHT_GRACE_MS)
+                    if (ShizukuSettings.getManuallyStopped()) return@launch
+                }
+                else -> Unit
+            }
+            if (ShizukuStateMachine.update() != ShizukuStateMachine.State.RUNNING) {
+                Log.d(TAG, "Server not running while watchdog active — attempting restart")
+                attemptRestart()
+            }
+        }
+    }
+
+    private fun attemptRestart() {
+        // Cancel any prior WorkManager attempt so we don't inherit exponential backoff
+        WorkManager.getInstance(applicationContext).cancelUniqueWork("adb_start_worker")
+
+        serviceScope.launch {
+            try {
+                val tcpPort = EnvironmentUtils.getAdbTcpPort()
+                if (tcpPort > 0 && ShizukuSettings.getTcpMode() && EnvironmentUtils.isUsbDebuggingEnabled()) {
+                    // Direct TCP restart — fastest path, no mDNS needed. Classic TCP
+                    // rides on the USB debugging toggle, so this path is only used
+                    // when USB debugging is already on; wireless-only setups restart
+                    // over TLS below.
+                    pendingRestart = false
+                    AdbStarter.startAdb(applicationContext, tcpPort)
+                    Starter.waitForBinder()
+                } else {
+                    // mDNS-based restart via WorkManager. Mark pending so the
+                    // screen-on receiver can retry if this attempt fails.
+                    pendingRestart = true
+                    ShizukuReceiverStarter.start(applicationContext, forceStart = true)
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Direct restart failed, falling back", e)
+                pendingRestart = true
+                ShizukuReceiverStarter.start(applicationContext, forceStart = true)
+            }
         }
     }
 
@@ -36,10 +140,16 @@ class WatchdogService : Service() {
         isRunning.set(true)
         sendWatchdogChangedBroadcast(applicationContext, true)
         ShizukuStateMachine.addListener(stateListener)
+        registerReceiver(screenOnReceiver, IntentFilter(Intent.ACTION_USER_PRESENT))
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == "ACTION_STOP_SERVICE") {
+            // User explicitly turned the watchdog off via the notification — persist
+            // the setting directly instead of calling setWatchdog() (which would
+            // redundantly call stop() while we're already stopping via stopSelf).
+            ShizukuSettings.getPreferences().edit()
+                .putBoolean(ShizukuSettings.Keys.KEY_WATCHDOG, false).apply()
             stopSelf()
             return START_NOT_STICKY
         }
@@ -55,14 +165,21 @@ class WatchdogService : Service() {
                 buildNotification()
             )
         }
+        checkServerAndRestartIfDead()
         return START_STICKY
     }
 
     override fun onDestroy() {
+        serviceScope.cancel()
+        pendingRestart = false
         ShizukuStateMachine.removeListener(stateListener)
+        runCatching { unregisterReceiver(screenOnReceiver) }
         isRunning.set(false)
         sendWatchdogChangedBroadcast(applicationContext, false)
-        ShizukuSettings.setWatchdog(applicationContext, false)
+        // Do NOT persist watchdog=false here: onDestroy runs both when the user
+        // manually stops Shizuku (temporary) and when the notification stop button
+        // is used (permanent). Only the notification stop button and the settings
+        // toggle should persist the preference.
         super.onDestroy()
     }
 
@@ -145,6 +262,8 @@ class WatchdogService : Service() {
 
     companion object {
         private const val TAG = "ShizukuWatchdog"
+        private const val BINDER_GRACE_MS = 3000L
+        private const val IN_FLIGHT_GRACE_MS = 90_000L
         private const val NOTIFICATION_ID_WATCHDOG = 1001
         private const val NOTIFICATION_ID_CRASH = 1002
         const val CRASH_CHANNEL_ID = "crash_reports"
