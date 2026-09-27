@@ -168,8 +168,10 @@
     <string name="settings_use_system_color">Use system theme color</string>
     <string name="settings_watchdog">Watchdog</string>
     <string name="settings_watchdog_summary">Automatically restart Shizuku if it crashes</string>
-    <string name="settings_wireless_only_restart">Wireless-only restart</string>
-    <string name="settings_wireless_only_restart_summary">Restart Shizuku over wireless debugging only: never fall back to USB debugging and do not wait for Wi-Fi. Requires wireless debugging to stay enabled.</string>
+    <string name="settings_allow_usb_fallback">Allow USB debugging fallback</string>
+    <string name="settings_allow_usb_fallback_summary">When wireless debugging is unavailable, allow Shizuku to start by enabling USB debugging. Turn off to only ever restart over wireless debugging.</string>
+    <string name="settings_wait_for_wifi">Wait for Wi-Fi before restarting</string>
+    <string name="settings_wait_for_wifi_summary">Unattended restarts wait for an unmetered Wi-Fi connection before attempting to start. Starts you trigger yourself never wait.</string>
     <string name="settings_tcp_mode">TCP mode</string>
     <string name="settings_tcp_mode_summary">"Allows Shizuku to restart without Wi-Fi. (Shizuku must have started once since reboot)"</string>
     <string name="settings_tcp_mode_dialog_close_port">"The TCP port will be closed immediately. You will need Wi-Fi to turn on TCP mode again. Continue?"</string>

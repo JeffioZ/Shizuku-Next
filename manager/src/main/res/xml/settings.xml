@@ -22,9 +22,16 @@
             android:title="@string/settings_watchdog" />
 
         <SwitchPreferenceCompat
-            android:key="wireless_only_restart"
-            android:summary="@string/settings_wireless_only_restart_summary"
-            android:title="@string/settings_wireless_only_restart" />
+            android:key="allow_usb_fallback"
+            android:summary="@string/settings_allow_usb_fallback_summary"
+            android:title="@string/settings_allow_usb_fallback"
+            android:defaultValue="true" />
+
+        <SwitchPreferenceCompat
+            android:key="wait_for_wifi"
+            android:summary="@string/settings_wait_for_wifi_summary"
+            android:title="@string/settings_wait_for_wifi"
+            android:defaultValue="true" />
 
         <SwitchPreferenceCompat
             android:key="tcp_mode"

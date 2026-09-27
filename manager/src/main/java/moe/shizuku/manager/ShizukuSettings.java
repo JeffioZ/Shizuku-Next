@@ -43,7 +43,8 @@ public class ShizukuSettings {
         public static final String KEY_CATEGORY_ADVANCED = "category_advanced";
         public static final String KEY_MANUALLY_STOPPED = "manually_stopped";
         public static final String KEY_LAST_ADB_TRANSPORT = "last_adb_transport";
-        public static final String KEY_WIRELESS_ONLY_RESTART = "wireless_only_restart";
+        public static final String KEY_ALLOW_USB_FALLBACK = "allow_usb_fallback";
+        public static final String KEY_WAIT_FOR_WIFI = "wait_for_wifi";
     }
 
     public static class UpdateMode {
@@ -189,15 +190,27 @@ public class ShizukuSettings {
     }
 
     /**
-     * When enabled, background restarts go through the wireless-debugging path
-     * (no USB fallback) and do not wait for an unmetered Wi-Fi connection.
+     * When disabled, background restarts never fall back to enabling USB
+     * debugging — they only ever use wireless debugging (TLS).
      */
-    public static boolean getWirelessOnlyRestart() {
-        return getPreferences().getBoolean(Keys.KEY_WIRELESS_ONLY_RESTART, false);
+    public static boolean getAllowUsbFallback() {
+        return getPreferences().getBoolean(Keys.KEY_ALLOW_USB_FALLBACK, true);
     }
 
-    public static void setWirelessOnlyRestart(boolean enable) {
-        getPreferences().edit().putBoolean(Keys.KEY_WIRELESS_ONLY_RESTART, enable).apply();
+    public static void setAllowUsbFallback(boolean enable) {
+        getPreferences().edit().putBoolean(Keys.KEY_ALLOW_USB_FALLBACK, enable).apply();
+    }
+
+    /**
+     * When enabled, unattended background restarts wait for an unmetered Wi-Fi
+     * connection before attempting discovery. User-initiated starts never wait.
+     */
+    public static boolean getWaitForWifi() {
+        return getPreferences().getBoolean(Keys.KEY_WAIT_FOR_WIFI, true);
+    }
+
+    public static void setWaitForWifi(boolean enable) {
+        getPreferences().edit().putBoolean(Keys.KEY_WAIT_FOR_WIFI, enable).apply();
     }
 
     public static void setWatchdog(Context context, boolean enable) {

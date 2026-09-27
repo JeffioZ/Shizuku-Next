@@ -37,7 +37,7 @@ object ShizukuReceiverStarter {
         STOPPED
     }
 
-    fun start(context: Context, forceStart: Boolean = false) {
+    fun start(context: Context, forceStart: Boolean = false, userInitiated: Boolean = false) {
         // A start request from any entry point clears manual-stop suppression.
         ShizukuSettings.setManuallyStopped(false)
 
@@ -48,13 +48,15 @@ object ShizukuReceiverStarter {
         } else if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.R || EnvironmentUtils.isTelevision() || EnvironmentUtils.getAdbTcpPort() > 0)
             && ShizukuSettings.getLastLaunchMode() == LaunchMethod.ADB) {
                 if (context.checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED) {
-                    // "Wireless-only restart" setting: prefer wireless debugging
-                    // (never fall back to USB) and don't wait for unmetered Wi-Fi.
-                    val wirelessOnly = ShizukuSettings.getWirelessOnlyRestart()
+                    // Falling back to USB debugging is controlled by settings.
+                    val allowUsbFallback = ShizukuSettings.getAllowUsbFallback()
+                    // User-initiated starts never wait for Wi-Fi; unattended
+                    // background restarts honour the "wait for Wi-Fi" setting.
+                    val immediate = userInitiated || !ShizukuSettings.getWaitForWifi()
                     AdbStartWorker.enqueue(
                         context,
-                        enableWirelessDebugging = wirelessOnly,
-                        immediate = wirelessOnly
+                        enableWirelessDebugging = !allowUsbFallback,
+                        immediate = immediate
                     )
                     updateNotification(context, WorkerState.AWAITING_WIFI)
                 } else {

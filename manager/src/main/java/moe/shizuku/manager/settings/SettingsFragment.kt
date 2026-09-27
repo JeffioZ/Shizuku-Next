@@ -66,7 +66,8 @@ class SettingsFragment : PreferenceFragmentCompat(), SharedPreferences.OnSharedP
 
     private lateinit var startOnBootPreference: TwoStatePreference
     private lateinit var watchdogPreference: TwoStatePreference
-    private lateinit var wirelessOnlyRestartPreference: TwoStatePreference
+    private lateinit var allowUsbFallbackPreference: TwoStatePreference
+    private lateinit var waitForWifiPreference: TwoStatePreference
     private lateinit var tcpModePreference: TwoStatePreference
     private lateinit var tcpPortPreference: EditTextPreference
     private lateinit var languagePreference: ListPreference
@@ -101,7 +102,8 @@ class SettingsFragment : PreferenceFragmentCompat(), SharedPreferences.OnSharedP
 
         startOnBootPreference = findPreference(KEY_START_ON_BOOT)!!
         watchdogPreference = findPreference(KEY_WATCHDOG)!!
-        wirelessOnlyRestartPreference = findPreference(KEY_WIRELESS_ONLY_RESTART)!!
+        allowUsbFallbackPreference = findPreference(KEY_ALLOW_USB_FALLBACK)!!
+        waitForWifiPreference = findPreference(KEY_WAIT_FOR_WIFI)!!
         tcpModePreference = findPreference(KEY_TCP_MODE)!!
         tcpPortPreference = findPreference(KEY_TCP_PORT)!!
         languagePreference = findPreference(KEY_LANGUAGE)!!
@@ -179,12 +181,24 @@ class SettingsFragment : PreferenceFragmentCompat(), SharedPreferences.OnSharedP
             }
         }
 
-        wirelessOnlyRestartPreference.apply {
-            isChecked = ShizukuSettings.getWirelessOnlyRestart()
+        allowUsbFallbackPreference.apply {
+            isChecked = ShizukuSettings.getAllowUsbFallback()
 
             setOnPreferenceChangeListener { _, newValue ->
                 if (newValue is Boolean) {
-                    ShizukuSettings.setWirelessOnlyRestart(newValue)
+                    ShizukuSettings.setAllowUsbFallback(newValue)
+                    isChecked = newValue
+                }
+                false
+            }
+        }
+
+        waitForWifiPreference.apply {
+            isChecked = ShizukuSettings.getWaitForWifi()
+
+            setOnPreferenceChangeListener { _, newValue ->
+                if (newValue is Boolean) {
+                    ShizukuSettings.setWaitForWifi(newValue)
                     isChecked = newValue
                 }
                 false
@@ -449,7 +463,7 @@ class SettingsFragment : PreferenceFragmentCompat(), SharedPreferences.OnSharedP
             .setMessage(HtmlCompat.fromHtml(message))
             .setPositiveButton(android.R.string.ok) { _, _ ->
                 applyChange()
-                ShizukuReceiverStarter.start(context, true)
+                ShizukuReceiverStarter.start(context, forceStart = true, userInitiated = true)
             }
             .setNegativeButton(android.R.string.cancel, null)
             .show()

@@ -37,7 +37,7 @@ This version of Shizuku includes some extra features over the original version, 
 * **More robust "start on boot":** waits for a Wi-Fi connection before starting the Shizuku service
 * **TCP mode:** (i.e., the `adb tcpip` command) once Shizuku successfully starts with Wi-Fi after a reboot, you can stop/restart Shizuku without a Wi-Fi connection!
 * **Wireless debugging stays enabled:** starting Shizuku no longer turns off wireless debugging, so it can restart with USB debugging off and no Wi-Fi connection; the status card shows whether it runs over wireless or USB debugging
-* **Wireless-only restart (setting):** choose whether background restarts use wireless debugging only — never falling back to USB debugging — and skip waiting for an unmetered Wi-Fi connection
+* **Restart transport settings:** choose whether restarts may fall back to enabling USB debugging, and whether unattended restarts wait for an unmetered Wi-Fi connection (starts you trigger yourself never wait)
 * **Search and sort authorized apps:** filter the apps list by name and sort it alphabetically or by most recently added
 * **Watchdog service:** automatically restarts Shizuku if it stops unexpectedly, and can alert you of crashes/potential fixes
 * **More resilient watchdog:** self-heals a dead server on screen unlock (even if the manager wasn't running when it died) and never fights a deliberate Stop

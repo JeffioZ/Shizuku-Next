@@ -10,6 +10,6 @@ class ManualStartReceiver : AuthenticatedReceiver() {
         val applicationId = BuildConfig.APPLICATION_ID
         if (intent.action != "${applicationId}.START") return
 
-        ShizukuReceiverStarter.start(context)
+        ShizukuReceiverStarter.start(context, userInitiated = true)
     }
 }
