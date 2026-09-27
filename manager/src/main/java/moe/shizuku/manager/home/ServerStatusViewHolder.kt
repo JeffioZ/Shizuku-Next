@@ -21,6 +21,9 @@ class ServerStatusViewHolder(private val binding: HomeServerStatusBinding, root:
     BaseViewHolder<ServiceStatus>(root) {
 
     companion object {
+        private const val ROOT_UID = 0
+        private const val SHELL_UID = 2000
+
         val CREATOR = Creator<ServiceStatus> { inflater: LayoutInflater, parent: ViewGroup? ->
             val outer = HomeItemContainerBinding.inflate(inflater, parent, false)
             val inner = HomeServerStatusBinding.inflate(inflater, outer.root, true)
@@ -36,7 +39,6 @@ class ServerStatusViewHolder(private val binding: HomeServerStatusBinding, root:
         val context = itemView.context
         val status = data
         val ok = status.isRunning
-        val isRoot = status.uid == 0
         val apiVersion = status.apiVersion
         val patchVersion = status.patchVersion
         if (ok) {
@@ -44,10 +46,16 @@ class ServerStatusViewHolder(private val binding: HomeServerStatusBinding, root:
         } else {
             iconView.setImageDrawable(ContextCompat.getDrawable(context, R.drawable.ic_server_error_24dp))
         }
-        val user = if (isRoot) "root" else when (ShizukuSettings.getLastAdbTransport()) {
-            ShizukuSettings.ADB_TRANSPORT_TLS -> context.getString(R.string.home_status_adb_wireless)
-            ShizukuSettings.ADB_TRANSPORT_TCP -> context.getString(R.string.home_status_adb_usb)
-            else -> "adb"
+        val user = when (status.uid) {
+            ROOT_UID -> "root"
+            SHELL_UID -> when (ShizukuSettings.getLastAdbTransport()) {
+                ShizukuSettings.ADB_TRANSPORT_TLS -> context.getString(R.string.home_status_adb_wireless)
+                ShizukuSettings.ADB_TRANSPORT_TCP -> context.getString(R.string.home_status_adb_usb)
+                else -> "adb"
+            }
+            // Any other UID (e.g. system 1000) is reported as-is instead of being
+            // mislabelled as adb.
+            else -> context.getString(R.string.home_status_uid, status.uid)
         }
         val title = if (ok) {
             context.getString(R.string.home_status_service_is_running, context.getString(R.string.app_name))

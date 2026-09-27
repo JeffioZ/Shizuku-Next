@@ -10,6 +10,7 @@
     <string name="home_status_service_version">Version %2$s, %1$s</string>
     <string name="home_status_adb_wireless">adb (Wireless debugging)</string>
     <string name="home_status_adb_usb">adb (USB debugging)</string>
+    <string name="home_status_uid">uid %1$d</string>
     <string name="home_status_service_version_update"><![CDATA[Version %2$s, %1$s<br>Start again to update to version %3$s]]></string>
 
     <!-- Home - Adb -->
