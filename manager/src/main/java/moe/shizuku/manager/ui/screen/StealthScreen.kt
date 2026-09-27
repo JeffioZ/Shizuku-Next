@@ -3,8 +3,10 @@ package moe.shizuku.manager.ui.screen
 import android.content.Context
 import android.net.Uri
 import android.provider.DocumentsContract
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -23,6 +25,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -44,11 +47,30 @@ import moe.shizuku.manager.stealth.ApkType
 import moe.shizuku.manager.stealth.StealthTutorialViewModel
 import moe.shizuku.manager.stealth.UiState
 import moe.shizuku.manager.stealth.validatePackageName
+import moe.shizuku.manager.ui.component.SegmentedColumn
+import moe.shizuku.manager.ui.component.SegmentedListItem
 import moe.shizuku.manager.utils.ApkUtils.ORIGINAL_PACKAGE_NAME
 import moe.shizuku.manager.utils.ApkUtils.buildApkFilename
 import moe.shizuku.manager.utils.ApkUtils.installPackage
 import moe.shizuku.manager.utils.ApkUtils.uninstallPackage
+import rikka.core.util.ClipboardUtils
 import java.io.File
+
+private const val codeSnippet = """
+import android.content.Context
+import rikka.shizuku.ShizukuProvider
+
+private fun Context.shizukuPermission() =
+    runCatching {
+        packageManager.getPermissionInfo(ShizukuProvider.PERMISSION, 0)
+    }.getOrNull()
+
+fun Context.isShizukuInstalled() =
+    shizukuPermission() != null
+
+fun Context.getShizukuPackageName() =
+    shizukuPermission()?.packageName
+"""
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -129,6 +151,85 @@ fun StealthScreen(onBack: () -> Unit) {
                 )
             }
 
+            // Tapping this card copies a snippet the user can send to a developer
+            // whose "is Shizuku installed" check breaks while hidden.
+            item {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            if (ClipboardUtils.put(context, codeSnippet)) {
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.toast_copied_to_clipboard),
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        },
+                    color = MaterialTheme.colorScheme.tertiaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                    shape = MaterialTheme.shapes.large
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.stealth_warning_compatibility),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            text = stringResource(R.string.stealth_warning_compatibility_2),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            text = stringResource(R.string.stealth_warning_compatibility_3),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+            }
+
+            item {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                    shape = MaterialTheme.shapes.large
+                ) {
+                    Text(
+                        text = stringResource(R.string.stealth_warning_detection),
+                        modifier = Modifier.padding(16.dp),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+
+            item {
+                SegmentedColumn(modifier = Modifier.fillMaxWidth()) {
+                    item {
+                        SegmentedListItem(
+                            headlineContent = { Text(stringResource(R.string.stealth_info_reconfigure)) }
+                        )
+                    }
+                    item {
+                        SegmentedListItem(
+                            headlineContent = { Text(stringResource(R.string.stealth_info_rish)) }
+                        )
+                    }
+                    item {
+                        SegmentedListItem(
+                            headlineContent = { Text(stringResource(R.string.stealth_info_intents)) }
+                        )
+                    }
+                    item {
+                        SegmentedListItem(
+                            headlineContent = { Text(stringResource(R.string.stealth_info_update)) }
+                        )
+                    }
+                }
+            }
+
             if (action == Action.HIDE) {
                 item {
                     OutlinedTextField(
@@ -164,8 +265,7 @@ fun StealthScreen(onBack: () -> Unit) {
                             }
                         }
                     },
-                    enabled = !busy && (action != Action.HIDE || packageNameError == null),
-                    modifier = Modifier.padding(top = 4.dp)
+                    enabled = !busy && (action != Action.HIDE || packageNameError == null)
                 ) {
                     Text(
                         stringResource(
