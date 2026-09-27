@@ -7,6 +7,7 @@ import android.os.Build
 import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -71,6 +72,7 @@ import moe.shizuku.manager.start.startMethodLabelRes
 import moe.shizuku.manager.starter.Starter
 import moe.shizuku.manager.starter.StarterActivity
 import moe.shizuku.manager.ui.component.SegmentedColumn
+import moe.shizuku.manager.ui.theme.LocalAmoledTheme
 import moe.shizuku.manager.ui.component.SegmentedListItem
 import moe.shizuku.manager.ui.component.stripHtmlTags
 import moe.shizuku.manager.utils.EnvironmentUtils
@@ -513,8 +515,25 @@ private fun StatusCard(
         MaterialTheme.colorScheme.onSurface
     }
 
+    // On the pure black theme the stopped card is the same colour as the page, so it
+    // gets the same hairline outline as the other cards. The running card uses a
+    // tinted container that the page can't swallow.
+    val outlined = LocalAmoledTheme.current && !running
+
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                if (outlined) {
+                    Modifier.border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                        shape = MaterialTheme.shapes.large
+                    )
+                } else {
+                    Modifier
+                }
+            ),
         color = containerColor,
         contentColor = contentColor,
         shape = MaterialTheme.shapes.large
