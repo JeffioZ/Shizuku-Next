@@ -45,6 +45,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import moe.shizuku.manager.BuildConfig
 import moe.shizuku.manager.R
@@ -70,7 +71,7 @@ import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(onOpenDetail: (Detail) -> Unit) {
+fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
     val context = LocalContext.current
 
     var startOnBoot by remember { mutableStateOf(ShizukuSettings.getStartOnBoot(context)) }
@@ -133,7 +134,7 @@ fun SettingsScreen(onOpenDetail: (Detail) -> Unit) {
         )
 
         LazyColumn(
-            contentPadding = PaddingValues(16.dp),
+            contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = bottomPadding),
             verticalArrangement = Arrangement.spacedBy(13.dp)
         ) {
             item {

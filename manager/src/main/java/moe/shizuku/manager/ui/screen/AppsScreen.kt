@@ -61,6 +61,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import kotlinx.coroutines.Dispatchers
@@ -77,7 +78,7 @@ enum class SortOrder { LAST_ADDED, ALPHABETICAL }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun AppsScreen() {
+fun AppsScreen(bottomPadding: Dp) {
     val context = LocalContext.current
     val pm = context.packageManager
 
@@ -286,7 +287,7 @@ fun AppsScreen() {
             modifier = Modifier.fillMaxSize(),
             // Every app is its own card, so they need room between them; the padding
             // keeps the cards off the edges like the cards on the other tabs.
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+            contentPadding = PaddingValues(start = 16.dp, top = 4.dp, end = 16.dp, bottom = bottomPadding),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(shown, key = { it.packageName }) { pi ->
