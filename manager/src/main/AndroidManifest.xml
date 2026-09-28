@@ -186,6 +186,30 @@
                     The watchdog service is opt-in and toggleable via settings, so users can choose to disable it at any time if not desired." />
         </service>
 
+        <!-- WorkManager promotes the start worker to a foreground service when it has to
+             wait for the device to be unlocked, so the authorization prompt is there the
+             moment it is. A foreground service needs a declared type, and the library's
+             own declaration has none: without this the start fails on Android 14+ with
+             MissingForegroundServiceTypeException, which is exactly the boot start while
+             the screen is locked. The permission for the type is declared above. -->
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="specialUse"
+            tools:node="merge">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="The user can configure the app to start the Shizuku API server in the background.
+                    User interaction may be required to authorize starting the server.
+                    This requires the user to unlock their device if it is locked.
+                    If the user does not unlock their device for several hours while connected to Wi-Fi,
+                    WorkManager's retry backoff policy may result in a significant delay between retries.
+                    Many users of this feature expect the server to start as soon as possible.
+                    Because of this, the worker is promoted to a foreground service, so that the user
+                    receives the authorization prompt immediately after an unlock.
+                    The foreground service only registers a dynamic broadcast receiver to detect the
+                    device unlock. It uses minimal battery and device resources." />
+        </service>
+
         <receiver
             android:name=".receiver.BinderRequestReceiver"
             android:directBootAware="true"
