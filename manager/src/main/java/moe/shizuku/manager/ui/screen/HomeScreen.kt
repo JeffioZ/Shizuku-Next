@@ -445,8 +445,7 @@ fun HomeScreen() {
                     }
                     item {
                         SegmentedListItem(
-                            // Disabled while running, like the other start options — but the
-                            // command row below stays enabled: it only copies a command.
+                            // Disabled while running, like the other start options.
                             enabled = !running,
                             headlineContent = { Text(stringResource(R.string.home_system_title)) },
                             supportingContent = { Text(stringResource(R.string.home_system_summary)) },
@@ -464,6 +463,9 @@ fun HomeScreen() {
                     }
                     item {
                         SegmentedListItem(
+                            // This row is how you start Shizuku from a computer, so it is
+                            // disabled while running like the other start methods.
+                            enabled = !running,
                             headlineContent = { Text(stringResource(R.string.intents_adb_command)) },
                             // The command itself is long enough to swamp the row; it is in
                             // the dialog this opens, where it can be copied.
