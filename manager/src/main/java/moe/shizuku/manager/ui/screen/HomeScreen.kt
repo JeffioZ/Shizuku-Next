@@ -269,6 +269,24 @@ fun HomeScreen() {
                                             contentColor = MaterialTheme.colorScheme.onError
                                         )
                                     ) { Text(stringResource(R.string.action_open_adb_port)) }
+                                } else if (failed.kind == StartFailureKind.SETTINGS) {
+                                    // The same thing the adb command would buy, done by hand:
+                                    // switching wireless debugging on in Developer options.
+                                    // Shizuku can't do it without WRITE_SECURE_SETTINGS, but
+                                    // the user can, and not everyone has adb to hand.
+                                    Button(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        onClick = {
+                                            runCatching {
+                                                SettingsPage.Developer.HighlightWirelessDebugging
+                                                    .launch(context)
+                                            }
+                                        },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = MaterialTheme.colorScheme.error,
+                                            contentColor = MaterialTheme.colorScheme.onError
+                                        )
+                                    ) { Text(stringResource(R.string.action_open_wireless_debugging)) }
                                 } else if (failed.kind == StartFailureKind.PAIRING) {
                                     Button(
                                         modifier = Modifier.fillMaxWidth(),

@@ -19,7 +19,14 @@ enum class StartFailureKind {
     PAIRING,
 
     /** No local ADB port is open — it can be opened from the card. */
-    PORT
+    PORT,
+
+    /**
+     * Wireless debugging has to be switched on by hand: without WRITE_SECURE_SETTINGS the
+     * app can't do it, but a user can, in Developer options. The card offers that instead
+     * of leaving the adb command as the only way out (plenty of people have no computer).
+     */
+    SETTINGS
 }
 
 /** Outcome of the most recent start attempt, surfaced in the manager UI. */
