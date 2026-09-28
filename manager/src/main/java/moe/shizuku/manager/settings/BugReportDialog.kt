@@ -31,13 +31,13 @@ class BugReportDialog : DialogFragment() {
         // Releases and issues are this fork's; the wiki belongs to the fork this is based on,
         // because it documents the behaviour that came from there.
         val updateLink = getString(R.string.bug_report_dialog_link_update)
-            .asLink("https://github.com/rushiranpise/Shizuku/releases/latest")
+            .asLink("https://github.com/rushiranpise/Shizuku-Next/releases/latest")
 
         val wikiLink = getString(R.string.bug_report_dialog_link_wiki)
             .asLink("https://github.com/thedjchi/Shizuku/wiki#troubleshooting")
 
         val issuesLink = getString(R.string.bug_report_dialog_link_issues)
-            .asLink("https://github.com/rushiranpise/Shizuku/issues")
+            .asLink("https://github.com/rushiranpise/Shizuku-Next/issues")
 
         binding.apply {
             updateText.applyTemplateArgs(updateLink)
@@ -50,7 +50,7 @@ class BugReportDialog : DialogFragment() {
             .setTitle(R.string.settings_report_bug)
             .setView(binding.root)
             .setPositiveButton("GitHub") { _, _ ->
-                CustomTabsHelper.launchUrlOrCopy(context, "https://github.com/rushiranpise/Shizuku/issues/new")
+                CustomTabsHelper.launchUrlOrCopy(context, "https://github.com/rushiranpise/Shizuku-Next/issues/new")
             }
             .setNegativeButton(R.string.bug_report_dialog_button_email) { _, _ ->
                 val plainBody = """
