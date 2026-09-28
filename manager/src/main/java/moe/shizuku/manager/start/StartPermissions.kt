@@ -2,7 +2,10 @@ package moe.shizuku.manager.start
 
 import android.Manifest
 import android.Manifest.permission.WRITE_SECURE_SETTINGS
+import android.app.Activity
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
@@ -10,6 +13,7 @@ import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import androidx.core.app.ActivityCompat
 import kotlinx.coroutines.launch
 import moe.shizuku.manager.AppConstants
 import moe.shizuku.manager.ShizukuApplication
@@ -47,6 +51,35 @@ fun Context.needsLocalNetworkPermissionFor(@ShizukuSettings.StartMethod method: 
     if (hasPermission(permission)) return false
     return method == ShizukuSettings.StartMethod.WIRELESS ||
         EnvironmentUtils.getAdbTcpPort() <= 0
+}
+
+/**
+ * True when the system won't put the request dialog up for [permission] again — the user
+ * answered "don't ask again", or denied it twice, which Android treats the same way.
+ *
+ * Only ask this *after* a request came back denied, because before the first request the
+ * same answer just means there is nothing to explain yet, and asking a request that can
+ * never show anything looks like a button that does nothing.
+ */
+fun Context.isPermissionPermanentlyDenied(permission: String): Boolean {
+    if (hasPermission(permission)) return false
+    val activity = this as? Activity ?: return false
+    return !ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)
+}
+
+/**
+ * Opens this app's page in system settings, which is where a permission has to be changed
+ * once the request dialog is out of the picture.
+ */
+fun Context.openAppSettings() {
+    runCatching {
+        startActivity(
+            Intent(
+                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                Uri.fromParts("package", packageName, null)
+            ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
+    }.onFailure { Log.w(AppConstants.TAG, "Could not open app settings", it) }
 }
 
 /** WRITE_SECURE_SETTINGS can only be granted over ADB, so it is checked before use. */

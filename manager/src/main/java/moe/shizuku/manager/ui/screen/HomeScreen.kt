@@ -79,8 +79,10 @@ import moe.shizuku.manager.receiver.ShizukuReceiverStarter
 import moe.shizuku.manager.start.StartFailureKind
 import moe.shizuku.manager.start.StartStatus
 import moe.shizuku.manager.start.StartStatusReporter
+import moe.shizuku.manager.start.isPermissionPermanentlyDenied
 import moe.shizuku.manager.start.localNetworkPermission
 import moe.shizuku.manager.start.needsLocalNetworkPermissionFor
+import moe.shizuku.manager.start.openAppSettings
 import moe.shizuku.manager.start.openAdbPortAndStart
 import moe.shizuku.manager.start.StartMethodGuard
 import moe.shizuku.manager.start.runningStartMethodLabelRes
@@ -128,11 +130,25 @@ fun HomeScreen(bottomPadding: Dp) {
     var pendingLocalNetworkAction by remember { mutableStateOf<(() -> Unit)?>(null) }
     val localNetworkLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) {
-        // Carry on either way: a denial means discovery fails, which the failure card then
-        // explains, rather than the tap appearing to do nothing.
-        pendingLocalNetworkAction?.invoke()
+    ) { granted ->
+        val action = pendingLocalNetworkAction
         pendingLocalNetworkAction = null
+        val permission = localNetworkPermission()
+        if (!granted && permission != null && context.isPermissionPermanentlyDenied(permission)) {
+            // The dialog will never come back, so the start would fail at discovery with
+            // nothing to explain it: say where the switch is and open it, rather than
+            // burning the start on a permission the user cannot grant from here.
+            Toast.makeText(
+                context,
+                context.getString(R.string.permissions_open_settings_hint),
+                Toast.LENGTH_LONG
+            ).show()
+            context.openAppSettings()
+            return@rememberLauncherForActivityResult
+        }
+        // Otherwise carry on either way: a denial means discovery fails, which the failure
+        // card then explains, rather than the tap appearing to do nothing.
+        action?.invoke()
     }
 
     fun startWithLocalNetworkPermission(

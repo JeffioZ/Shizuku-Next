@@ -235,6 +235,8 @@
     <string name="settings_permissions_summary">What Shizuku needs, and what is allowed right now</string>
     <string name="permissions_allowed">Allowed</string>
     <string name="permissions_action_allow">Allow</string>
+    <string name="permissions_action_settings">Settings</string>
+    <string name="permissions_open_settings_hint">Android will not ask again, so turn it on under App info → Permissions</string>
     <string name="permissions_notifications">Notifications</string>
     <string name="permissions_notifications_summary">Shows the pairing code, how a start is going, and what went wrong when one fails. Without it Shizuku still starts, just silently.</string>
     <string name="permissions_nearby">Nearby devices</string>

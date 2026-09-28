@@ -45,6 +45,8 @@ import kotlinx.coroutines.withContext
 import moe.shizuku.manager.R
 import moe.shizuku.manager.home.isAccessibilityEnabled
 import moe.shizuku.manager.start.hasPermission
+import moe.shizuku.manager.start.isPermissionPermanentlyDenied
+import moe.shizuku.manager.start.openAppSettings
 import moe.shizuku.manager.ui.component.SegmentedCard
 import moe.shizuku.manager.start.localNetworkPermission
 import moe.shizuku.manager.utils.SettingsHelper
@@ -81,9 +83,40 @@ fun PermissionsScreen(onBack: () -> Unit) {
         localNetwork = localNetworkPermission()?.let { context.hasPermission(it) } ?: true
     }
 
+    // Which permission the request on screen is for, so the answer can be attributed to it,
+    // and which ones this session has learned the system will no longer ask about.
+    var askedPermission by remember { mutableStateOf<String?>(null) }
+    var stuckPermissions by remember { mutableStateOf(emptySet<String>()) }
+
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { refresh() }
+    ) { granted ->
+        val asked = askedPermission
+        askedPermission = null
+        // A denial with no rationale left means the system will never show the dialog for
+        // this permission again: sending them to app settings is the only way forward, and
+        // the row below remembers it so the button stops offering a request that can't
+        // appear.
+        if (!granted && asked != null && context.isPermissionPermanentlyDenied(asked)) {
+            stuckPermissions = stuckPermissions + asked
+            Toast.makeText(
+                context,
+                context.getString(R.string.permissions_open_settings_hint),
+                Toast.LENGTH_LONG
+            ).show()
+            context.openAppSettings()
+        }
+        refresh()
+    }
+
+    fun askFor(permission: String, action: () -> Unit) {
+        if (permission in stuckPermissions) {
+            context.openAppSettings()
+        } else {
+            askedPermission = permission
+            action()
+        }
+    }
 
     LaunchedEffect(Unit) { refresh() }
     // Coming back from the system's own screens (accessibility, battery) changes these.
@@ -112,8 +145,13 @@ fun PermissionsScreen(onBack: () -> Unit) {
                     headline = stringResource(R.string.permissions_notifications),
                     reason = stringResource(R.string.permissions_notifications_summary),
                     granted = notifications,
-                    actionLabel = stringResource(R.string.permissions_action_allow),
-                    onAction = { permissionLauncher.launch(POST_NOTIFICATIONS) }
+                    actionLabel = stringResource(
+                        if (POST_NOTIFICATIONS in stuckPermissions) R.string.permissions_action_settings
+                        else R.string.permissions_action_allow
+                    ),
+                    onAction = {
+                        askFor(POST_NOTIFICATIONS) { permissionLauncher.launch(POST_NOTIFICATIONS) }
+                    }
                 )
             }
 
@@ -122,8 +160,15 @@ fun PermissionsScreen(onBack: () -> Unit) {
                     headline = stringResource(R.string.permissions_nearby),
                     reason = stringResource(R.string.permissions_nearby_summary),
                     granted = localNetwork,
-                    actionLabel = stringResource(R.string.permissions_action_allow),
-                    onAction = { localNetworkPermission()?.let { permissionLauncher.launch(it) } }
+                    actionLabel = stringResource(
+                        if (localNetworkPermission() in stuckPermissions) R.string.permissions_action_settings
+                        else R.string.permissions_action_allow
+                    ),
+                    onAction = {
+                        localNetworkPermission()?.let { permission ->
+                            askFor(permission) { permissionLauncher.launch(permission) }
+                        }
+                    }
                 )
             }
 
