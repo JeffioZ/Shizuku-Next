@@ -135,6 +135,57 @@ jobs:
           ref: ${{ github.ref_name }}
           fetch-depth: 0
 
+      # The notes are written from the commits themselves, which are already Conventional
+      # Commits, so the draft says what changed without anyone remembering to write it up
+      # and without a service to call. Runs before the tag exists, or the tag would look
+      # like the previous release.
+      - name: Build Changelog
+        run: |
+          VERSION="${{ needs.build.outputs.versionName }}"
+          # From the commit before HEAD: on a re-run this version's tag already points at
+          # HEAD, and describing HEAD would return the release we are writing notes for,
+          # leaving the range empty.
+          PREV=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || true)
+          echo "previous tag: ${PREV:-none}"
+          PREV="$PREV" VERSION="$VERSION" python3 - <<'PY'
+          import collections, os, re, subprocess
+
+          prev = os.environ.get("PREV", "")
+          rng = f"{prev}..HEAD" if prev else "HEAD"
+          subjects = subprocess.run(
+              ["git", "log", "--no-merges", "--pretty=format:%s", rng],
+              capture_output=True, text=True, check=True).stdout.splitlines()
+
+          titles = {
+              "feat": "Features", "fix": "Fixes", "perf": "Performance",
+              "refactor": "Refactoring", "docs": "Documentation", "build": "Build",
+              "ci": "CI", "test": "Tests", "style": "Style", "chore": "Chores",
+          }
+          buckets, other = collections.defaultdict(list), []
+          for subject in subjects:
+              match = re.match(r"^(\w+)(?:\(([^)]+)\))?!?:\s*(.+)$", subject)
+              if match and match.group(1) in titles:
+                  scope = f"**{match.group(2)}:** " if match.group(2) else ""
+                  buckets[titles[match.group(1)]].append(f"- {scope}{match.group(3)}")
+              else:
+                  other.append(f"- {subject}")
+
+          sections = [f"### {name}\n" + "\n".join(buckets[name])
+                      for name in titles.values() if buckets[name]]
+          if other:
+              sections.append("### Other\n" + "\n".join(other))
+          if prev:
+              sections.append(
+                  "**Full Changelog**: https://github.com/"
+                  f"{os.environ['GITHUB_REPOSITORY']}/compare/{prev}...{os.environ['VERSION']}")
+
+          body = "\n\n".join(sections).strip()
+          if len(subjects) == 0 or not body:
+              body = ""
+          open("release-notes.md", "w").write(body)
+          print(body or "(no commits since the previous tag)")
+          PY
+
       - name: Create Release Tag
         run: |
           VERSION="${{ needs.build.outputs.versionName }}"
@@ -162,9 +213,19 @@ jobs:
           FLAGS="--draft"
           [ "${{ inputs.prerelease }}" = "true" ] && FLAGS="$FLAGS --prerelease"
 
+          # Fall back to GitHub's own notes when there is nothing to describe, so a draft
+          # is never published with an empty body.
+          if [ -s release-notes.md ]; then
+            NOTES="--notes-file release-notes.md"
+          else
+            echo "no changelog from commits, asking GitHub for notes"
+            NOTES="--generate-notes"
+          fi
+
           if gh release view "$RELEASE_VERSION" --json id > /dev/null 2>&1; then
-            # A re-run for the same version: replace the APKs rather than fail.
+            # A re-run for the same version: refresh both the notes and the APKs.
+            gh release edit "$RELEASE_VERSION" $NOTES $FLAGS
             gh release upload "$RELEASE_VERSION" files/*.apk --clobber
           else
-            gh release create "$RELEASE_VERSION" files/*.apk $FLAGS
+            gh release create "$RELEASE_VERSION" files/*.apk $NOTES $FLAGS
           fi
