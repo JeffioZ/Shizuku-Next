@@ -80,6 +80,11 @@
     <string name="app_management_sort">Sort</string>
     <string name="apps_needs_shizuku">Shizuku isn\'t running, start it to see apps</string>
     <string name="apps_empty">No apps to show</string>
+    <string name="apps_filter_empty">No apps in this filter</string>
+    <string name="apps_filter_all">All</string>
+    <string name="apps_filter_granted">Granted</string>
+    <string name="apps_filter_revoked">Revoked</string>
+    <string name="apps_filter_hidden">Hidden</string>
     <string name="apps_no_match">No apps match your search</string>
     <string name="app_management_sort_last_added">Recent</string>
     <string name="app_management_sort_alphabetical">A-Z</string>

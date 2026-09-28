@@ -47,6 +47,16 @@
         android:protectionLevel="signature" />
     <uses-permission android:name="moe.shizuku.manager.permission.MANAGER" />
 
+    <!-- Android 11+ package visibility: without this the app cannot see other apps'
+         launchers at all, so "does this app have a launcher entry" answered no for every
+         app and the whole list looked hidden. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
+
     <permission
         android:name="moe.shizuku.manager.permission.API_V23"
         android:description="@string/permission_description"

@@ -1,19 +1,28 @@
 package moe.shizuku.manager.ui.screen
 
 import android.content.pm.PackageInfo
+import android.content.Intent
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -39,6 +48,7 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -55,12 +65,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
@@ -76,6 +89,23 @@ import moe.shizuku.manager.utils.ShizukuStateMachine
 
 enum class SortOrder { LAST_ADDED, ALPHABETICAL }
 
+/** Which slice of the app list to show. */
+enum class AppFilter {
+    ALL,
+
+    /** Shizuku's permission is granted to these. */
+    GRANTED,
+
+    /** It is not — the apps you can still hand it to. */
+    REVOKED,
+
+    /**
+     * Apps with no launcher entry, so they never appear in the app drawer: services and
+     * system pieces. They are in the list either way, which is why they need naming.
+     */
+    HIDDEN
+}
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun AppsScreen(bottomPadding: Dp) {
@@ -88,6 +118,7 @@ fun AppsScreen(bottomPadding: Dp) {
     var selected by remember { mutableStateOf(setOf<String>()) }
     var version by remember { mutableIntStateOf(0) }
     var sortMenu by remember { mutableStateOf(false) }
+    var filter by remember { mutableStateOf(AppFilter.ALL) }
     var pendingBatch by remember { mutableStateOf<Boolean?>(null) }
     // Set to the state every listed app should end up in, once the user confirms.
     var pendingToggleAll by remember { mutableStateOf<Boolean?>(null) }
@@ -115,12 +146,56 @@ fun AppsScreen(bottomPadding: Dp) {
         loading = false
     }
 
-    val shown = remember(all, query, sortOrder) {
+    // Both sets are worked out once per loaded list, off the main thread: the granted one is
+    // a server round trip per app, and the chips want its size before anyone picks that
+    // filter. Recomputed when a toggle changes something (version), which is what keeps the
+    // counts honest.
+    var grantedNames by remember { mutableStateOf(emptySet<String>()) }
+    var launcherless by remember { mutableStateOf(emptySet<String>()) }
+    LaunchedEffect(all, version) {
+        if (all.isEmpty()) {
+            grantedNames = emptySet()
+            launcherless = emptySet()
+            return@LaunchedEffect
+        }
+        val (granted, withoutLauncher) = withContext(Dispatchers.IO) {
+            val granted = all.filter {
+                val uid = it.applicationInfo?.uid ?: return@filter false
+                runCatching { AuthorizationManager.granted(it.packageName, uid) }.getOrDefault(false)
+            }.map { it.packageName }.toSet()
+
+            // An app with no launcher entry is what "hidden" means: it is in the list, but
+            // never in the app drawer. The leanback category counts as an entry on TV.
+            val withoutLauncher = all.filterNot { pi ->
+                runCatching {
+                    pm.getLaunchIntentForPackage(pi.packageName) != null ||
+                        pm.queryIntentActivities(
+                            Intent(Intent.ACTION_MAIN)
+                                .addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER)
+                                .setPackage(pi.packageName),
+                            0
+                        ).isNotEmpty()
+                }.getOrDefault(true)
+            }.map { it.packageName }.toSet()
+
+            granted to withoutLauncher
+        }
+        grantedNames = granted
+        launcherless = withoutLauncher
+    }
+
+    val shown = remember(all, query, sortOrder, filter, launcherless, grantedNames) {
         val q = query.trim()
+        val byFilter = when (filter) {
+            AppFilter.ALL -> all
+            AppFilter.GRANTED -> all.filter { it.packageName in grantedNames }
+            AppFilter.REVOKED -> all.filter { it.packageName !in grantedNames }
+            AppFilter.HIDDEN -> all.filter { it.packageName in launcherless }
+        }
         val filtered = if (q.isBlank()) {
-            all
+            byFilter
         } else {
-            all.filter {
+            byFilter.filter {
                 val label = runCatching { it.applicationInfo?.loadLabel(pm)?.toString() ?: "" }.getOrDefault("")
                 label.contains(q, ignoreCase = true) || it.packageName.contains(q, ignoreCase = true)
             }
@@ -258,6 +333,39 @@ fun AppsScreen(bottomPadding: Dp) {
         // A search field, not just a text field: Material 3 gives search boxes the fully
         // rounded shape and a quieter outline, so this reads as "search" at a glance
         // instead of as a box someone put a magnifier in.
+        // Filter first, search within it: the two answer different questions and the search
+        // box alone cannot say "only what is granted". The four share the width equally and
+        // carry how many each one holds, so the state of the list is readable before picking.
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            AppFilter.entries.forEach { option ->
+                val count = when (option) {
+                    AppFilter.ALL -> all.size
+                    AppFilter.GRANTED -> grantedNames.size
+                    AppFilter.REVOKED -> all.size - grantedNames.size
+                    AppFilter.HIDDEN -> launcherless.size
+                }
+                AppFilterChip(
+                    modifier = Modifier.weight(1f),
+                    label = stringResource(
+                        when (option) {
+                            AppFilter.ALL -> R.string.apps_filter_all
+                            AppFilter.GRANTED -> R.string.apps_filter_granted
+                            AppFilter.REVOKED -> R.string.apps_filter_revoked
+                            AppFilter.HIDDEN -> R.string.apps_filter_hidden
+                        }
+                    ),
+                    count = count,
+                    selected = filter == option,
+                    onClick = { filter = option }
+                )
+            }
+        }
+
         OutlinedTextField(
             value = query,
             onValueChange = { query = it },
@@ -386,6 +494,14 @@ fun AppsScreen(bottomPadding: Dp) {
                         textAlign = TextAlign.Center
                     )
 
+                    // A filter can legitimately hold nothing (Hidden often does), which is
+                    // not the same as there being no apps at all.
+                    filter != AppFilter.ALL -> Text(
+                        text = stringResource(R.string.apps_filter_empty),
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center
+                    )
+
                     else -> Text(
                         text = stringResource(R.string.apps_empty),
                         style = MaterialTheme.typography.bodyMedium,
@@ -478,6 +594,86 @@ fun AppsScreen(bottomPadding: Dp) {
                 TextButton(onClick = { pendingBatch = null }) {
                     Text(stringResource(android.R.string.cancel))
                 }
+            }
+        )
+    }
+}
+
+/**
+ * One filter, sized to its share of the row rather than to its label, with its label and how
+ * many apps it holds centred together. A stock chip sizes to its text, which left the four
+ * ragged on the left and hid the counts somewhere else entirely.
+ */
+@Composable
+private fun AppFilterChip(
+    label: String,
+    count: Int,
+    selected: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = modifier
+            .height(34.dp)
+            .clip(MaterialTheme.shapes.large)
+            .selectable(selected = selected, role = Role.Tab, onClick = onClick),
+        shape = MaterialTheme.shapes.large,
+        color = if (selected) {
+            MaterialTheme.colorScheme.secondaryContainer
+        } else {
+            Color.Transparent
+        },
+        border = BorderStroke(
+            1.dp,
+            if (selected) Color.Transparent else MaterialTheme.colorScheme.outlineVariant
+        )
+    ) {
+        Row(
+            modifier = Modifier.fillMaxSize().padding(horizontal = 6.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                label,
+                style = MaterialTheme.typography.labelLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = if (selected) {
+                    MaterialTheme.colorScheme.onSecondaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            CountBadge(count, selected)
+        }
+    }
+}
+
+/** Just the number, in a small circle — enough to read at a glance, not enough to shout. */
+@Composable
+private fun CountBadge(count: Int, selected: Boolean) {
+    Box(
+        modifier = Modifier
+            .size(18.dp)
+            .clip(CircleShape)
+            .background(
+                if (selected) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.surfaceContainerHighest
+                }
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            count.toString(),
+            style = MaterialTheme.typography.labelSmall,
+            maxLines = 1,
+            color = if (selected) {
+                MaterialTheme.colorScheme.onPrimary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
             }
         )
     }
