@@ -4,9 +4,9 @@
 
 # Shizuku Next
 
-<img width="200" alt="Screenshot_20260928_002039_Shizuku Next" src="https://github.com/user-attachments/assets/e9a82a54-b980-4941-b3dd-c343d6d29deb" />
-<img width="200" alt="Screenshot_20260928_002019_Shizuku Next" src="https://github.com/user-attachments/assets/67ef0571-29b4-4490-9640-caeba876f29c" />
-<img width="200" alt="Screenshot_20260928_002042_Shizuku Next" src="https://github.com/user-attachments/assets/892fc798-db02-4260-bac6-2e58844ac185" />
+<img width="200" alt="Screenshot_20260928_115734_Shizuku Next" src="https://github.com/user-attachments/assets/377def8a-0e21-45a8-abd1-22ad83e53fa2" />
+<img width="200" alt="Screenshot_20260928_115739_Shizuku Next" src="https://github.com/user-attachments/assets/339d8b1b-0c2c-4374-9a9f-13a5aa3fb2c7" />
+<img width="200" alt="Screenshot_20260928_115745_Shizuku Next" src="https://github.com/user-attachments/assets/146ac504-a78e-48c5-81d6-d9367dc87616" />
 
 #
 
