@@ -25,6 +25,7 @@ public class ShizukuSettings {
     public static final String NAME = "settings";
     public static class Keys {
         public static final String KEY_START_ON_BOOT = "start_on_boot";
+        public static final String KEY_ADB_WITHOUT_DEVELOPER_OPTIONS = "adb_without_developer_options";
         public static final String KEY_WATCHDOG = "watchdog";
         public static final String KEY_TCP_MODE = "tcp_mode";
         public static final String KEY_TCP_PORT = "tcp_port";
@@ -203,13 +204,35 @@ public class ShizukuSettings {
     }
 
     public static void setStartOnBoot(Context context, boolean enable) {
+        getPreferences().edit().putBoolean(Keys.KEY_START_ON_BOOT, enable).apply();
+        updateBootReceiver(context);
+    }
+
+    /**
+     * Keep ADB on while Developer options is off, so Shizuku can still start there.
+     *
+     * The boot receiver is what puts the ADB settings back after a reboot, which is why it
+     * is enabled for this as well as for start on boot: without it the first reboot would
+     * undo the whole point of the setting.
+     */
+    public static boolean getAdbWithoutDeveloperOptions() {
+        return getPreferences().getBoolean(Keys.KEY_ADB_WITHOUT_DEVELOPER_OPTIONS, false);
+    }
+
+    public static void setAdbWithoutDeveloperOptions(Context context, boolean enable) {
+        getPreferences().edit().putBoolean(Keys.KEY_ADB_WITHOUT_DEVELOPER_OPTIONS, enable).apply();
+        updateBootReceiver(context);
+    }
+
+    /** The receiver is needed by either setting, so it follows both of them. */
+    private static void updateBootReceiver(Context context) {
+        boolean needed = getStartOnBoot(context) || getAdbWithoutDeveloperOptions();
         ComponentName bootCompleteReceiver = new ComponentName(context.getPackageName(), BootCompleteReceiver.class.getName());
         context.getPackageManager().setComponentEnabledSetting(
             bootCompleteReceiver,
-            enable ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED : PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+            needed ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED : PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
             PackageManager.DONT_KILL_APP
         );
-        getPreferences().edit().putBoolean(Keys.KEY_START_ON_BOOT, enable).apply();
     }
     
     public static boolean getWatchdog() {

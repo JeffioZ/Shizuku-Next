@@ -31,6 +31,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -58,6 +59,8 @@ import moe.shizuku.manager.ui.component.SegmentedListItem
 import moe.shizuku.manager.adb.AdbStarter
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter
 import moe.shizuku.manager.start.StartMethodGuard
+import moe.shizuku.manager.start.applyAdbWithoutDeveloperOptions
+import moe.shizuku.manager.start.restoreDeveloperOptions
 import moe.shizuku.manager.start.startMethodLabelRes
 import moe.shizuku.manager.utils.CustomTabsHelper
 import moe.shizuku.manager.utils.EnvironmentUtils
@@ -94,6 +97,9 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
     }
 
     var legacyPairing by remember { mutableStateOf(ShizukuSettings.getLegacyPairing()) }
+    var adbWithoutDeveloperOptions by remember {
+        mutableStateOf(ShizukuSettings.getAdbWithoutDeveloperOptions())
+    }
 
     var closeTcpDialog by remember { mutableStateOf(false) }
     var restartAction by remember { mutableStateOf<(() -> Unit)?>(null) }
@@ -223,6 +229,36 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
                             },
                             onClick = { startMethodDialog = true }
+                        )
+                    }
+                    item {
+                        SegmentedListItem(
+                            headlineContent = { Text(stringResource(R.string.settings_adb_without_developer_options)) },
+                            supportingContent = {
+                                Text(stringResource(R.string.settings_adb_without_developer_options_summary))
+                            },
+                            trailingContent = {
+                                Switch(
+                                    checked = adbWithoutDeveloperOptions,
+                                    onCheckedChange = { checked ->
+                                        ShizukuSettings.setAdbWithoutDeveloperOptions(context, checked)
+                                        adbWithoutDeveloperOptions = checked
+                                        val applied = if (checked) {
+                                            applyAdbWithoutDeveloperOptions(context)
+                                        } else {
+                                            restoreDeveloperOptions(context)
+                                            true
+                                        }
+                                        if (!applied) {
+                                            Toast.makeText(
+                                                context,
+                                                context.getString(R.string.settings_adb_without_developer_options_failed),
+                                                Toast.LENGTH_LONG
+                                            ).show()
+                                        }
+                                    }
+                                )
+                            }
                         )
                     }
                     item {

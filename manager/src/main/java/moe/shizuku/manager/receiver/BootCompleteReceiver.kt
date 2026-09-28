@@ -6,12 +6,19 @@ import android.content.Intent
 import android.util.Log
 import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.service.WatchdogService
+import moe.shizuku.manager.start.reapplyAdbWithoutDeveloperOptionsIfEnabled
 
 class BootCompleteReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
 
-        ShizukuReceiverStarter.start(context)
-        if(ShizukuSettings.getWatchdog()) WatchdogService.start(context)
+        // A reboot clears the ADB toggles, so the setting that keeps them on has to be put
+        // back before anything tries to use them.
+        reapplyAdbWithoutDeveloperOptionsIfEnabled(context)
+
+        // The receiver is enabled by either setting now, so ask before starting: it used to
+        // be enabled only alongside start on boot, which made the component the pref.
+        if (ShizukuSettings.getStartOnBoot(context)) ShizukuReceiverStarter.start(context)
+        if (ShizukuSettings.getWatchdog()) WatchdogService.start(context)
     }
 }
