@@ -280,28 +280,24 @@ private fun PermissionRow(
                 Text(headline, style = MaterialTheme.typography.bodyLarge)
                 Text(
                     reason,
-                    style = MaterialTheme.typography.bodyMedium,
+                    // A step down from the headline and no more: these are one-line
+                    // reminders, and at body size they read as paragraphs to work through.
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
             Spacer(modifier = Modifier.width(16.dp))
 
+            // A tick is enough for "this one is fine": the word beside it only added
+            // width to every row on the page.
             if (granted) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Rounded.CheckCircle,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        stringResource(R.string.permissions_allowed),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
+                Icon(
+                    Icons.Rounded.CheckCircle,
+                    contentDescription = stringResource(R.string.permissions_allowed),
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
             } else {
                 TextButton(onClick = onAction) { Text(actionLabel) }
             }
