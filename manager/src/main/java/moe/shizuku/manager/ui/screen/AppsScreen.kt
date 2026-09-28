@@ -397,12 +397,14 @@ fun AppsScreen(bottomPadding: Dp) {
         }
     }
 
-    // The undo offer sits above the list, out of the way of the bottom bar.
+    // The undo offer sits above the list — and above the floating bar, which is drawn over
+    // the page rather than beside it, so the same padding the list uses to clear the bar is
+    // what keeps the snackbar from appearing underneath it.
     SnackbarHost(
         hostState = snackbarHostState,
         modifier = Modifier
             .align(Alignment.BottomCenter)
-            .padding(16.dp)
+            .padding(start = 16.dp, end = 16.dp, bottom = bottomPadding + 16.dp)
     )
     }
 
