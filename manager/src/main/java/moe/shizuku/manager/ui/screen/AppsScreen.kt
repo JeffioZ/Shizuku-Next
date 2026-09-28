@@ -34,6 +34,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -253,6 +254,9 @@ fun AppsScreen() {
             )
         }
 
+        // A search field, not just a text field: Material 3 gives search boxes the fully
+        // rounded shape and a quieter outline, so this reads as "search" at a glance
+        // instead of as a box someone put a magnifier in.
         OutlinedTextField(
             value = query,
             onValueChange = { query = it },
@@ -261,7 +265,20 @@ fun AppsScreen() {
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             placeholder = { Text(stringResource(R.string.app_management_search_hint)) },
             leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
-            singleLine = true
+            trailingIcon = {
+                // Clearing a search is the one thing you always end up wanting.
+                if (query.isNotEmpty()) {
+                    IconButton(onClick = { query = "" }) {
+                        Icon(Icons.Filled.Close, contentDescription = stringResource(android.R.string.cancel))
+                    }
+                }
+            },
+            singleLine = true,
+            shape = MaterialTheme.shapes.extraLarge,
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                focusedBorderColor = MaterialTheme.colorScheme.primary
+            )
         )
 
         Box(modifier = Modifier.fillMaxSize()) {
