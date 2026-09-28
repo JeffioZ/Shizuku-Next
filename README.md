@@ -4,6 +4,12 @@
 
 # Shizuku Next
 
+<img width="200" alt="Screenshot_20260928_002039_Shizuku Next" src="https://github.com/user-attachments/assets/e9a82a54-b980-4941-b3dd-c343d6d29deb" />
+<img width="200" alt="Screenshot_20260928_002019_Shizuku Next" src="https://github.com/user-attachments/assets/67ef0571-29b4-4490-9640-caeba876f29c" />
+<img width="200" alt="Screenshot_20260928_002042_Shizuku Next" src="https://github.com/user-attachments/assets/892fc798-db02-4260-bac6-2e58844ac185" />
+
+#
+
 An Android app that allows other apps to use system-level APIs that require ADB/root privileges.
 
 **Shizuku Next is a fork of [thedjchi's Shizuku](https://github.com/thedjchi/Shizuku), which is itself a fork of
