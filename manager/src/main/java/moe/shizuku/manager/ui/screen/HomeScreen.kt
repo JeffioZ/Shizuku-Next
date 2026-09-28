@@ -77,6 +77,7 @@ import moe.shizuku.manager.start.StartFailureKind
 import moe.shizuku.manager.start.StartStatus
 import moe.shizuku.manager.start.StartStatusReporter
 import moe.shizuku.manager.start.openAdbPortAndStart
+import moe.shizuku.manager.start.StartMethodGuard
 import moe.shizuku.manager.start.runningStartMethodLabelRes
 import moe.shizuku.manager.start.startMethodLabelRes
 import moe.shizuku.manager.starter.Starter
@@ -124,7 +125,9 @@ fun HomeScreen() {
         ShizukuStateMachine.update()
         running = ShizukuStateMachine.isRunning()
         batteryIgnored = SettingsHelper.isIgnoringBatteryOptimizations(context)
-        startMethod = ShizukuSettings.getStartMethod()
+        // Root can be gone since the method was chosen; the card would otherwise keep
+        // promising a start the device can no longer run.
+        startMethod = StartMethodGuard.resolve()
         // A start that is already running has nothing left to report; without this a
         // "starting" state from a path that finishes elsewhere would stick.
         if (running) StartStatusReporter.clear()

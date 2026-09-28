@@ -26,6 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,6 +46,7 @@ import moe.shizuku.manager.ui.theme.ThemeState
 import moe.shizuku.manager.ui.component.SegmentedListItem
 import moe.shizuku.manager.adb.AdbStarter
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter
+import moe.shizuku.manager.start.StartMethodGuard
 import moe.shizuku.manager.start.startMethodLabelRes
 import moe.shizuku.manager.utils.CustomTabsHelper
 import moe.shizuku.manager.utils.EnvironmentUtils
@@ -52,7 +54,9 @@ import moe.shizuku.manager.utils.SettingsHelper
 import moe.shizuku.manager.utils.ShizukuStateMachine
 import moe.shizuku.manager.utils.UpdateHelper
 import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -92,6 +96,25 @@ fun SettingsScreen(onOpenDetail: (Detail) -> Unit) {
     var tcpPortDialog by remember { mutableStateOf(false) }
     var systemStartDialog by remember { mutableStateOf(false) }
     var updateDialog by remember { mutableStateOf(false) }
+
+    // Root can be gone since the method was chosen (an OTA, root switched off in the
+    // manager), and a stored Root would then never start anything. The resolver rewrites
+    // the setting; Root is also left out of the list below, so it can't be picked again.
+    // Both probes spawn a shell, hence off the main thread.
+    var rootAvailable by remember { mutableStateOf(false) }
+    var rootMethodDropped by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) {
+            StartMethodGuard.isAvailable(ShizukuSettings.StartMethod.ROOT) to
+                StartMethodGuard.resolve()
+        }.let { (available, resolved) ->
+            rootAvailable = available
+            // Read after resolving: the drop may have happened on the home screen
+            // already, and it is still worth explaining here.
+            rootMethodDropped = StartMethodGuard.droppedRoot
+            startMethod = resolved
+        }
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
@@ -176,7 +199,16 @@ fun SettingsScreen(onOpenDetail: (Detail) -> Unit) {
                         SegmentedListItem(
                             headlineContent = { Text(stringResource(R.string.settings_start_method)) },
                             supportingContent = {
-                                Text(stringResource(startMethodLabelRes(startMethod)))
+                                // Say why the row no longer reads Root, rather than changing
+                                // the setting behind the user's back without a word.
+                                Text(
+                                    stringResource(startMethodLabelRes(startMethod)) +
+                                        if (rootMethodDropped) {
+                                            "\n" + stringResource(R.string.settings_start_method_root_unavailable)
+                                        } else {
+                                            ""
+                                        }
+                                )
                             },
                             trailingContent = {
                                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
@@ -610,12 +642,16 @@ fun SettingsScreen(onOpenDetail: (Detail) -> Unit) {
     if (startMethodDialog) {
         ChoiceDialog(
             title = stringResource(R.string.settings_start_method),
-            options = listOf(
-                ShizukuSettings.StartMethod.WIRELESS.toString() to stringResource(R.string.start_method_wireless),
-                ShizukuSettings.StartMethod.USB.toString() to stringResource(R.string.start_method_usb),
-                ShizukuSettings.StartMethod.SYSTEM.toString() to stringResource(R.string.start_method_system),
-                ShizukuSettings.StartMethod.ROOT.toString() to stringResource(R.string.start_method_root),
-            ),
+            options = buildList {
+                add(ShizukuSettings.StartMethod.WIRELESS.toString() to stringResource(R.string.start_method_wireless))
+                add(ShizukuSettings.StartMethod.USB.toString() to stringResource(R.string.start_method_usb))
+                add(ShizukuSettings.StartMethod.SYSTEM.toString() to stringResource(R.string.start_method_system))
+                // Offered only where it can work — the same rule the home screen's root
+                // row follows.
+                if (rootAvailable) {
+                    add(ShizukuSettings.StartMethod.ROOT.toString() to stringResource(R.string.start_method_root))
+                }
+            },
             selected = startMethod.toString(),
             onDismiss = { startMethodDialog = false },
             onSelect = {

@@ -178,6 +178,7 @@
     <string name="start_failed_pairing_required">This device isn\'t paired for wireless debugging (or the pairing was invalidated).</string>
     <string name="start_failed_connection_lost">The connection to adb closed midway through the start. Try again.</string>
     <string name="start_failed_usb_no_port">No local ADB port is open Android clears it on every reboot, and reopening it needs a connection to borrow. Connect to Wi-Fi and Shizuku will reopen it over wireless debugging, or run <b>adb tcpip 5555</b> from a computer.</string>
+    <string name="start_failed_root_unavailable">Root is no longer available on this device, so Shizuku can\'t start over root. Pick another start method.</string>
     <string name="start_failed_system_needs_app">The system start method has to be started from the app.</string>
     <string name="settings_section_startup">Startup</string>
     <string name="settings_section_wireless">Wireless debugging</string>
@@ -257,6 +258,7 @@
     <string name="settings_auto_disable_wireless_debugging">Auto-disable wireless debugging</string>
     <string name="settings_auto_disable_wireless_debugging_summary">Disable wireless debugging when stopping Shizuku.</string>
     <string name="settings_start_method">Default start method</string>
+    <string name="settings_start_method_root_unavailable">This device has no root, so starts fall back to wireless debugging.</string>
     <string name="settings_start_method_summary">How Start, start on boot and the watchdog launch Shizuku</string>
     <string name="start_method_wireless">Wireless</string>
     <string name="start_method_usb">USB</string>

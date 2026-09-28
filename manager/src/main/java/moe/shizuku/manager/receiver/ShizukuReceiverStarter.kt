@@ -19,6 +19,7 @@ import moe.shizuku.manager.AppConstants
 import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.start.StartFailureKind
 import moe.shizuku.manager.start.StartStatusReporter
+import moe.shizuku.manager.start.StartMethodGuard
 import moe.shizuku.manager.start.startMethodLabelRes
 import moe.shizuku.manager.starter.Starter
 import moe.shizuku.manager.starter.StarterActivity
@@ -59,17 +60,24 @@ object ShizukuReceiverStarter {
 
         if ((UserHandleCompat.myUserId() > 0 || ShizukuStateMachine.isRunning()) && !forceStart) return
 
+        // Root can be gone since the method was chosen (an OTA, root switched off), and a
+        // root start with nothing to escalate with does nothing at all — so a start that
+        // asks for root on a device without it falls back to wireless debugging instead of
+        // failing silently. The setting is rewritten too, so the UI agrees with what the
+        // next start will do.
+        val method = StartMethodGuard.resolve(startMethod)
+
         StartStatusReporter.starting()
 
         // Remember how this launch was started: the status card and the notification
         // report the method the server is actually running under, which isn't always
         // the one configured for the next start.
-        ShizukuSettings.setRunningStartMethod(startMethod)
+        ShizukuSettings.setRunningStartMethod(method)
 
-        when (startMethod) {
+        when (method) {
             ShizukuSettings.StartMethod.ROOT -> rootStart(context)
             ShizukuSettings.StartMethod.SYSTEM -> systemStart(context)
-            else -> adbStart(context, userInitiated, startMethod)
+            else -> adbStart(context, userInitiated, method)
         }
     }
 
@@ -212,8 +220,13 @@ object ShizukuReceiverStarter {
 
     private fun rootStart(context: Context) {
         if (!Shell.getShell().isRoot) {
-            //NotificationHelper.notify(context, AppConstants.NOTIFICATION_ID_STATUS, AppConstants.NOTIFICATION_CHANNEL_STATUS, R.string.notification_service_start_no_root)
+            // [start] has already dropped root when the device doesn't have it, so reaching
+            // here means it was revoked in between. Say so instead of returning silently:
+            // the card would otherwise sit on "starting" for a start that never happened.
+            Log.w(AppConstants.TAG, "Root was revoked before the start could use it")
             Shell.getCachedShell()?.close()
+            StartStatusReporter.failed(context.getString(R.string.start_failed_root_unavailable))
+            ShizukuStateMachine.update()
             return
         }
 
