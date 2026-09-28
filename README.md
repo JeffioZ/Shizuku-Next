@@ -1,12 +1,25 @@
 <div align="center">
-   
+
+<img src="docs/logo.png" width="132" alt="Shizuku Next">
+
 # Shizuku Next
 
 An Android app that allows other apps to use system-level APIs that require ADB/root privileges.
 
-**This fork ships as Shizuku Next** (14.0.0-next): same package, same interfaces, same API — just a new name and icon. Updates install over an existing Shizuku without disturbing the server, the permissions an app already holds, or anything that talks to the API.
+**Shizuku Next is a fork of [thedjchi's Shizuku](https://github.com/thedjchi/Shizuku), which is itself a fork of
+[RikkaApps' Shizuku](https://github.com/RikkaApps/Shizuku).** Shizuku the server, the API, the shell and
+everything that makes this possible is RikkaW's work, and the fork this is built on is thedjchi's. Their credit
+is given in full below; please support them.
 
-**I'm pausing maintenance for the time being, I simply haven't had time to work on this and it was a side project.**
+**Note from [thedjchi](https://github.com/thedjchi/Shizuku), whose fork this continues:** *"I'm pausing maintenance
+for the time being, I simply haven't had time to work on this and it was a side project."* This fork picks up where
+his left off.
+
+⚠️ **This build is signed with this fork's own key, so it will not install over the official Shizuku or over
+thedjchi's fork** — Android refuses to replace an app signed with a different key. Uninstall that one first, and
+note that a Shizuku server it started may still be running until you stop it or reboot. Nothing else changes: the
+package name (`moe.shizuku.privileged.api`), the interfaces and the API are untouched, so apps that use Shizuku
+keep working.
 
 [![Stars](https://img.shields.io/github/stars/thedjchi/Shizuku?style=for-the-badge&color=bfb330&labelColor=807820&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHRpdGxlPnN0YXI8L3RpdGxlPjxwYXRoIGQ9Ik0xMiwxNy4yN0wxOC4xOCwyMUwxNi41NCwxMy45N0wyMiw5LjI0TDE0LjgxLDguNjJMMTIsMkw5LjE5LDguNjJMMiw5LjI0TDcuNDUsMTMuOTdMNS44MiwyMUwxMiwxNy4yN1oiIGZpbGw9IndoaXRlIiAvPjwvc3ZnPg==)](https://github.com/thedjchi/Shizuku/stargazers)
 [![Downloads](https://img.shields.io/github/downloads/thedjchi/Shizuku/total?style=for-the-badge&color=bf7830&labelColor=805020&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHRpdGxlPmRvd25sb2FkPC90aXRsZT48cGF0aCBkPSJNNSwyMEgxOVYxOEg1TTE5LDlIMTVWM0g5VjlINUwxMiwxNkwxOSw5WiIgZmlsbD0id2hpdGUiIC8+PC9zdmc+)](https://github.com/thedjchi/Shizuku/releases)
@@ -28,18 +41,40 @@ This is a **FORK** of Shizuku. If you are looking for the original version, plea
 
 ## ⬇️ Download
 
-Get the latest [stable](https://github.com/thedjchi/Shizuku/releases/latest) or [beta](https://github.com/thedjchi/Shizuku/releases) version.
+Get the latest [stable](https://github.com/thedjchi/Shizuku/releases/latest) or [beta](https://github.com/thedjchi/Shizuku/releases) version of the fork this is based on, or build this one yourself — see [Building the App](#building-the-app).
 
-All versions are distributed via [GitHub Releases](https://github.com/thedjchi/Shizuku/releases).
+Those releases are [thedjchi's](https://github.com/thedjchi/Shizuku), not this fork's, and the badges above track his repository too.
+Because they are signed with a different key, they and this build can't replace one another: uninstall the one you have before installing the other.
 
 ## ✨ Added Features
 
-This version of Shizuku includes some extra features over the original version, such as:
+Everything below is either inherited from the fork this is based on or added here. The two are kept apart
+on purpose, because the second list is the only part this project is responsible for.
+
+### 🍴 From [thedjchi's fork](https://github.com/thedjchi/Shizuku) — his work, carried over
+
+Shizuku Next started from his fork of Shizuku, so these are his features. A couple have been extended here
+since — the transport split inside **TCP mode**, for instance — and where that is so, the extra behaviour
+also appears under this fork's own list below.
+
+* **More robust "start on boot":** waits for a Wi-Fi connection before starting the Shizuku service
+* **TCP mode:** keep the classic ADB port open (i.e. the `adb tcpip` command) so the USB start and the watchdog can restart Shizuku without Wi-Fi or pairing. With it off, an open port is closed whenever Shizuku starts over wireless
+* **Watchdog service:** automatically restarts Shizuku if it stops unexpectedly, and can alert you of crashes/potential fixes
+* **Start/stop intents:** toggle Shizuku on-demand using automation apps (e.g., Tasker, MacroDroid, Automate)
+* **[BETA] Stealth mode:** hide Shizuku from other apps that don't work when Shizuku is installed
+* **[BETA] In-app updates:** option to automatically check for new updates, and can automatically download/install the latest version from GitHub
+* **Android/Google TV and VR headset support:** UI is now compatible with D-Pad remotes, all TVs are supported (including Android 14+ TVs that require pairing), and the multi-window pairing dialog is toggleable in settings for VR headsets
+* **MediaTek support:** fixes a critical bug in the original v13.6.0 which prevented Shizuku from working on MediaTek devices
+* And more!
+
+### 🦊 Added by Shizuku Next (this fork)
+
+The interface work, the start-method handling and the reliability fixes below are ours, built on top of his
+fork, which is built on [RikkaApps' Shizuku](https://github.com/RikkaApps/Shizuku).
+
 * **Automated setup:** the separate "Pair" button has been removed — pressing "Start" detects when wireless debugging still needs to be paired and launches the pairing flow automatically
 * **Pair without typing:** Shizuku reads the pairing code and port straight out of the system's "Pair with device" dialog, pairs, and starts itself — so the code never has to be typed, and can't expire while you switch apps. Manual pairing (notification + typed code) stays one tap away as a fallback — the *Manual* button beside *Automated* in the same dialog — and both labels are single words so they fit on one button row instead of stacking
-* **More robust "start on boot":** waits for a Wi-Fi connection before starting the Shizuku service
 * **Wireless debugging auto-disable (optional):** restore the old behaviour of turning wireless debugging off once Shizuku has started over it, instead of leaving it on so Shizuku can restart itself
-* **TCP mode:** keep the classic ADB port open (i.e. the `adb tcpip` command) so the USB start and the watchdog can restart Shizuku without Wi-Fi or pairing. With it off, an open port is closed whenever Shizuku starts over wireless
 * **Wireless debugging stays enabled:** starting Shizuku no longer turns off wireless debugging, so it can restart with USB debugging off and no Wi-Fi connection; the status card shows whether it runs over wireless or USB debugging
 * **Accurate status label:** the home status card shows the server's real UID (e.g. `uid 1000`) instead of always assuming adb, plus three facts that can't be confused with each other — the transport it actually runs on, the method this launch used (*Current*) and the method the next Start will use (*Default*) — so wireless, USB, system and root stay apart. The four read as one row across the card — label above value, a hairline rule between each pair — so the whole state is legible without reading left to right. Every status notification names the method too ("USB debugging · Waiting to retry")
 * **Fewer cryptic failure cards:** a pairing request that the device rejects is reported as a pairing failure instead of being retried until the dead socket reports "Socket closed"
@@ -60,17 +95,13 @@ This version of Shizuku includes some extra features over the original version, 
 * **One-tap ADB port fix:** a USB start that finds the classic ADB port closed offers to open it and start in one tap, instead of only explaining `adb tcpip`
 * **Clearer apps list:** the Apps tab now says what is happening — a spinner while it loads, "Shizuku is not running" with a Start button, no apps matching the search, or no app having asked for permission yet — instead of a blank page
 * **Search and sort authorized apps:** filter the apps list by name and sort it alphabetically or by most recently added
-* **Watchdog service:** automatically restarts Shizuku if it stops unexpectedly, and can alert you of crashes/potential fixes
 * **More resilient watchdog:** self-heals a dead server on screen unlock (even if the manager wasn't running when it died) and never fights a deliberate Stop
-* **Start/stop intents:** toggle Shizuku on-demand using automation apps (e.g., Tasker, MacroDroid, Automate)
 * **Watchdog control intents:** enable/disable the watchdog via `moe.shizuku.privileged.api.WATCHDOG_ON`, `...WATCHDOG_OFF`, or `...WATCHDOG_TOGGLE`
 * **Status broadcasts:** automation apps can react to `moe.shizuku.privileged.api.SHIZUKU_CHANGED` and `...WATCHDOG_CHANGED`, each carrying a `status` extra (1 = on, 0 = off)
-* **[BETA] Stealth mode:** hide Shizuku from other apps that don't work when Shizuku is installed
-* **[BETA] In-app updates:** option to automatically check for new updates, and can automatically download/install the latest version from GitHub
-* **Android/Google TV and VR headset support:** UI is now compatible with D-Pad remotes, all TVs are supported (including Android 14+ TVs that require pairing), and the multi-window pairing dialog is toggleable in settings for VR headsets
 * **Stability on some Chinese devices (Xiaomi/OPPO/Lenovo):** background starts no longer force USB debugging on, so Shizuku no longer dies when the USB mode is File Transfer and the screen is off
-* **MediaTek support:** fixes a critical bug in the original v13.6.0 which prevented Shizuku from working on MediaTek devices
-* And more!
+
+The fork's own name and icon — the fox in [`docs/logo.png`](docs/logo.png) — are this project's. Everything
+underneath is the work credited below.
 
 ## 📝 User Guide
 
@@ -146,6 +177,14 @@ The `:manager:assembleDebug` task generates a debuggable server. You can attach 
 4. Commit your changes (`git commit -m 'Commit message'`)
 5. Push to the branch (`git push origin branch-name`)
 6. Open a Pull Request
+
+## 🙏 Credits
+
+* **[RikkaW / RikkaApps](https://github.com/RikkaApps/Shizuku)** — the original Shizuku: the server, the API, the
+  shell, and the foundation all of this is built on.
+* **[thedjchi](https://github.com/thedjchi/Shizuku)** — the fork this project is based on. Everything under
+  *From thedjchi's fork* above is his.
+* Everyone who contributed upstream, and the translators on [Crowdin](https://crowdin.com/project/shizuku).
 
 ## 📃 License
 
