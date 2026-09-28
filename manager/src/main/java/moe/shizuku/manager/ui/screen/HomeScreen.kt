@@ -11,14 +11,16 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -42,6 +44,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -602,16 +605,18 @@ private fun StatusCard(
         contentColor = contentColor,
         shape = MaterialTheme.shapes.large
     ) {
-        // Status on the left, action on the right, so the card isn't half empty.
+        // The icon reads as a status badge for the title beside it, with the facts in a
+        // row underneath the two of them.
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(horizontal = 16.dp, vertical = 14.dp)
         ) {
             Icon(
                 if (running) Icons.Rounded.CheckCircle else Icons.Rounded.StopCircle,
-                contentDescription = null
+                contentDescription = null,
+                // Nudged down to sit on the title's line rather than above it.
+                modifier = Modifier.padding(top = 2.dp)
             )
 
             Spacer(modifier = Modifier.width(16.dp))
@@ -715,75 +720,51 @@ private fun readSeccompStatus(): Int? {
 private fun readDeviceStatus(): Pair<Int?, Int?> = readSelinuxStatus() to readSeccompStatus()
 
 /**
- * The facts inside the status card, two per row so they don't all stack down the left
- * edge. Each takes half the width and ellipsises rather than scrambling the row when a
- * value is long.
+ * The facts inside the status card, spread across it with a hairline rule between each
+ * pair. Each takes an equal share of the width so the rules land in even gaps, and long
+ * values ellipsise inside their share rather than pushing the next one along.
  */
 @Composable
 private fun StatusFacts(vararg facts: Pair<Int, String>) {
-    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-        // On a wide card (landscape, tablets) two columns leave each pair stranded in the
-        // middle of an empty half — the pairs end up far apart. Fit all four across
-        // instead and let them spread over the width.
-        val wide = maxWidth >= 460.dp
-        val perRow = if (wide) 4 else 2
-
-        Column(modifier = Modifier.fillMaxWidth()) {
-            facts.toList().chunked(perRow).forEach { row ->
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
-                    horizontalArrangement =
-                        if (wide) Arrangement.SpaceBetween else Arrangement.Start
-                ) {
-                    row.forEach { (labelRes, value) ->
-                        // Wide: each pair sizes to its content and the row spreads them out.
-                        // Otherwise every pair takes half the card and the values line up.
-                        StatusFact(
-                            labelRes,
-                            value,
-                            if (wide) Modifier else Modifier.weight(1f),
-                            alignValues = !wide
-                        )
-                    }
-                    // Keep the columns even when the last row holds fewer facts.
-                    if (!wide) repeat(perRow - row.size) { Spacer(modifier = Modifier.weight(1f)) }
-                }
+    Row(
+        // IntrinsicSize.Min is what gives the rules a height to fill: without it the
+        // divider measures against the row's (unbounded) constraint and disappears.
+        modifier = Modifier.fillMaxWidth().padding(top = 2.dp).height(IntrinsicSize.Min)
+    ) {
+        facts.forEachIndexed { index, (labelRes, value) ->
+            if (index > 0) {
+                VerticalDivider(
+                    modifier = Modifier.padding(horizontal = 10.dp),
+                    thickness = 1.dp,
+                    color = LocalContentColor.current.copy(alpha = 0.25f)
+                )
             }
+            StatusFact(labelRes, value, Modifier.weight(1f).fillMaxHeight())
         }
     }
 }
 
 /**
- * One label/value pair, left-aligned in its half of the row so the columns line up with
- * the title above them instead of each pair drifting to its own centre.
+ * One fact: its label above its value. The label is set back so the eye reads the value
+ * first, and both line up with the title above them.
  */
 @Composable
-private fun StatusFact(
-    @StringRes labelRes: Int,
-    value: String,
-    modifier: Modifier = Modifier,
-    alignValues: Boolean = true
-) {
-    Row(
-        modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+private fun StatusFact(@StringRes labelRes: Int, value: String, modifier: Modifier = Modifier) {
+    Column(modifier = modifier) {
         Text(
             stringResource(labelRes),
             style = MaterialTheme.typography.bodySmall,
-            color = LocalContentColor.current.copy(alpha = 0.75f),
+            color = LocalContentColor.current.copy(alpha = 0.7f),
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            // Fixed width in the grid, so the values stack under one another in a column.
-            modifier = if (alignValues) Modifier.width(78.dp) else Modifier
+            overflow = TextOverflow.Ellipsis
         )
-        Spacer(modifier = Modifier.width(6.dp))
         Text(
             value,
-            style = MaterialTheme.typography.bodySmall,
+            // One step up from the label and no more: four facts share the width, so a
+            // bigger value just eats its own ellipsis.
+            style = MaterialTheme.typography.bodyMedium,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f, fill = false)
+            overflow = TextOverflow.Ellipsis
         )
     }
 }
