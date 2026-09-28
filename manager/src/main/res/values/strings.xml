@@ -212,6 +212,9 @@
     <string name="app_management_batch_revoke_title">Revoke permission</string>
     <string name="app_management_batch_message">Apply to %1$d selected app(s)?</string>
     <string name="app_management_toggle_all_message">Apply to all %1$d listed apps?</string>
+    <string name="app_management_batch_granted">Access granted to %1$d apps</string>
+    <string name="app_management_batch_revoked">Access revoked from %1$d apps</string>
+    <string name="action_undo">Undo</string>
 
     <!-- Terminal -->
     <string name="home_terminal_title">Use Shizuku in terminal apps</string>

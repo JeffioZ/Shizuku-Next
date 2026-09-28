@@ -34,6 +34,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -131,7 +135,61 @@ fun AppsScreen() {
 
     val selectionMode = selected.isNotEmpty()
     val scope = rememberCoroutineScope()
+    // Remembered for the whole screen rather than per batch, so a second batch replaces
+    // the first offer to undo instead of stacking snackbars.
+    val snackbarHostState = remember { SnackbarHostState() }
 
+    /**
+     * Applies a batch and offers to take it back.
+     *
+     * Flipping every listed app is one tap and one confirmation, which is a lot of
+     * permission to change by accident, so the snackbar that follows carries Undo and
+     * puts the same apps back the way they were. A batch the server refused is not
+     * reversible and gets no offer to undo it.
+     */
+    fun applyBatch(grant: Boolean, apps: List<PackageInfo>) {
+        scope.launch {
+            val limited = withContext(Dispatchers.IO) {
+                var limited = false
+                for (pi in apps) {
+                    val result = runCatching {
+                        if (grant) AuthorizationManager.grant(pi.packageName, pi.applicationInfo!!.uid)
+                        else AuthorizationManager.revoke(pi.packageName, pi.applicationInfo!!.uid)
+                    }
+                    if (result.exceptionOrNull() is SecurityException) limited = true
+                }
+                limited
+            }
+            if (limited) permissionLimited = true
+            version++
+            if (limited) return@launch
+
+            val result = snackbarHostState.showSnackbar(
+                message = context.getString(
+                    if (grant) R.string.app_management_batch_granted
+                    else R.string.app_management_batch_revoked,
+                    apps.size
+                ),
+                actionLabel = context.getString(R.string.action_undo),
+                withDismissAction = true,
+                duration = SnackbarDuration.Short
+            )
+            if (result == SnackbarResult.ActionPerformed) {
+                // Back the other way, over the same apps.
+                withContext(Dispatchers.IO) {
+                    for (pi in apps) {
+                        runCatching {
+                            if (grant) AuthorizationManager.revoke(pi.packageName, pi.applicationInfo!!.uid)
+                            else AuthorizationManager.grant(pi.packageName, pi.applicationInfo!!.uid)
+                        }
+                    }
+                }
+                version++
+            }
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
     Column(modifier = Modifier.fillMaxSize()) {
         if (selectionMode) {
             TopAppBar(
@@ -321,6 +379,15 @@ fun AppsScreen() {
         }
     }
 
+    // The undo offer sits above the list, out of the way of the bottom bar.
+    SnackbarHost(
+        hostState = snackbarHostState,
+        modifier = Modifier
+            .align(Alignment.BottomCenter)
+            .padding(16.dp)
+    )
+    }
+
     if (permissionLimited) {
         val adbUrl = runCatching { Helps.ADB.get() }.getOrDefault("")
         AlertDialog(
@@ -354,21 +421,7 @@ fun AppsScreen() {
                 TextButton(onClick = {
                     val target = shown.toList()
                     pendingToggleAll = null
-                    scope.launch {
-                        val limited = withContext(Dispatchers.IO) {
-                            var limited = false
-                            for (pi in target) {
-                                val result = runCatching {
-                                    if (grant) AuthorizationManager.grant(pi.packageName, pi.applicationInfo!!.uid)
-                                    else AuthorizationManager.revoke(pi.packageName, pi.applicationInfo!!.uid)
-                                }
-                                if (result.exceptionOrNull() is SecurityException) limited = true
-                            }
-                            limited
-                        }
-                        if (limited) permissionLimited = true
-                        version++
-                    }
+                    applyBatch(grant, target)
                 }) { Text(stringResource(android.R.string.ok)) }
             },
             dismissButton = {
@@ -393,15 +446,12 @@ fun AppsScreen() {
             text = { Text(stringResource(R.string.app_management_batch_message, selected.size)) },
             confirmButton = {
                 TextButton(onClick = {
-                    for (pi in all.filter { it.packageName in selected }) {
-                        runCatching {
-                            if (grant) AuthorizationManager.grant(pi.packageName, pi.applicationInfo!!.uid)
-                            else AuthorizationManager.revoke(pi.packageName, pi.applicationInfo!!.uid)
-                        }
-                    }
+                    // Same path as Toggle all, so a hand-picked batch can be taken back
+                    // just as easily.
+                    val target = all.filter { it.packageName in selected }
                     pendingBatch = null
                     selected = emptySet()
-                    version++
+                    applyBatch(grant, target)
                 }) { Text(stringResource(android.R.string.ok)) }
             },
             dismissButton = {
