@@ -74,9 +74,7 @@ object AdbStarter {
             // Classic TCP mode rides on the USB debugging toggle. Only switch adbd
             // into TCP mode when USB debugging is already on — switching during a
             // wireless-only start would tie future restarts to a toggle that's off.
-            val usbDebugging = Settings.Global.getInt(
-                context.contentResolver, Settings.Global.ADB_ENABLED, 0
-            ) == 1
+            val usbDebugging = EnvironmentUtils.isAdbEnabled()
             // Only a USB start opens/switches to the classic ADB port. Letting a
             // wireless start do it turned "Wireless debugging" into a TCP connection
             // that then reported itself as USB debugging.
@@ -128,7 +126,7 @@ object AdbStarter {
     suspend fun stopTcp(context: Context, port: Int) {
         runCatching {
             val cr = context.contentResolver
-            val hadUsbDebugging = Settings.Global.getInt(cr, Settings.Global.ADB_ENABLED, 0) == 1
+            val hadUsbDebugging = EnvironmentUtils.isAdbEnabled()
             val canWriteSettings =
                 context.checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED
             if (canWriteSettings) {
@@ -136,8 +134,7 @@ object AdbStarter {
                 Settings.Global.putLong(cr, "adb_allowed_connection_time", 0L)
             }
 
-            val adbEnabled = Settings.Global.getInt(cr, Settings.Global.ADB_ENABLED, 0)
-            if (adbEnabled == 0) throw IllegalStateException("ADB is not enabled")
+            if (!EnvironmentUtils.isAdbEnabled()) throw IllegalStateException("ADB is not enabled")
 
             ShizukuStateMachine.set(ShizukuStateMachine.State.STOPPING)
             val key = AdbKey(PreferenceAdbKeyStore(ShizukuSettings.getPreferences()), "shizuku")

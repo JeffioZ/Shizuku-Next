@@ -20,8 +20,8 @@ private const val TAG = "SettingsHelper"
 object SettingsHelper {
 
     fun launchOrHighlightWirelessDebugging(context: Context) {
-        val adbEnabled = Settings.Global.getInt(context.contentResolver, Settings.Global.ADB_ENABLED, 0)
-        if (adbEnabled > 0) {
+        // Read through the helper: the raw setting is redacted on Android 17.
+        if (EnvironmentUtils.isAdbEnabled()) {
             SettingsPage.Developer.WirelessDebugging.launch(context)
         } else SettingsPage.Developer.HighlightWirelessDebugging.launch(context)
     }

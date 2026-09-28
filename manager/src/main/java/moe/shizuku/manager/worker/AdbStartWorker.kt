@@ -74,7 +74,7 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             //               is what killed Shizuku on some Chinese devices when the
             //               USB mode was File Transfer and the screen went off.
             val wirelessAlreadyEnabled = Settings.Global.getInt(cr, "adb_wifi_enabled", 0) == 1
-            val usbAlreadyEnabled = Settings.Global.getInt(cr, Settings.Global.ADB_ENABLED, 0) == 1
+            val usbAlreadyEnabled = EnvironmentUtils.isAdbEnabled()
 
             // All of the writes below go through helpers that swallow a permission denial:
             // on a fresh install (or after a re-signed update) the app has no

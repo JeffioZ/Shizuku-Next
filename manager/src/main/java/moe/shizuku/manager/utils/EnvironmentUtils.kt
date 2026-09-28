@@ -51,9 +51,23 @@ object EnvironmentUtils {
         return port
     }
 
-    fun isUsbDebuggingEnabled(): Boolean {
-        return Settings.Global.getInt(appContext.contentResolver, Settings.Global.ADB_ENABLED, 0) == 1
+    /**
+     * Whether USB debugging is on.
+     *
+     * Android 17 (SDK 37) redacts `Settings.Global.ADB_ENABLED` to 0 for third-party apps,
+     * so a 0 there no longer means the toggle is off. Believing it made the app announce
+     * that USB debugging was disabled on devices where it was on, and made the TCP-mode
+     * path refuse to run at all. On that platform the setting says nothing and the
+     * toggle is assumed on, which is what the redaction is asking apps to do.
+     */
+    fun isAdbEnabled(): Boolean {
+        if (Settings.Global.getInt(appContext.contentResolver, Settings.Global.ADB_ENABLED, 0) > 0) {
+            return true
+        }
+        return Build.VERSION.SDK_INT >= 37
     }
+
+    fun isUsbDebuggingEnabled(): Boolean = isAdbEnabled()
 
     fun isWifiConnected(): Boolean {
         val cm = appContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
