@@ -3,12 +3,6 @@ name: Build App
 on:
   workflow_dispatch:
     inputs:
-      debug:
-        description: 'Debug'
-        type: boolean
-        required: false
-        default: false
-
       prerelease:
         description: 'Prerelease'
         type: boolean
@@ -29,7 +23,8 @@ jobs:
 
     outputs:
       versionName: ${{ steps.buildWithGradle.outputs.versionName }}
-      artifactName: ${{ steps.buildWithGradle.outputs.artifactName }}
+      debugArtifact: ${{ steps.buildWithGradle.outputs.debugArtifact }}
+      releaseArtifact: ${{ steps.buildWithGradle.outputs.releaseArtifact }}
 
     steps:
       - name: Checkout
@@ -48,15 +43,16 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
+      # Both variants are built and released every run, so the release APK always needs
+      # its signing secrets. Missing ones are a configuration error, not a debug build.
       - name: Validate Signing Config
         run: |
-          if [ "${{ inputs.debug }}" = "false" ] && [ "$KEYSTORE" = "" ]; then
-            echo "::error::Signing secrets not configured. Signing secrets are required for release builds."
+          if [ "$KEYSTORE" = "" ]; then
+            echo "::error::Signing secrets not configured. The release APK has to be signed."
             exit 1
           fi
 
       - name: Create signing.properties
-        if: ${{ !inputs.debug && env.KEYSTORE != '' }}
         run: |
           echo KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }} > signing.properties
           echo KEYSTORE_ALIAS=${{ secrets.KEYSTORE_ALIAS }} >> signing.properties
@@ -78,49 +74,54 @@ jobs:
           echo 'org.gradle.caching=true' >> gradle.properties
           echo 'org.gradle.parallel=true' >> gradle.properties
 
-          if [ "${{ inputs.debug }}" = "true" ]; then
-            CMD="./gradlew :manager:assembleDebug"
-            APK_DIR="manager/build/outputs/apk/debug"
-          else
-            CMD="./gradlew :manager:assembleRelease"
-            APK_DIR="manager/build/outputs/apk/release"
-          fi
-
+          CMD="./gradlew :manager:assembleDebug :manager:assembleRelease"
           [ "${{ inputs.prerelease }}" = "true" ] && CMD="$CMD -Pbeta"
 
           eval $CMD
-          FILE=$(ls "$APK_DIR"/*.apk)
 
-          VERSION=$(echo "$(basename "$FILE")" | sed -E 's/^shizuku-(.*)-(debug|release)\.apk/\1/')
+          # The release APK drops the variant suffix, the debug one keeps it, so a
+          # download says which build it is.
+          VERSION=""
+          for KIND in debug release; do
+            FILE=$(ls manager/build/outputs/apk/$KIND/*.apk)
+            BUILD=$(echo "$(basename "$FILE")" | sed -E 's/^shizuku-(.*)-(debug|release)\.apk/\1/')
+            [ -z "$VERSION" ] && VERSION="$BUILD"
 
-          ARTIFACT_NAME="shizuku-$VERSION"
-          [ "${{ inputs.debug }}" = "true" ] && ARTIFACT_NAME="${ARTIFACT_NAME}-debug"
-          ARTIFACT_NAME="${ARTIFACT_NAME}.apk"
+            NAME="shizuku-$VERSION"
+            [ "$KIND" = "debug" ] && NAME="$NAME-debug"
+            NAME="$NAME.apk"
 
-          RENAMED="$FILE"
-          if [ "$(basename "$FILE")" != "$ARTIFACT_NAME" ]; then
-            RENAMED="$(dirname "$FILE")/$ARTIFACT_NAME"
-            mv "$FILE" "$RENAMED"
-          fi
+            RENAMED="$FILE"
+            if [ "$(basename "$FILE")" != "$NAME" ]; then
+              RENAMED="$(dirname "$FILE")/$NAME"
+              mv "$FILE" "$RENAMED"
+            fi
+
+            echo "${KIND}Artifact=$NAME" >> $GITHUB_OUTPUT
+            echo "${KIND}FilePath=$RENAMED" >> $GITHUB_OUTPUT
+          done
 
           echo "versionName=$VERSION" >> $GITHUB_OUTPUT
-          echo "artifactName=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
-          echo "filePath=$RENAMED" >> $GITHUB_OUTPUT
 
-      - name: Upload Artifact
+      - name: Upload Debug Artifact
         uses: actions/upload-artifact@v6
         with:
-          name: ${{ steps.buildWithGradle.outputs.artifactName }}
-          path: ${{ steps.buildWithGradle.outputs.filePath }}
+          name: ${{ steps.buildWithGradle.outputs.debugArtifact }}
+          path: ${{ steps.buildWithGradle.outputs.debugFilePath }}
+
+      - name: Upload Release Artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ steps.buildWithGradle.outputs.releaseArtifact }}
+          path: ${{ steps.buildWithGradle.outputs.releaseFilePath }}
 
       - name: Attest Build Provenance
-        if: ${{ success() && !inputs.debug }}
+        if: ${{ success() }}
         uses: actions/attest-build-provenance@v3
         with:
-          subject-path: manager/build/outputs/apk/release/*.apk
+          subject-path: manager/build/outputs/apk/**/*.apk
 
   release:
-    if: ${{ !inputs.debug }}
     needs: [build]
     runs-on: ubuntu-latest
     permissions:
@@ -139,14 +140,19 @@ jobs:
           VERSION="${{ needs.build.outputs.versionName }}"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "$VERSION" -m "Release version $VERSION"
-          git push origin "$VERSION"
+          if git rev-parse "$VERSION" > /dev/null 2>&1; then
+            echo "Tag $VERSION already exists, reusing it."
+          else
+            git tag "$VERSION" -m "Release version $VERSION"
+            git push origin "$VERSION"
+          fi
 
-      - name: Download Artifact
+      - name: Download Artifacts
         uses: actions/download-artifact@v7
         with:
-          name: ${{ needs.build.outputs.artifactName }}
+          pattern: 'shizuku-*'
           path: files
+          merge-multiple: true
 
       - name: Create Draft Release
         env:
@@ -155,4 +161,10 @@ jobs:
         run: |
           FLAGS="--draft"
           [ "${{ inputs.prerelease }}" = "true" ] && FLAGS="$FLAGS --prerelease"
-          gh release create "$RELEASE_VERSION" files/*.apk $FLAGS
+
+          if gh release view "$RELEASE_VERSION" --json id > /dev/null 2>&1; then
+            # A re-run for the same version: replace the APKs rather than fail.
+            gh release upload "$RELEASE_VERSION" files/*.apk --clobber
+          else
+            gh release create "$RELEASE_VERSION" files/*.apk $FLAGS
+          fi
