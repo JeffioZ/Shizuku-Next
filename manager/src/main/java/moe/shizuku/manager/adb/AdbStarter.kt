@@ -260,7 +260,14 @@ object AdbStarter {
         } catch (e: Exception) {
             if (e is AdbPairingRequiredException) throw e
             if (e is SSLException || e.isCertificateUnknown()) {
-                Log.w(TAG, "TLS handshake rejected, pairing required", e)
+                // Expected whenever the device doesn't trust our key, and the UI turns it
+                // into the pairing flow — so log one line, not a stack trace, which reads
+                // like a crash of its own.
+                Log.w(
+                    TAG,
+                    "TLS handshake rejected, pairing required — " +
+                        e.message?.replace('\n', ' ')
+                )
                 throw AdbPairingRequiredException(e.message, e)
             }
             throw e
@@ -279,7 +286,10 @@ object AdbStarter {
                 if (
                     attempt == maxAttempts ||
                     e is CancellationException ||
-                    e is SocketTimeoutException
+                    e is SocketTimeoutException ||
+                    // Not transient: retrying can't make the device trust our key, and the
+                    // retry only produces a dead-socket error that hides the real reason.
+                    e is AdbPairingRequiredException
                 ) throw e
                 delayTime += 1000
             }

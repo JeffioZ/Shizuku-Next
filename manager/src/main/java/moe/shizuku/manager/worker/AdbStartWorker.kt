@@ -17,6 +17,7 @@ import androidx.core.app.NotificationCompat
 import androidx.lifecycle.asFlow
 import androidx.work.*
 import java.io.EOFException
+import java.io.IOException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import kotlinx.coroutines.CancellationException
@@ -250,6 +251,12 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
 
                 is SecurityException ->
                     applicationContext.getString(R.string.start_failed_no_auth) to
+                        StartFailureKind.GENERIC
+
+                // A bare "Socket closed" (or any other IO failure) tells the user nothing
+                // — the connection to adbd went away mid-attempt. Say that instead.
+                is IOException ->
+                    applicationContext.getString(R.string.start_failed_connection_lost) to
                         StartFailureKind.GENERIC
 
                 else -> {
