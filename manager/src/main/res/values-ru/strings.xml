@@ -2,32 +2,10 @@
 <resources>
     <!-- To translators: you can leave your here -->
     <!-- Home - Status -->
-    <string name="home_status_service_is_running">%1$s запущен</string>
-    <string name="home_status_service_not_running">%1$s не запущен</string>
-    <string name="home_status_service_version">Версия %2$s, %1$s</string>
-    <string name="home_status_service_version_update"><![CDATA[Версия %2$s, %1$s<br>Запустите снова что бы обновиться до версии %3$s]]></string>
     <!-- Home - Adb -->
-    <string name="home_adb_title"><![CDATA[Запуск через соединение с ПК]]></string>
-    <string name="home_adb_description"><![CDATA[Для устройств без root прав потребуется обращаться к adb для запуска Shizuku (не обойтись без соединения с компьютером). Этот процесс нужно повторять каждый раз, когда устройство перезагружается. Пожалуйста, <b><a href="%1$s">прочтите справку</a></b>.]]></string>
-    <string name="home_adb_button_view_help">Читать справку</string>
-    <string name="home_adb_button_view_command">Просмотр команды</string>
-    <string name="home_adb_dialog_view_command_message"><![CDATA[<font face=monospace>%1$s</font><br><br>* Есть и другие способы; сначала убедитесь, что сперва прочли справку.]]></string>
-    <string name="home_adb_dialog_view_command_copy_button">Скопировать</string>
-    <string name="home_adb_dialog_view_command_button_send">Отправить</string>
     <!-- Home - Wireless Adb -->
     <string name="home_wireless_adb_title"><![CDATA[Запуск через отладку по Wi-Fi]]></string>
-    <string name="home_wireless_adb_description"><![CDATA[На Android 11 или выше Вы можете включить отладку по Wi-Fi без дополнительного ПО, без подключения к компьютеру. Пожалуйста, сперва просмотрите инструкцию]]></string>
-    <string name="home_wireless_adb_description_pre_11"><![CDATA[Для отладки по Wi-Fi в Android до 11 версии  потребуется соединения с компьютером.]]></string>
-    <string name="home_wireless_adb_view_guide_button">Пошаговая инструкция</string>
     <!-- Adb -->
-    <string name="dialog_adb_discovery">Ожидание службы отладки по Wi-Fi</string>
-    <string name="dialog_adb_discovery_message">Пожалуйста, включите пункт «Отладка по Wi-Fi» в меню
-        «Для разработчиков». «Отладка по Wi-Fi» автоматически отключается при изменении сети.
-        \n
-        \nВнимание: не отключайте пункт «Для разработчиков» или «Отладка по USB», иначе Shizuku
-        остановит работу.</string>
-    <string name="dialog_adb_discovery_message_toggle_wireless_debugging">Попробуй выключить и снова
-        включить \"Отладка по Wi-Fi\", если поиск продолжается.</string>
     <string name="dialog_adb_port">Порт</string>
     <string name="dialog_adb_invalid_port">Порт – это целое число в диапазоне от 1 до 65535.</string>
     <string name="adb_pairing">Сопряжение</string>
@@ -38,11 +16,6 @@
     <string name="cannot_connect_port">Не могу подключиться к беспроводной отладке.\n\nПожалуйста,
         убедитесь, что Shizuku внесен в белый список во всех фаерволах, блокировке рекламы, VPN или
         подобных приложениях, которые могут ограничивать доступ к сети.</string>
-    <string name="dialog_wireless_adb_not_enabled">Отладка по Wi-Fi не включена.
-        \nВнимание: на системах старше Android 11 для включения этой отладки необходимо соединение с
-        компьютером.</string>
-    <string name="dialog_usb_debugging_not_enabled">Отладка по USB не включена.\nВключите её в
-        «Параметрах разработчика».</string>
     <string name="dialog_adb_pairing_message">Пожалуйста, начните спаривать с выполнения следующих
         шагов:\n- Перейти к разделу «Опции разработчика»\n- Включить «USB отладку» и «беспроводную
         отладку»\n- Нажать на левую сторону раздела «Беспроводная отладка»\n- Нажмите «Сопарить
@@ -68,13 +41,11 @@
         одновременно видеть это приложение и системный диалог.</string>
     <string name="adb_error_key_store">Не удаётся сгенерировать ключ для беспроводной
         отладки.\nВозможно, это связано с поломанным механизмом KeyStore этого устройства.</string>
-    <string name="adb_stopping_tcp">Закрытие TCP-порта</string>
     <string name="adb_error_stop_tcp">Не удалось остановить ADB через TCP</string>
     <string name="adb_pair_required">Пожалуйста, сперва пройдите процедуру сопряжения.</string>
     <string name="enable">Давать возможность</string>
     <string name="development_settings">Параметры разработчика</string>
     <string name="notification_settings">Настройки уведомлений</string>
-    <string name="adb_pairing_tutorial_title">Сопряжение Shizuku с вашим устройством</string>
     <string name="adb_pairing_tutorial_content_notification">Уведомление от Shizuku поможет
         завершить процедуру сопряжения.</string>
     <string name="adb_pairing_tutorial_content_steps">Перейдите в «Настройки разработчика», затем
@@ -100,49 +71,25 @@
     <string name="home_root_title"><![CDATA[Запуск (для устройств с root правами)]]></string>
     <string name="home_root_description"><![CDATA[Если вы используете Magisk, попробуйте %1$s. Для пользователей root он в конечном итоге заменит Shizuku. Обратите внимание, что существующие приложения необходимо немного изменить для использования %2$s.]]></string>
     <string name="home_root_button_start">Запустить</string>
-    <string name="home_root_button_restart">Перезапустить</string>
     <!-- Home - Application management -->
-    <string name="home_app_management_title">Управление приложениями</string>
     <plurals name="home_app_management_authorized_apps_count">
         <item quantity="one"><![CDATA[Доступно для %d приложения]]></item>
         <item quantity="few"><![CDATA[Доступно для %d приложений]]></item>
         <item quantity="many"><![CDATA[Доступно для %d приложений]]></item>
         <item quantity="other"><![CDATA[Доступно для %d приложений]]></item>
     </plurals>
-    <string name="home_app_management_view_authorized_apps"><![CDATA[Нажмите для управления списком допущенных приложений]]></string>
-    <string name="home_app_management_empty">Здесь будут отображаться приложения, которые запросили
-        или заявили разрешение Shizuku.</string>
     <!-- Home - Automation -->
-    <string name="home_automation_title">Управляйте Сидзуку с помощью приложений автоматизации</string>
-    <string name="home_automation_description">Приложения, такие как Tasker и MacroDroid, могут
-        отправлять намерения на автоматический запуск/остановку Shizuku.</string>
-    <string name="home_automation_button_view_intents">Просмотр намерений</string>
     <string name="home_automation_dialog_label_action">Действие</string>
     <string name="home_automation_dialog_label_package">Упаковка</string>
     <string name="home_automation_dialog_label_class">Сорт</string>
     <string name="home_automation_dialog_label_target">Цель</string>
     <!-- Home - Learn more -->
-    <string name="home_learn_more_title">Руководство разработчика</string>
-    <string name="home_learn_more_description">Узнайте, как начать разрабатывать с Shizuku</string>
     <!-- Home - Adb permissions limited -->
-    <string name="home_adb_is_limited_title">Нужен дополнительный шаг</string>
-    <string name="home_adb_is_limited_description">Производитель вашего устройства ограничил права
-        ADB, приложения использующие Shizuku будут работать не корректно.
-        \n
-        \nОбычно эти ограничения можно снять в настройках для разработчиков. Пожалуйста, прочитай
-        раздел помощи, чтобы узнать как это сделать.
-        \n
-        \nВозможно Вам понадобится перезапустить Shizuku для применения изменений.</string>
     <!-- Application management -->
     <string name="app_management_dialog_adb_is_limited_title">Доступ к adb ограничен</string>
     <string name="app_management_dialog_adb_is_limited_message"><![CDATA[Возможно, что производитель вашего устройства ограничивает доступ к adb.<p>Решение для вашей системы может быть описано <b><a href="%1$s">здесь</a></b>.]]></string>
-    <string name="app_management_item_summary_requires_root">* требуется Shizuku, запущенный с root
-        правами</string>
     <string name="app_management_toggle_all">Переключить все</string>
     <!-- Terminal -->
-    <string name="home_terminal_title">Применение Shizuku в эмуляторах терминала</string>
-    <string name="home_terminal_description">Выполнение команд оболочки в терминальных приложениях
-        через Shizuku</string>
     <string name="terminal_tutorial_miui">Пользователи сообщают, что MIUI нарушает работу Storage
         Access Framework, который используется функцией экспорта.</string>
     <string name="terminal_tutorial_miui_2">Если вы используете MIUI, вам, возможно, придется
@@ -150,7 +97,6 @@
     <string name="terminal_tutorial_1">Экспортируйте файлы в новую папку.</string>
     <string name="terminal_tutorial_1_description">Будут экспортированы два файла: %1$s и %2$s. Если
         файлы уже существуют в выбранной папке, они будут удалены.</string>
-    <string name="terminal_export_files">Экспорт файлов</string>
     <string name="terminal_tutorial_2">Используйте приложение терминала для копирования файлов в его
         личный каталог.</string>
     <string name="terminal_tutorial_2_description">Совет: если домашний каталог вашего терминального
@@ -158,15 +104,8 @@
         запускать %1$s без указания пути.\n\nВ противном случае вы можете создать псевдоним для %2$s
         в файле конфигурации %3$s вашего терминального приложения.</string>
     <string name="terminal_tutorial_3">Откройте оболочку с помощью следующей команды:</string>
-    <string name="rish_description"><![CDATA[С помощью %1$sвы можете запускать команды оболочки в любом терминальном приложении.<p>Нажмите, чтобы узнать больше об использовании.]]></string>
     <!-- Settings -->
-    <string name="settings_title">Настройки</string>
-    <string name="settings_behavior">Поведение</string>
     <string name="settings_start_on_boot">Запуск при загрузке</string>
-    <string name="settings_start_on_boot_summary">Требуется Android 11+ или root-доступ</string>
-    <string name="settings_start_on_boot_bug">Из-за ошибки в Android 11-12 беспроводная отладка не
-        запоминает ни одной авторизованной сети.\n\nПри каждой перезагрузке вам нужно будет повторно
-        авторизировать сеть, нажав «Разрешить» при появлении диалога авторизации.</string>
     <string name="settings_use_system_color">Палитра цветов из системы</string>
     <string name="settings_watchdog">Сторожевой пес</string>
     <string name="settings_watchdog_summary">Автоматически перезапускать Shizuku в случае сбоя</string>
@@ -175,29 +114,19 @@
         должен был запуститься один раз после перезагрузки)"</string>
     <string name="settings_tcp_mode_dialog_close_port">"TCP-порт будет немедленно закрыт. Для
         повторного включения TCP-режима потребуется Wi-Fi. Продолжить?"</string>
-    <string name="settings_tcp_mode_closing_port">Закрытие TCP-порта...</string>
     <string name="settings_restart_dialog_title">Требуется перезагрузка</string>
     <string name="settings_restart_dialog_message">Сидзуку нужно начать заново, чтобы применить этот
         сеттинг.</string>
     <string name="settings_restart_dialog_message_wifi_required"><![CDATA[<br><br><b>Требуется Wi-Fi. Шизуку продолжит работу и ждёт Wi-Fi подключения, прежде чем перезагрузить в фоновом режиме.</b>]]></string>
     <string name="settings_tcp_port">TCP-порт</string>
-    <string name="settings_tcp_port_default">По умолчанию (5555)</string>
-    <string name="settings_tcp_port_hint">Оставьте поле пустым, чтобы использовать значение по
-        умолчанию (5555)</string>
     <string name="settings_tcp_learn_more">Узнайте больше об использовании приложений автоматизации
         для управления Сидзуку</string>
     <string name="settings_language">Язык</string>
-    <string name="settings_translation_contributors">Авторы перевода</string>
-    <string name="settings_translation">Участвуйте в переводе</string>
-    <string name="settings_translation_summary">Помогите перевести %s на ваш язык</string>
-    <string name="settings_user_interface">Внешний вид</string>
     <string name="settings_black_night_theme">Черная тема</string>
     <string name="settings_black_night_theme_summary">Глубокий черный цвет фона при работе темной
         темы</string>
-    <string name="settings_support">Поддерживать</string>
     <string name="settings_help">Помощь</string>
     <string name="settings_report_bug">Сообщить об ошибке</string>
-    <string name="settings_advanced">Передовой</string>
     <string name="settings_legacy_pairing">Устаревшее сопряжение</string>
     <string name="settings_legacy_pairing_summary">Введите код сопряжения в диалоговом окне вместо
         уведомления.</string>
@@ -217,37 +146,22 @@
         письмо.</string>
     <string name="bug_report_dialog_button_email">Электронная почта</string>
     <!-- Snackbar -->
-    <string name="snackbar_invalid_port">Порт должен быть от 1 до 65535.</string>
-    <string name="snackbar_battery_optimization_home">Для корректной работы функции оптимизации
-        батареи необходимо отключить запуск при загрузке/сторожевом таймере.</string>
     <string name="snackbar_battery_optimization_settings">Чтобы использовать эту функцию, отключите
         оптимизацию расхода заряда батареи.</string>
     <string name="snackbar_action_fix">Исправить</string>
     <!-- Toast -->
     <string name="toast_no_email_app">Приложение электронной почты не найдено</string>
-    <string name="toast_shizuku_already_starting">Сидзуку уже запускается в фоновом режиме.</string>
-    <string name="toast_accessibility_tv_only">Эта услуга поддерживается только на телевизионных
-        устройствах.</string>
     <string name="toast_pairing_timeout">Сервис пары Сидзуку истёк.</string>
     <!-- Dark Mode Setting Override -->
     <string name="dark_theme">Тема</string>
     <string name="dark_theme_off">Всегда светло</string>
     <string name="dark_theme_on">Всегда темно</string>
     <!-- About -->
-    <string name="action_about">О приложении</string>
-    <string name="about_dialog_button_close">Закрывать</string>
-    <string name="about_view_source_code"><![CDATA[Исходный код доступен на %s]]></string>
     <!-- Start -->
     <string name="action_start">Запустить Шизуку</string>
     <!-- Stop -->
     <string name="action_stop">Остановить Shizuku</string>
-    <string name="dialog_stop_message">Служба Shizuku будет остановлена.</string>
     <!-- Notification -->
-    <string name="notification_channel_service_status">Состояние работы службы</string>
-    <string name="notification_service_starting">Служба Shizuku запускается…</string>
-    <string name="notification_service_start_failed">Не удалось запустить службу Shizuku.</string>
-    <string name="notification_service_start_no_root">Не удалось запросить root права.</string>
-    <string name="notification_working">Работает…</string>
     <string name="notification_channel_adb_pairing">Сопряжение с отладкой по Wi-Fi</string>
     <string name="notification_adb_pairing_input_paring_code">Введите код подключения</string>
     <string name="notification_adb_pairing_searching_for_service_title">Ожидание службы сопряжения</string>
@@ -277,7 +191,6 @@
     <string name="wadb_permission_error_notification_title">Ошибка разрешения</string>
     <string name="wadb_permission_error_notification_content">Для запуска Shizuku при загрузке
         требуется разрешение WRITE_SECURE_SETTINGS. Нажмите, чтобы узнать, как его предоставить.</string>
-    <string name="wadb_notification_channel">Служба автоматического запуска ADB</string>
     <!-- Watchdog -->
     <string name="watchdog_running">Watchdog работает</string>
     <string name="watchdog_turn_off">Отключить</string>

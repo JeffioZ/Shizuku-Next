@@ -2,31 +2,10 @@
 <resources>
     <!-- To translators: you can leave your here -->
     <!-- Home - Status -->
-    <string name="home_status_service_is_running">%1$s davam edir</string>
-    <string name="home_status_service_not_running">%1$s davam etmir</string>
-    <string name="home_status_service_version">Versiya %2$s, %1$s</string>
-    <string name="home_status_service_version_update"><![CDATA[Versiya %2$s, %1$s <br> %3$s Versiyasına güncəlləmək üçün proqramı yenidən başladın]]></string>
     <!-- Home - Adb -->
-    <string name="home_adb_title"><![CDATA[Kompüterə qoşularaq başlayın]]></string>
-    <string name="home_adb_description"><![CDATA[Root olmayan cihazlarda Shizuku-nu işə salmaq üçün adb-dən istifadə etməlisiniz (kompüter bağlantısı tələb olunur). Cihaz hər dəfə yenidən işə salındıqda bu proses təkrarlanmalıdır. Lütfən, <b><a href="%1$s">yardımı oxuyun</a></b>.]]></string>
-    <string name="home_adb_button_view_help">Yardım</string>
-    <string name="home_adb_button_view_command">Əmirə baxın</string>
-    <string name="home_adb_dialog_view_command_message"><![CDATA[<font face=monospace>%1$s</font><br><br>* Bəzi başqa mülahizələr də var, lütfən, əvvəlcə yardımı oxuduğunuzu təsdiqləyin.]]></string>
-    <string name="home_adb_dialog_view_command_copy_button">Kopyala</string>
-    <string name="home_adb_dialog_view_command_button_send">Göndər</string>
     <!-- Home - Wireless Adb -->
     <string name="home_wireless_adb_title"><![CDATA[Simsiz debaq ilə başladın]]></string>
-    <string name="home_wireless_adb_description"><![CDATA[Android 11 və ya daha yuxarı versiyalarda siz Simsiz debaqı aktivləşdirə və kompüterə qoşulmadan Shizuku-nu birbaşa cihazınızdan başlada bilərsiniz.<p>Lütfən, əvvəlcə addım-addım təlimata baxın.]]></string>
-    <string name="home_wireless_adb_description_pre_11"><![CDATA[Android 11 - dən aşağı android versiyalarında simsiz debaq üçün kompüterə bağlanmaq mütləqdir]]></string>
-    <string name="home_wireless_adb_view_guide_button">Addım-Addım Təlimat</string>
     <!-- Adb -->
-    <string name="dialog_adb_discovery">Simsiz debaq cihazı axtarılır</string>
-    <string name="dialog_adb_discovery_message">Lütfən, \"Tərtibatçı seçimləri\"ndə \"Simsiz Debaq\"
-        funksiyasını aktivləşdirin. Şəbəkə dəyişdikdə \"Simsiz Debaq\" avtomatik olaraq söndürülür.
-        \n
-        \nQeyd edək ki, Tərtibatçı seçimlərini, USB Debaqı və ya Shizuku-nu söndürməyin</string>
-    <string name="dialog_adb_discovery_message_toggle_wireless_debugging">Əgər axtarış davam edirsə,
-        zəhmət olmasa \"Wireless debugging\" funksiyasını söndürüb aktiv etməyə çalışın.</string>
     <string name="dialog_adb_port">Liman</string>
     <string name="dialog_adb_invalid_port">Port 1 ilə 65535 arasında dəyişən tam ədəddir.</string>
     <string name="adb_pairing">Cütləşmə</string>
@@ -37,11 +16,6 @@
     <string name="cannot_connect_port">Simsiz sazlama xidmətinə qoşulmaq mümkün deyil.\n\nŞəbəkəyə
         girişi məhdudlaşdıra bilən bütün firewall, reklam bloku, VPN və ya oxşar tətbiqlərdə
         Shizuku-nun ağ siyahıya salındığından əmin olun.</string>
-    <string name="dialog_wireless_adb_not_enabled">Simsiz debaq aktiv edilməyib.
-        \nQeyd edək ki, Android 11-dən əvvəl simsiz debaqı aktivləşdirmək üçün kompüter bağlantısı
-        mütləqdir.</string>
-    <string name="dialog_usb_debugging_not_enabled">USB debugging aktiv deyil.\nZəhmət olmasa, onu
-        \"İnkişaf etdirici seçimləri\" bölməsində aktiv edin.</string>
     <string name="dialog_adb_pairing_message">Zəhmət olmasa, cütləşdirməyə aşağıdakı addımları
         yerinə yetirməklə başlayın:\n- \"İnkişaf etdirici Seçimləri\"nə keçid edin\n- \"USB
         debugging\" və \"Wireless debugging\"i aktiv edin\n- \"Simsiz debugging\" bölməsinin sol
@@ -68,13 +42,11 @@
         eyni vaxtda görünməsinə imkan verməyin yeganə yoludur.</string>
     <string name="adb_error_key_store">Simsiz sazlama üçün açar yaratmaq mümkün deyil.\nBunun səbəbi
         bu cihazın KeyStore mexanizminin xarab olması ola bilər.</string>
-    <string name="adb_stopping_tcp">TCP portunun bağlanması</string>
     <string name="adb_error_stop_tcp">ADB-ni TCP üzərindən dayandırmaq uğursuz oldu</string>
     <string name="adb_pair_required">Lütfən, əvvəlcə cütləşmə mərhələsini keçin.</string>
     <string name="enable">Aktiv et</string>
     <string name="development_settings">Tərtibatçı seçimləri</string>
     <string name="notification_settings">Bildiriş seçimləri</string>
-    <string name="adb_pairing_tutorial_title">Shizuku-nu cihazınızla cütləşdirin</string>
     <string name="adb_pairing_tutorial_content_notification">Shizukudan gələn bildiriş cütləşdirməni
         tamamlamağınız üçün sizə kömək edə bilər</string>
     <string name="adb_pairing_tutorial_content_steps">\"Developer Options\"a keçin, sonra \"USB
@@ -100,45 +72,23 @@
     <string name="home_root_title"><![CDATA[Başlat (root edilmiş cihazlar üçün)]]></string>
     <string name="home_root_description"><![CDATA[Magisk istifadə edirsinizsə, cəhd edə bilərsiniz %1$s. Kök istifadəçiləri üçün o, nəticədə Shizuku-nu əvəz edəcək. Qeyd edək ki, %2$sistifadə etmək üçün mövcud proqramlar bir az dəyişməlidir.]]></string>
     <string name="home_root_button_start">Başlat</string>
-    <string name="home_root_button_restart">Yenidən Başlat</string>
     <!-- Home - Application management -->
-    <string name="home_app_management_title">tətbiqin idarə edilməsi</string>
     <plurals name="home_app_management_authorized_apps_count">
         <item quantity="one"><![CDATA[İcazə verilmiş %d proqram]]></item>
         <item quantity="other"><![CDATA[İcazə verilmiş %d proqramlar]]></item>
     </plurals>
-    <string name="home_app_management_view_authorized_apps"><![CDATA[İcazə verilmiş proqramları idarə etmək üçün toxunun]]></string>
-    <string name="home_app_management_empty">Shizuku icazəsini tələb edən və ya bəyan edən tətbiqlər
-        burada göstəriləcək.</string>
     <!-- Home - Automation -->
-    <string name="home_automation_title">Avtomatlaşdırma proqramları ilə Shizuku-ya nəzarət edin</string>
-    <string name="home_automation_description">Tasker və MacroDroid kimi proqramlar Shizuku-nu
-        avtomatik başlatmaq/dayandırmaq niyyətlərini göndərə bilər.</string>
-    <string name="home_automation_button_view_intents">Niyyətlərə baxın</string>
     <string name="home_automation_dialog_label_action">Fəaliyyət</string>
     <string name="home_automation_dialog_label_package">Paket</string>
     <string name="home_automation_dialog_label_class">Sinif</string>
     <string name="home_automation_dialog_label_target">Hədəf</string>
     <!-- Home - Learn more -->
-    <string name="home_learn_more_title">Tərtibatçı təlimatı</string>
-    <string name="home_learn_more_description">Necə Shizuku dəstəkli proqram hazırlaya biləcəyinizi
-        öyrənin və ya Shizuku dəstəkli proqramları əldə edin</string>
     <!-- Home - Adb permissions limited -->
-    <string name="home_adb_is_limited_title">Əlavə bir addım atmalısan</string>
-    <string name="home_adb_is_limited_description">Cihaz istehsalçınız adb icazələrini
-        məhdudlaşdırıb və Shizuku istifadə edən tətbiqlər düzgün işləməyəcək.\n\nAdətən, bu
-        məhdudiyyət \"İnkişaf etdirici seçimləri\"ndə bəzi seçimləri tənzimləməklə aradan qaldırıla
-        bilər. Bunun necə ediləcəyi barədə ətraflı məlumat üçün zəhmət olmasa, köməkçi səhifəni
-        oxuyun.\n\nƏməliyyatın təsir etməsi üçün Shizuku-nu yenidən başlatmaq lazım ola bilər.</string>
     <!-- Application management -->
     <string name="app_management_dialog_adb_is_limited_title">adb icazəsi məhduddur</string>
     <string name="app_management_dialog_adb_is_limited_message"><![CDATA[Çox güman ki, cihazınızın istehsalçısı adb icazəsini məhdudlaşdırır.<p>Sisteminiz üçün <b><a href="%1$s">bu sənəddə</a></b> həll yolu ola bilər.]]></string>
-    <string name="app_management_item_summary_requires_root">* Shizuku rootla işləməsini tələb edir</string>
     <string name="app_management_toggle_all">Hamısını dəyiş</string>
     <!-- Terminal -->
-    <string name="home_terminal_title">Shizikunu terminal proqramlarında istifadə edin</string>
-    <string name="home_terminal_description">Shizuku vasitəsilə terminal proqramlarında qabıq
-        əmrlərini işlədin</string>
     <string name="terminal_tutorial_miui">İstifadəçilər MIUI-nin ixrac funksiyası tərəfindən
         istifadə edilən Yaddaş Giriş Çərçivəsini pozduğunu bildirdilər.</string>
     <string name="terminal_tutorial_miui_2">Əgər MIUI istifadə edirsinizsə, faylı Shizuku
@@ -146,7 +96,6 @@
     <string name="terminal_tutorial_1">Faylları yeni qovluğa ixrac edin.</string>
     <string name="terminal_tutorial_1_description">İki fayl ixrac olunacaq: %1$s və %2$s. Fayllar
         seçilmiş qovluqda artıq varsa, onlar silinəcək.</string>
-    <string name="terminal_export_files">Faylları ixrac edin</string>
     <string name="terminal_tutorial_2">Faylları şəxsi fayllar kataloquna köçürmək üçün terminal
         proqramından istifadə edin.</string>
     <string name="terminal_tutorial_2_description">İpucu: Terminal proqramınızın ev kataloqu (~)
@@ -154,15 +103,8 @@
         salmağa imkan verəcək.\n\nƏks halda, siz terminal proqramınızın %3$s konfiqurasiya faylında
         %2$s üçün ləqəb yarada bilərsiniz.</string>
     <string name="terminal_tutorial_3">Aşağıdakı əmrlə qabığı açın:</string>
-    <string name="rish_description"><![CDATA[%1$silə siz istənilən terminal proqramında qabıq əmrlərini işlədə bilərsiniz.<p>Onu necə istifadə etmək barədə ətraflı öyrənmək üçün toxunun.]]></string>
     <!-- Settings -->
-    <string name="settings_title">Parametrlər</string>
-    <string name="settings_behavior">Davranış</string>
     <string name="settings_start_on_boot">Bootda başla</string>
-    <string name="settings_start_on_boot_summary">Android 11+ və ya root tələb edir</string>
-    <string name="settings_start_on_boot_bug">Android 11-12-də bir səhvə görə, simsiz sazlama heç
-        bir səlahiyyətli şəbəkəni xatırlamır.\n\nAvtorizasiya dialoqu açıldıqda \"İcazə verin\"
-        üzərinə klikləməklə, hər bir yenidən yükləmədə şəbəkəyə yenidən icazə verməli olacaqsınız.</string>
     <string name="settings_use_system_color">Sistem teması rəngindən istifadə edin</string>
     <string name="settings_watchdog">Nəzarətçi</string>
     <string name="settings_watchdog_summary">Shizuku qəzaya uğradıqda onu avtomatik olaraq yenidən
@@ -172,29 +114,19 @@
         imkan verir. (Shizuku yenidən başladıqdan sonra bir dəfə başlamış olmalıdır)"</string>
     <string name="settings_tcp_mode_dialog_close_port">"TCP portu dərhal bağlanacaq. TCP rejimini
         yenidən aktivləşdirmək üçün Wi-Fi-a ehtiyacınız olacaq. Davam etmək istəyirsiniz?"</string>
-    <string name="settings_tcp_mode_closing_port">TCP portu bağlanır...</string>
     <string name="settings_restart_dialog_title">Yenidən başladın Tələb olunur</string>
     <string name="settings_restart_dialog_message">Bu ayarı tətbiq etmək üçün Shizuku yenidən
         başlamalıdır.</string>
     <string name="settings_restart_dialog_message_wifi_required"><![CDATA[<br><br><b>Wi-Fi tələb olunur. Shizuku işləməyə davam edəcək və arxa fonda yenidən başlamazdan əvvəl Wi-Fi bağlantısını gözləyəcək.</b>]]></string>
     <string name="settings_tcp_port">TCP portu</string>
-    <string name="settings_tcp_port_default">Defolt (5555)</string>
-    <string name="settings_tcp_port_hint">Default (5555) istifadə etmək üçün boş buraxın</string>
     <string name="settings_tcp_learn_more">Shizuku-nu idarə etmək üçün avtomatlaşdırma
         tətbiqlərindən istifadə haqqında daha çox məlumat əldə edin</string>
     <string name="settings_language">Dil</string>
-    <string name="settings_translation_contributors">Tərcümədə iştirak edənlər</string>
-    <string name="settings_translation">Tərcümədə iştirak et</string>
-    <string name="settings_translation_summary">%s dilini öz dilinizə tərcümə etməkdə bizə kömək
-        edin</string>
-    <string name="settings_user_interface">Görünüş</string>
     <string name="settings_black_night_theme">Qara gecə teması</string>
     <string name="settings_black_night_theme_summary">Gecə rejimi aktivdirsə, saf qara temasından
         istifadə edin</string>
-    <string name="settings_support">Dəstək</string>
     <string name="settings_help">Kömək edin</string>
     <string name="settings_report_bug">Bir səhv bildir</string>
-    <string name="settings_advanced">İrəliləyişçilər</string>
     <string name="settings_legacy_pairing">İrs cütlüyü</string>
     <string name="settings_legacy_pairing_summary">Cütləşdirmə kodunu bildiriş əvəzinə dialoqda
         daxil edin</string>
@@ -213,36 +145,22 @@
     <string name="bug_report_dialog_method_2">Əks halda, bir e-poçt göndərə bilərsiniz.</string>
     <string name="bug_report_dialog_button_email">E-poçt</string>
     <!-- Snackbar -->
-    <string name="snackbar_invalid_port">Port 1 ilə 65535 arasında olmalıdır</string>
-    <string name="snackbar_battery_optimization_home">Start on boot/watchdog düzgün işləməsi üçün
-        batareya optimizasiyası deaktiv edilməlidir.</string>
     <string name="snackbar_battery_optimization_settings">Zəhmət olmasa, bu funksiyadan istifadə
         etmək üçün batareya optimizasiyasını söndürün.</string>
     <string name="snackbar_action_fix">Düzəlt</string>
     <!-- Toast -->
     <string name="toast_no_email_app">Heç bir e-poçt tətbiqi tapılmadı</string>
-    <string name="toast_shizuku_already_starting">Shizuku artıq arxa planda başlayır</string>
-    <string name="toast_accessibility_tv_only">Bu xidmət yalnız TV cihazlarında dəstəklənir.</string>
     <string name="toast_pairing_timeout">Shizuku cütləşdirmə xidmətinin vaxtı bitdi.</string>
     <!-- Dark Mode Setting Override -->
     <string name="dark_theme">Mövzu</string>
     <string name="dark_theme_off">Həmişə yüngül</string>
     <string name="dark_theme_on">Həmişə qaranlıq</string>
     <!-- About -->
-    <string name="action_about">Haqqında</string>
-    <string name="about_dialog_button_close">Bağlan</string>
-    <string name="about_view_source_code"><![CDATA[Qaynaq kodlarına buradan baxın %s]]></string>
     <!-- Start -->
     <string name="action_start">Şizukuya başlayın</string>
     <!-- Stop -->
     <string name="action_stop">Shizikunu dayandır</string>
-    <string name="dialog_stop_message">Shizuku xidməti dayandırılacaq.</string>
     <!-- Notification -->
-    <string name="notification_channel_service_status">Xidmətin başlama statusu</string>
-    <string name="notification_service_starting">Shizuku servisi başladılır…</string>
-    <string name="notification_service_start_failed">Shizuku servisini başlatmaq mümkün olmadı</string>
-    <string name="notification_service_start_no_root">Root icazəsini tələb etmək alınmadı.</string>
-    <string name="notification_working">İşləyir…</string>
     <string name="notification_channel_adb_pairing">Simsiz debaq qoşulur...</string>
     <string name="notification_adb_pairing_input_paring_code">Cütləşmə kodunu daxil edin</string>
     <string name="notification_adb_pairing_searching_for_service_title">Qoşulma xidməti axtarılır</string>
@@ -274,7 +192,6 @@
     <string name="wadb_permission_error_notification_title">İcazə xətası</string>
     <string name="wadb_permission_error_notification_content">Shizuku işə başlamaq üçün
         WRITE_SECURE_SETTINGS lazımdır. Onu necə vermək lazım olduğunu öyrənmək üçün toxun.</string>
-    <string name="wadb_notification_channel">ADB avtomatik işə salma xidməti</string>
     <!-- Watchdog -->
     <string name="watchdog_running">Watchdog qaçır</string>
     <string name="watchdog_turn_off">Söndürün</string>
