@@ -2,7 +2,6 @@ package moe.shizuku.manager.ui.screen
 
 import android.Manifest.permission.POST_NOTIFICATIONS
 import android.Manifest.permission.WRITE_SECURE_SETTINGS
-import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -45,6 +44,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import moe.shizuku.manager.R
 import moe.shizuku.manager.home.isAccessibilityEnabled
+import moe.shizuku.manager.start.hasPermission
 import moe.shizuku.manager.start.localNetworkPermission
 import moe.shizuku.manager.utils.SettingsHelper
 import moe.shizuku.manager.utils.SettingsPage
@@ -64,20 +64,20 @@ import rikka.core.util.ClipboardUtils
 fun PermissionsScreen(onBack: () -> Unit) {
     val context = LocalContext.current
 
-    var notifications by remember { mutableStateOf(context.granted(POST_NOTIFICATIONS)) }
-    var writeSecureSettings by remember { mutableStateOf(context.granted(WRITE_SECURE_SETTINGS)) }
+    var notifications by remember { mutableStateOf(context.hasPermission(POST_NOTIFICATIONS)) }
+    var writeSecureSettings by remember { mutableStateOf(context.hasPermission(WRITE_SECURE_SETTINGS)) }
     var batteryIgnored by remember { mutableStateOf(SettingsHelper.isIgnoringBatteryOptimizations(context)) }
     var accessibility by remember { mutableStateOf(context.isAccessibilityEnabled()) }
     var localNetwork by remember {
-        mutableStateOf(localNetworkPermission()?.let { context.granted(it) } ?: true)
+        mutableStateOf(localNetworkPermission()?.let { context.hasPermission(it) } ?: true)
     }
 
     fun refresh() {
-        notifications = context.granted(POST_NOTIFICATIONS)
-        writeSecureSettings = context.granted(WRITE_SECURE_SETTINGS)
+        notifications = context.hasPermission(POST_NOTIFICATIONS)
+        writeSecureSettings = context.hasPermission(WRITE_SECURE_SETTINGS)
         batteryIgnored = SettingsHelper.isIgnoringBatteryOptimizations(context)
         accessibility = context.isAccessibilityEnabled()
-        localNetwork = localNetworkPermission()?.let { context.granted(it) } ?: true
+        localNetwork = localNetworkPermission()?.let { context.hasPermission(it) } ?: true
     }
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -184,9 +184,6 @@ fun PermissionsScreen(onBack: () -> Unit) {
         }
     }
 }
-
-private fun android.content.Context.granted(permission: String): Boolean =
-    checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
 
 /**
  * One required permission: what it is for, whether it is allowed, and how to change that.

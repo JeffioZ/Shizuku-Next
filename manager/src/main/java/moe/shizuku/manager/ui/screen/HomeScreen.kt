@@ -8,6 +8,8 @@ import java.io.File
 import moe.shizuku.manager.BuildConfig
 import android.widget.Toast
 import androidx.annotation.StringRes
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -77,6 +79,8 @@ import moe.shizuku.manager.receiver.ShizukuReceiverStarter
 import moe.shizuku.manager.start.StartFailureKind
 import moe.shizuku.manager.start.StartStatus
 import moe.shizuku.manager.start.StartStatusReporter
+import moe.shizuku.manager.start.localNetworkPermission
+import moe.shizuku.manager.start.needsLocalNetworkPermissionFor
 import moe.shizuku.manager.start.openAdbPortAndStart
 import moe.shizuku.manager.start.StartMethodGuard
 import moe.shizuku.manager.start.runningStartMethodLabelRes
@@ -116,6 +120,32 @@ fun HomeScreen(bottomPadding: Dp) {
     var seccompRes by remember { mutableStateOf<Int?>(null) }
     val startStatus by StartStatusReporter.status.collectAsState()
     val scope = rememberCoroutineScope()
+
+    // Android 16+ gates local-network discovery behind a runtime permission, and discovery is
+    // the first thing a wireless start does. Asking here — on the path that needs it, when the
+    // user asks for a start — is what keeps a fresh install from failing to find the port with
+    // only the pairing tutorial able to grant it.
+    var pendingLocalNetworkAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+    val localNetworkLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) {
+        // Carry on either way: a denial means discovery fails, which the failure card then
+        // explains, rather than the tap appearing to do nothing.
+        pendingLocalNetworkAction?.invoke()
+        pendingLocalNetworkAction = null
+    }
+
+    fun startWithLocalNetworkPermission(
+        @ShizukuSettings.StartMethod method: Int,
+        action: () -> Unit
+    ) {
+        if (context.needsLocalNetworkPermissionFor(method)) {
+            pendingLocalNetworkAction = action
+            localNetworkPermission()?.let { localNetworkLauncher.launch(it) }
+        } else {
+            action()
+        }
+    }
 
     /**
      * Reads everything the home screen shows, so no row keeps a value from an earlier
@@ -263,7 +293,11 @@ fun HomeScreen(bottomPadding: Dp) {
                                             // Opens the port and starts over it; if that
                                             // needs Wi-Fi, the card comes back offering
                                             // Connect instead.
-                                            scope.launch { openAdbPortAndStart(context) }
+                                            // Opening the port borrows the wireless
+                                            // connection, so it discovers the port too.
+                                            startWithLocalNetworkPermission(ShizukuSettings.StartMethod.USB) {
+                                                scope.launch { openAdbPortAndStart(context) }
+                                            }
                                         },
                                         colors = ButtonDefaults.buttonColors(
                                             containerColor = MaterialTheme.colorScheme.error,
@@ -376,7 +410,11 @@ fun HomeScreen(bottomPadding: Dp) {
                     starting = startStatus is StartStatus.Starting,
                     // Uses whichever method is set in Settings; never guesses from the
                     // last one that happened to work.
-                    onStart = { ShizukuReceiverStarter.start(context, userInitiated = true) },
+                    onStart = {
+                        startWithLocalNetworkPermission(ShizukuSettings.getStartMethod()) {
+                            ShizukuReceiverStarter.start(context, userInitiated = true)
+                        }
+                    },
                     // One tap, no confirmation: stopping is a normal action and the
                     // dialog only slowed it down.
                     onStop = {
@@ -387,11 +425,13 @@ fun HomeScreen(bottomPadding: Dp) {
                     // A bounce: forceStart replaces the running server instead of
                     // being ignored as "already running".
                     onRestart = {
-                        ShizukuReceiverStarter.start(
-                            context,
-                            forceStart = true,
-                            userInitiated = true
-                        )
+                        startWithLocalNetworkPermission(ShizukuSettings.getStartMethod()) {
+                            ShizukuReceiverStarter.start(
+                                context,
+                                forceStart = true,
+                                userInitiated = true
+                            )
+                        }
                     }
                 )
             }
@@ -412,11 +452,13 @@ fun HomeScreen(bottomPadding: Dp) {
                                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
                             },
                             onClick = {
-                                ShizukuReceiverStarter.start(
-                                    context,
-                                    userInitiated = true,
-                                    startMethod = ShizukuSettings.StartMethod.WIRELESS
-                                )
+                                startWithLocalNetworkPermission(ShizukuSettings.StartMethod.WIRELESS) {
+                                    ShizukuReceiverStarter.start(
+                                        context,
+                                        userInitiated = true,
+                                        startMethod = ShizukuSettings.StartMethod.WIRELESS
+                                    )
+                                }
                             }
                         )
                     }

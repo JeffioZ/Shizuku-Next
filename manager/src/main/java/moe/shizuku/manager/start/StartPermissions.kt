@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import moe.shizuku.manager.AppConstants
 import moe.shizuku.manager.ShizukuApplication
 import moe.shizuku.manager.ShizukuSettings
+import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.runShellCommand
 
 /** The global setting Android keeps wireless debugging in. */
@@ -31,6 +32,21 @@ fun localNetworkPermission(): String? = when {
     Build.VERSION.SDK_INT >= 37 -> "android.permission.ACCESS_LOCAL_NETWORK"
     Build.VERSION.SDK_INT >= 36 -> Manifest.permission.NEARBY_WIFI_DEVICES
     else -> null
+}
+
+fun Context.hasPermission(permission: String): Boolean =
+    checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
+
+/**
+ * Whether a start over [method] is going to need local-network discovery — and so the
+ * permission above. A wireless start discovers the TLS port; a USB start only needs that
+ * discovery when the classic port is closed and it has to borrow a connection to open it.
+ */
+fun Context.needsLocalNetworkPermissionFor(@ShizukuSettings.StartMethod method: Int): Boolean {
+    val permission = localNetworkPermission() ?: return false
+    if (hasPermission(permission)) return false
+    return method == ShizukuSettings.StartMethod.WIRELESS ||
+        EnvironmentUtils.getAdbTcpPort() <= 0
 }
 
 /** WRITE_SECURE_SETTINGS can only be granted over ADB, so it is checked before use. */
