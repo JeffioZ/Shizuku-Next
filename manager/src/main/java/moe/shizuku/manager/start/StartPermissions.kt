@@ -1,8 +1,10 @@
 package moe.shizuku.manager.start
 
+import android.Manifest
 import android.Manifest.permission.WRITE_SECURE_SETTINGS
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Build
 import android.provider.Settings
 import android.util.Log
 import kotlinx.coroutines.CoroutineScope
@@ -16,6 +18,20 @@ import moe.shizuku.manager.utils.runShellCommand
 
 /** The global setting Android keeps wireless debugging in. */
 private const val ADB_WIFI_ENABLED = "adb_wifi_enabled"
+
+/**
+ * The permission the OS gates local-network discovery behind, or null where there is none.
+ *
+ * Discovery goes through the system's NSD service, and the platform has moved the gate on
+ * it twice: Android 16 (SDK 36) asks for NEARBY_WIFI_DEVICES, Android 17 (SDK 37)
+ * ACCESS_LOCAL_NETWORK. Without the grant the OS intercepts the pairing connection with
+ * its own "choose a device" picker.
+ */
+fun localNetworkPermission(): String? = when {
+    Build.VERSION.SDK_INT >= 37 -> "android.permission.ACCESS_LOCAL_NETWORK"
+    Build.VERSION.SDK_INT >= 36 -> Manifest.permission.NEARBY_WIFI_DEVICES
+    else -> null
+}
 
 /** WRITE_SECURE_SETTINGS can only be granted over ADB, so it is checked before use. */
 fun Context.hasWriteSecureSettings(): Boolean =

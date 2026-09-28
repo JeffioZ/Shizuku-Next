@@ -68,6 +68,7 @@ import moe.shizuku.manager.R
 import moe.shizuku.manager.ui.screen.AppsScreen
 import moe.shizuku.manager.ui.screen.HomeScreen
 import moe.shizuku.manager.ui.screen.IntentsScreen
+import moe.shizuku.manager.ui.screen.PermissionsScreen
 import moe.shizuku.manager.ui.screen.SettingsScreen
 import moe.shizuku.manager.ui.screen.StealthScreen
 import moe.shizuku.manager.ui.screen.TerminalScreen
@@ -75,7 +76,7 @@ import moe.shizuku.manager.ui.theme.LocalAmoledTheme
 import moe.shizuku.manager.ui.theme.ShizukuTheme
 
 /** A secondary screen shown on top of the tab pager. */
-enum class Detail { STEALTH, TERMINAL, INTENTS }
+enum class Detail { STEALTH, TERMINAL, INTENTS, PERMISSIONS }
 
 /**
  * On wide windows (tablets, foldables, desktop mode, mirrored displays) a
@@ -130,6 +131,7 @@ fun ShizukuApp() {
                             Detail.STEALTH -> StealthScreen(onBack = { detail = null })
                             Detail.TERMINAL -> TerminalScreen(onBack = { detail = null })
                             Detail.INTENTS -> IntentsScreen(onBack = { detail = null })
+                            Detail.PERMISSIONS -> PermissionsScreen(onBack = { detail = null })
                         }
                     }
                 } else {

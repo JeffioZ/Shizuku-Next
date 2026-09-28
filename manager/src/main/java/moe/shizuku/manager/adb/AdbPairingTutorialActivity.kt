@@ -19,6 +19,7 @@ import androidx.core.view.isVisible
 import moe.shizuku.manager.AppConstants
 import moe.shizuku.manager.app.AppBarActivity
 import moe.shizuku.manager.databinding.AdbPairingTutorialActivityBinding
+import moe.shizuku.manager.start.localNetworkPermission
 import moe.shizuku.manager.utils.SettingsHelper
 import moe.shizuku.manager.utils.SettingsPage
 import rikka.compatibility.DeviceCompatibility
@@ -95,15 +96,6 @@ class AdbPairingTutorialActivity : AppBarActivity() {
         }
     }
 
-    // Android 17 (SDK 37) gates local-network access behind ACCESS_LOCAL_NETWORK;
-    // Android 16 (SDK 36) uses NEARBY_WIFI_DEVICES. Without a runtime grant the OS
-    // intercepts the pairing connection with an endless "choose a device" picker.
-    private fun localNetworkPermission(): String? = when {
-        Build.VERSION.SDK_INT >= 37 -> "android.permission.ACCESS_LOCAL_NETWORK"
-        Build.VERSION.SDK_INT >= 36 -> Manifest.permission.NEARBY_WIFI_DEVICES
-        else -> null
-    }
-
     private val localNetworkPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) {
             // Start pairing whether or not the grant succeeded; a denial simply means
@@ -112,6 +104,7 @@ class AdbPairingTutorialActivity : AppBarActivity() {
         }
 
     private fun startPairingService() {
+        // Shared with the permissions page, which can grant it before pairing is reached.
         val permission = localNetworkPermission()
         if (permission != null && checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED) {
             localNetworkPermissionLauncher.launch(permission)

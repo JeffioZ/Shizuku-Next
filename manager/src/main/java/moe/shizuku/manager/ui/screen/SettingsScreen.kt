@@ -92,9 +92,7 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
     var blackNight by remember {
         mutableStateOf(ShizukuSettings.getPreferences().getBoolean(ShizukuSettings.Keys.KEY_BLACK_NIGHT_THEME, false))
     }
-    var batteryIgnored by remember {
-        mutableStateOf(SettingsHelper.isIgnoringBatteryOptimizations(context))
-    }
+
     var legacyPairing by remember { mutableStateOf(ShizukuSettings.getLegacyPairing()) }
 
     var closeTcpDialog by remember { mutableStateOf(false) }
@@ -324,28 +322,8 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
             }
             item {
                 SegmentedColumn(modifier = Modifier.fillMaxWidth()) {
-                    item {
-                        SegmentedListItem(
-                            headlineContent = { Text(stringResource(R.string.tools_battery)) },
-                            supportingContent = {
-                                Text(
-                                    stringResource(
-                                        if (batteryIgnored) R.string.tools_battery_ignored
-                                        else R.string.tools_battery_not_ignored
-                                    )
-                                )
-                            },
-                            trailingContent = if (!batteryIgnored) {
-                                {
-                                    TextButton(onClick = {
-                                        SettingsHelper.requestIgnoreBatteryOptimizationsPrivileged(context) {
-                                            batteryIgnored = SettingsHelper.isIgnoringBatteryOptimizations(context)
-                                        }
-                                    }) { Text(stringResource(R.string.snackbar_action_fix)) }
-                                }
-                            } else null
-                        )
-                    }
+                    // Battery optimisation moved to the permissions page: it answers the same
+                    // question as the rest of that page (may this app do its job?)
                     item {
                         SegmentedListItem(
                             headlineContent = { Text(stringResource(R.string.tools_stealth)) },
@@ -487,6 +465,16 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                     }
                     item {
                         SegmentedListItem(
+                            headlineContent = { Text(stringResource(R.string.settings_permissions)) },
+                            supportingContent = { Text(stringResource(R.string.settings_permissions_summary)) },
+                            trailingContent = {
+                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+                            },
+                            onClick = { onOpenDetail(Detail.PERMISSIONS) }
+                        )
+                    }
+                    item {
+                        SegmentedListItem(
                             headlineContent = { Text(stringResource(R.string.settings_help)) },
                             trailingContent = {
                                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
@@ -572,9 +560,7 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
             text = { Text(stringResource(R.string.snackbar_battery_optimization_settings)) },
             confirmButton = {
                 TextButton(onClick = {
-                    SettingsHelper.requestIgnoreBatteryOptimizationsPrivileged(context) {
-                        batteryIgnored = SettingsHelper.isIgnoringBatteryOptimizations(context)
-                    }
+                    SettingsHelper.requestIgnoreBatteryOptimizationsPrivileged(context)
                     action()
                     batteryPrompt = null
                 }) { Text(stringResource(R.string.snackbar_action_fix)) }
