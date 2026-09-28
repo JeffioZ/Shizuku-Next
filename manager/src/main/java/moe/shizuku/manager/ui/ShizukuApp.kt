@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Apps
@@ -34,6 +35,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -90,7 +92,13 @@ fun ShizukuApp() {
                     .fillMaxSize()
                     .windowInsetsPadding(WindowInsets.statusBars.only(WindowInsetsSides.Top))
             ) {
-                var detail by remember { mutableStateOf<Detail?>(null) }
+                // Both the open detail and the pager live here, above the switch between
+                // the two, for two reasons: the pager used to be remembered inside the tab
+                // layout, so opening a detail threw it away and closing the detail started
+                // again on the first tab (back from a Settings screen landed on Home). And
+                // neither was saveable, so a rotation dropped both and did the same thing.
+                var detail by rememberSaveable { mutableStateOf<Detail?>(null) }
+                val pagerState = rememberPagerState(pageCount = { tabs.size })
                 val current = detail
 
                 if (current != null) {
@@ -103,7 +111,7 @@ fun ShizukuApp() {
                         }
                     }
                 } else {
-                    MainTabs(onOpenDetail = { detail = it })
+                    MainTabs(pagerState = pagerState, onOpenDetail = { detail = it })
                 }
             }
         }
@@ -133,8 +141,10 @@ private fun CenteredContent(
 }
 
 @Composable
-private fun MainTabs(onOpenDetail: (Detail) -> Unit) {
-    val pagerState = rememberPagerState(pageCount = { tabs.size })
+private fun MainTabs(
+    pagerState: PagerState,
+    onOpenDetail: (Detail) -> Unit
+) {
     val scope = rememberCoroutineScope()
 
     Scaffold(
