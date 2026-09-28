@@ -12,7 +12,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import moe.shizuku.manager.R
+import moe.shizuku.manager.start.isDeveloperOptionsEnabled
 import moe.shizuku.manager.utils.SettingsPage
+import android.widget.Toast
 import rikka.shizuku.Shizuku
 
 private const val TAG = "SettingsHelper"
@@ -20,6 +23,18 @@ private const val TAG = "SettingsHelper"
 object SettingsHelper {
 
     fun launchOrHighlightWirelessDebugging(context: Context) {
+        // Wireless debugging lives under Developer options, which our "ADB without Developer
+        // options" setting can hide: launching anyway would open nothing at all, so say
+        // what has to change instead.
+        if (!context.isDeveloperOptionsEnabled()) {
+            Toast.makeText(
+                context,
+                context.getString(R.string.toast_developer_options_required),
+                Toast.LENGTH_LONG
+            ).show()
+            return
+        }
+
         // Read through the helper: the raw setting is redacted on Android 17.
         if (EnvironmentUtils.isAdbEnabled()) {
             SettingsPage.Developer.WirelessDebugging.launch(context)

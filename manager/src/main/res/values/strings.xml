@@ -208,6 +208,9 @@
     <string name="transport_adb">adb</string>
     <string name="settings_adb_without_developer_options">ADB without Developer options</string>
     <string name="settings_adb_without_developer_options_summary">Turns Developer options off and keeps the ADB settings it would take with it, so Shizuku still starts and apps that check for Developer options see that it is off. Re-applied after every reboot.</string>
+    <string name="start_failed_developer_options_off">Developer options is off because ADB without Developer options is on</string>
+    <string name="action_turn_on_developer_options">Turn on Developer options</string>
+    <string name="toast_developer_options_required">Turn off ADB without Developer</string>
     <string name="settings_adb_without_developer_options_confirm_title">Turn Developer options off?</string>
     <string name="settings_adb_without_developer_options_confirm_message">Shizuku keeps working. It puts the ADB settings back and re-applies them after a reboot. While Developer options is off its settings screen is hidden, so you cannot change USB or wireless debugging by hand, and pairing a new device needs that screen. Switch this off to put Developer options back.</string>
     <string name="settings_adb_without_developer_options_confirm">Turn off</string>

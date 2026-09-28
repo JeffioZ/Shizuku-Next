@@ -47,6 +47,17 @@ fun restoreDeveloperOptions(context: Context) {
 }
 
 /**
+ * Whether Developer options is currently available at all.
+ *
+ * The screens this app sends people to for ADB — wireless debugging, its own pairing
+ * tutorial — live under Developer options, so while our setting hides it those actions
+ * would open nothing. Defaults to enabled: only a 0 written there (by us or by the user)
+ * means hidden.
+ */
+fun Context.isDeveloperOptionsEnabled(): Boolean =
+    Settings.Global.getInt(contentResolver, DEVELOPMENT_SETTINGS_ENABLED, 1) != 0
+
+/**
  * Re-applies the setting after a reboot, when the system has cleared the ADB toggles but
  * left Developer options off. Called from the boot receiver.
  */

@@ -10,10 +10,12 @@ import android.text.Spannable
 import android.text.SpannableString
 import android.text.TextUtils
 import android.text.style.TypefaceSpan
+import android.widget.Toast
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import moe.shizuku.manager.R
 import moe.shizuku.manager.adb.AdbPairingAccessibilityService
 import moe.shizuku.manager.adb.AdbPairingTutorialActivity
+import moe.shizuku.manager.start.isDeveloperOptionsEnabled
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.SettingsHelper
 import moe.shizuku.manager.utils.SettingsPage
@@ -115,6 +117,16 @@ private fun Context.showNavigateDialog() {
         .setPositiveButton(R.string.development_settings) { _, _ ->
             // Only now, having chosen the automated way, is the accessibility service
             // needed — and only if Shizuku can't switch it on itself.
+            // The screen this opens is under Developer options, which this app's own "ADB
+            // without Developer options" setting hides: launching then would open nothing.
+            if (!isDeveloperOptionsEnabled()) {
+                Toast.makeText(
+                    this,
+                    getString(R.string.toast_developer_options_required),
+                    Toast.LENGTH_LONG
+                ).show()
+                return@setPositiveButton
+            }
             if (ensureAccessibilityService()) {
                 SettingsPage.Developer.HighlightWirelessDebugging.launch(this)
             }

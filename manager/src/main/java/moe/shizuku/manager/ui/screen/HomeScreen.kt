@@ -79,7 +79,9 @@ import moe.shizuku.manager.receiver.ShizukuReceiverStarter
 import moe.shizuku.manager.start.StartFailureKind
 import moe.shizuku.manager.start.StartStatus
 import moe.shizuku.manager.start.StartStatusReporter
+import moe.shizuku.manager.start.isDeveloperOptionsEnabled
 import moe.shizuku.manager.start.isPermissionPermanentlyDenied
+import moe.shizuku.manager.start.restoreDeveloperOptions
 import moe.shizuku.manager.start.localNetworkPermission
 import moe.shizuku.manager.start.needsLocalNetworkPermissionFor
 import moe.shizuku.manager.start.openAppSettings
@@ -118,6 +120,7 @@ fun HomeScreen(bottomPadding: Dp) {
     var updateAvailable by remember { mutableStateOf(false) }
     var rooted by remember { mutableStateOf(false) }
     var startMethod by remember { mutableStateOf(ShizukuSettings.getStartMethod()) }
+    var developerOptionsOn by remember { mutableStateOf(context.isDeveloperOptionsEnabled()) }
     var selinuxRes by remember { mutableStateOf<Int?>(null) }
     var seccompRes by remember { mutableStateOf<Int?>(null) }
     val startStatus by StartStatusReporter.status.collectAsState()
@@ -172,6 +175,7 @@ fun HomeScreen(bottomPadding: Dp) {
         ShizukuStateMachine.update()
         running = ShizukuStateMachine.isRunning()
         batteryIgnored = SettingsHelper.isIgnoringBatteryOptimizations(context)
+        developerOptionsOn = context.isDeveloperOptionsEnabled()
         // Root can be gone since the method was chosen; the card would otherwise keep
         // promising a start the device can no longer run.
         startMethod = StartMethodGuard.resolve()
@@ -189,6 +193,16 @@ fun HomeScreen(bottomPadding: Dp) {
             selinuxRes = selinux
             seccompRes = seccomp
         }
+    }
+
+    /**
+     * Undoes our own "ADB without Developer options" setting: the flag goes back on, so the
+     * screens the failed start wanted are reachable again.
+     */
+    fun turnDeveloperOptionsBackOn() {
+        ShizukuSettings.setAdbWithoutDeveloperOptions(context, false)
+        restoreDeveloperOptions(context)
+        scope.launch { refresh() }
     }
 
     DisposableEffect(Unit) {
@@ -281,13 +295,42 @@ fun HomeScreen(bottomPadding: Dp) {
                                 style = MaterialTheme.typography.bodyMedium
                             )
 
+                            // Two of these failures are answered by a screen that lives
+                            // under Developer options, which our own setting can hide — so
+                            // those cards say why, and offer the one tap that puts it back
+                            // instead of a button that opens nothing.
+                            val needsDeveloperOptions =
+                                failed.kind == StartFailureKind.SETTINGS ||
+                                    failed.kind == StartFailureKind.PAIRING
+                            val developerOptionsHidden =
+                                needsDeveloperOptions && !developerOptionsOn
+
+                            if (developerOptionsHidden) {
+                                Text(
+                                    text = stringResource(R.string.start_failed_developer_options_off),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier.padding(top = 8.dp)
+                                )
+                            }
+
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(top = 16.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                if (failed.kind == StartFailureKind.WIFI) {
+                                if (developerOptionsHidden) {
+                                    Button(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        onClick = { turnDeveloperOptionsBackOn() },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = MaterialTheme.colorScheme.error,
+                                            contentColor = MaterialTheme.colorScheme.onError
+                                        )
+                                    ) {
+                                        Text(stringResource(R.string.action_turn_on_developer_options))
+                                    }
+                                } else if (failed.kind == StartFailureKind.WIFI) {
                                     Button(
                                         modifier = Modifier.fillMaxWidth(),
                                         onClick = {
