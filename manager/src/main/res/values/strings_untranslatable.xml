@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="support_email" translatable="false">thedjchidev@gmail.com</string>
+    <string name="support_email" translatable="false">rushiranpise17@gmail.com</string>
     <string name="translation_url" translatable="false">https://crowdin.com/project/shizuku</string>
+    <!-- The wiki belongs to the fork this is based on: it is where these features are
+         documented, and this fork inherits them unchanged. -->
     <string name="help_url" translatable="false">https://github.com/thedjchi/Shizuku/wiki</string>
     <string name="automation_apps_url" translatable="false">https://github.com/thedjchi/Shizuku/wiki#using-automation-apps-to-startstop-shizuku</string>
 </resources>
