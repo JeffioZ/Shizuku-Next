@@ -65,3 +65,6 @@
 -repackageclasses rikka.shizuku
 -keepattributes SourceFile,LineNumberTable
 -renamesourcefileattribute SourceFile
+
+-dontwarn androidx.window.extensions.**
+-dontwarn androidx.window.sidecar.**
