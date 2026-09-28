@@ -59,8 +59,8 @@
     <string name="dialog_wifi_required_message">To start Shizuku via Wireless debugging, you must be connected to a Wi-Fi network.</string>
     <string name="enable">Enable</string>
     <string name="auto_pair_instructions">Pair without typing a code:\n\n1. Developer options → Wireless debugging\n2. Pair device with pairing code\n\nShizuku reads the code and port straight from that dialog and starts itself. Keep the dialog open until pairing finishes.</string>
-    <string name="auto_pair_manual">Manual Pairing</string>
-    <string name="development_settings">Automated Pairing</string>
+    <string name="auto_pair_manual">Manual</string>
+    <string name="development_settings">Automated</string>
     <string name="notification_settings">Notification options</string>
     <string name="adb_pairing_tutorial_title">Pair Shizuku with your device</string>
     <string name="adb_pairing_tutorial_content_notification">A notification from Shizuku will help you complete the pairing.</string>

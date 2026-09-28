@@ -34,7 +34,7 @@ All versions are distributed via [GitHub Releases](https://github.com/thedjchi/S
 
 This version of Shizuku includes some extra features over the original version, such as:
 * **Automated setup:** the separate "Pair" button has been removed — pressing "Start" detects when wireless debugging still needs to be paired and launches the pairing flow automatically
-* **Pair without typing:** Shizuku reads the pairing code and port straight out of the system's "Pair with device" dialog, pairs, and starts itself — so the code never has to be typed, and can't expire while you switch apps. Manual pairing (notification + typed code) stays one tap away as a fallback
+* **Pair without typing:** Shizuku reads the pairing code and port straight out of the system's "Pair with device" dialog, pairs, and starts itself — so the code never has to be typed, and can't expire while you switch apps. Manual pairing (notification + typed code) stays one tap away as a fallback — the *Manual* button beside *Automated* in the same dialog — and both labels are single words so they fit on one button row instead of stacking
 * **More robust "start on boot":** waits for a Wi-Fi connection before starting the Shizuku service
 * **Wireless debugging auto-disable (optional):** restore the old behaviour of turning wireless debugging off once Shizuku has started over it, instead of leaving it on so Shizuku can restart itself
 * **TCP mode:** keep the classic ADB port open (i.e. the `adb tcpip` command) so the USB start and the watchdog can restart Shizuku without Wi-Fi or pairing. With it off, an open port is closed whenever Shizuku starts over wireless
