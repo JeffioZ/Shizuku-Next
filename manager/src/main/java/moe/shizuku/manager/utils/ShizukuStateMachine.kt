@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import moe.shizuku.manager.ShizukuApplication
 import moe.shizuku.manager.ShizukuSettings
+import moe.shizuku.manager.start.grantWriteSecureSettingsIfNeeded
 import rikka.shizuku.Shizuku
 
 private val appContext = ShizukuApplication.appContext
@@ -42,6 +43,9 @@ object ShizukuStateMachine {
             // later crash is auto-restarted by the watchdog.
             if (newState == State.RUNNING) {
                 ShizukuSettings.setManuallyStopped(false)
+                // The server is up, so it can hand us the ADB-only permission the wireless
+                // flow needs — the user shouldn't have to reach for a computer for it.
+                grantWriteSecureSettingsIfNeeded()
                 // Remember how the server was launched so later background starts
                 // know whether to use root or wireless debugging (previously done by
                 // the removed HomeViewModel).
@@ -122,6 +126,9 @@ object ShizukuStateMachine {
     fun update(): State {
         val state = if (Shizuku.pingBinder()) State.RUNNING else State.STOPPED
         set(state)
+        // Also covers a server that was already running when this process started, or a
+        // permission that was revoked behind our back: there is no transition to hook then.
+        if (state == State.RUNNING) grantWriteSecureSettingsIfNeeded()
         return state
     }
 

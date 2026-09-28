@@ -40,7 +40,10 @@ import moe.shizuku.manager.receiver.ShizukuReceiverStarter.WorkerState
 import moe.shizuku.manager.settings.BugReportDialogActivity
 import moe.shizuku.manager.start.StartFailureKind
 import moe.shizuku.manager.start.StartStatusReporter
+import moe.shizuku.manager.start.hasWriteSecureSettings
 import moe.shizuku.manager.start.startMethodLabelRes
+import moe.shizuku.manager.start.writeGlobalLongSetting
+import moe.shizuku.manager.start.writeGlobalSetting
 import moe.shizuku.manager.starter.Starter
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.ShizukuStateMachine
@@ -73,25 +76,32 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             val wirelessAlreadyEnabled = Settings.Global.getInt(cr, "adb_wifi_enabled", 0) == 1
             val usbAlreadyEnabled = Settings.Global.getInt(cr, Settings.Global.ADB_ENABLED, 0) == 1
 
+            // All of the writes below go through helpers that swallow a permission denial:
+            // on a fresh install (or after a re-signed update) the app has no
+            // WRITE_SECURE_SETTINGS yet, and a settings write *throws* without it — which
+            // used to abort the start and get reported as a pairing problem. A start that
+            // can't nudge adbd should still try to connect.
             if (usbMethod) {
                 if (!usbAlreadyEnabled) {
-                    Settings.Global.putInt(cr, Settings.Global.ADB_ENABLED, 1)
+                    applicationContext.writeGlobalSetting(Settings.Global.ADB_ENABLED, 1)
                 }
                 // Don't let the authorized connection expire while we connect.
-                Settings.Global.putLong(cr, "adb_allowed_connection_time", 0L)
+                applicationContext.writeGlobalLongSetting("adb_allowed_connection_time", 0L)
             } else if (wirelessAlreadyEnabled) {
                 // Wireless is already active. Writing adb_wifi_enabled=1 again is a
                 // no-op (SettingsProvider does not notify on the same value), so adbd
                 // never reinitialises wireless and mDNS discovery finds nothing. Write
                 // 0 first so the re-enable below is a real 0->1 change, forcing adbd to
-                // restart wireless and emit a fresh mDNS announcement.
-                Settings.Global.putInt(cr, "adb_wifi_enabled", 0)
-                try {
-                    delay(200)
-                } finally {
-                    // Restore unconditionally: normally a harmless no-op, and on
-                    // cancellation it avoids leaving wireless disabled.
-                    Settings.Global.putInt(cr, "adb_wifi_enabled", 1)
+                // restart wireless and emit a fresh mDNS announcement. Skipped entirely
+                // when we may not write: bouncing the toggle is not worth failing for.
+                if (applicationContext.writeGlobalSetting("adb_wifi_enabled", 0)) {
+                    try {
+                        delay(200)
+                    } finally {
+                        // Restore unconditionally: normally a harmless no-op, and on
+                        // cancellation it avoids leaving wireless disabled.
+                        applicationContext.writeGlobalSetting("adb_wifi_enabled", 1)
+                    }
                 }
             }
             // else: wireless is off and we are starting over it — the callbackFlow
@@ -181,7 +191,7 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                                     unlockReceiver = null
                                     // Wireless debugging must be on for the TLS port to be
                                     // advertised, otherwise mDNS discovery can never find it.
-                                    Settings.Global.putInt(cr, "adb_wifi_enabled", 1)
+                                    context.writeGlobalSetting("adb_wifi_enabled", 1)
                                 }
                             }
                         }
@@ -202,9 +212,10 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                     }
                 }
 
-                // Always required for discovery — without it the device never
-                // advertises _adb-tls-connect and the worker just times out.
-                Settings.Global.putInt(cr, "adb_wifi_enabled", 1)
+                // Required for discovery — without it the device never advertises
+                // _adb-tls-connect and the worker just times out. Best effort: if we may
+                // not write, discovery still gets its chance before we complain.
+                applicationContext.writeGlobalSetting("adb_wifi_enabled", 1)
                 cr.registerContentObserver(Settings.Global.getUriFor("adb_wifi_enabled"), false, observer)
                 startDiscoveryWithTimeout()
 
@@ -246,8 +257,15 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                         StartFailureKind.PAIRING
 
                 is TimeoutException ->
-                    applicationContext.getString(R.string.start_failed_no_port) to
-                        StartFailureKind.GENERIC
+                    // Without WRITE_SECURE_SETTINGS the toggle above couldn't be switched
+                    // on, so the honest reason is the permission, not the network.
+                    applicationContext.getString(
+                        if (applicationContext.hasWriteSecureSettings()) {
+                            R.string.start_failed_no_port
+                        } else {
+                            R.string.start_failed_no_port_no_permission
+                        }
+                    ) to StartFailureKind.GENERIC
 
                 is SecurityException ->
                     applicationContext.getString(R.string.start_failed_no_auth) to

@@ -1,13 +1,11 @@
 package moe.shizuku.manager.receiver
 
-import android.Manifest.permission.WRITE_SECURE_SETTINGS
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
@@ -20,6 +18,8 @@ import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.start.StartFailureKind
 import moe.shizuku.manager.start.StartStatusReporter
 import moe.shizuku.manager.start.StartMethodGuard
+import moe.shizuku.manager.start.hasWriteSecureSettings
+import moe.shizuku.manager.start.needsWriteSecureSettingsFor
 import moe.shizuku.manager.start.startMethodLabelRes
 import moe.shizuku.manager.starter.Starter
 import moe.shizuku.manager.starter.StarterActivity
@@ -110,7 +110,13 @@ object ShizukuReceiverStarter {
             return
         }
 
-        if (context.checkSelfPermission(WRITE_SECURE_SETTINGS) != PackageManager.PERMISSION_GRANTED) {
+        // This used to refuse every ADB start without WRITE_SECURE_SETTINGS, including the
+        // ones that never write anything: a USB start, a classic-port start, and a wireless
+        // start whose debugging toggle is already on. On a fresh install — where the grant
+        // from the previous install is gone — that demanded a computer before Shizuku could
+        // start at all. Now only the start that actually has to switch wireless debugging on
+        // is held up, and only because it cannot be done without the permission.
+        if (context.needsWriteSecureSettingsFor(startMethod) && !context.hasWriteSecureSettings()) {
             StartStatusReporter.failed(context.getString(R.string.start_failed_write_secure_settings))
             showPermissionErrorNotification(context, startMethod)
             return

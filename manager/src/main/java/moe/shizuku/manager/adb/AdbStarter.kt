@@ -24,6 +24,7 @@ import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.adb.AdbClient
 import moe.shizuku.manager.adb.AdbKey
 import moe.shizuku.manager.adb.PreferenceAdbKeyStore
+import moe.shizuku.manager.start.writeGlobalSetting
 import moe.shizuku.manager.starter.Starter
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.ShizukuStateMachine
@@ -192,7 +193,9 @@ object AdbStarter {
             return@withContext false
         }
 
-        Settings.Global.putInt(context.contentResolver, "adb_wifi_enabled", 1)
+        // Best effort: without WRITE_SECURE_SETTINGS the write throws, and that must not
+        // abort the attempt — wireless debugging may already be on.
+        context.writeGlobalSetting("adb_wifi_enabled", 1)
         val wirelessPort = findWirelessPort(context) ?: run {
             Log.w(TAG, "Not opening the ADB port: no wireless debugging port was found")
             return@withContext false
