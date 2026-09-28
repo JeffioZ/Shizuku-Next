@@ -1,8 +1,10 @@
 <div align="center">
    
-# Shizuku
+# Shizuku Next
 
 An Android app that allows other apps to use system-level APIs that require ADB/root privileges.
+
+**This fork ships as Shizuku Next** (14.0.0-next): same package, same interfaces, same API — just a new name and icon. Updates install over an existing Shizuku without disturbing the server, the permissions an app already holds, or anything that talks to the API.
 
 **I'm pausing maintenance for the time being, I simply haven't had time to work on this and it was a side project.**
 
