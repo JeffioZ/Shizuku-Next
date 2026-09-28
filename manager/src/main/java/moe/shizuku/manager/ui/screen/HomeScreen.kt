@@ -891,19 +891,33 @@ private fun runningMethodLabel(uid: Int): String =
     runningStartMethodLabelRes()?.let { stringResource(it) } ?: transportLabel(uid)
 
 /**
- * The wire the last launch used. Only reached when no method was recorded, so it keeps
- * the "adb (...)" wording that can't be confused with a start method.
+ * The wire the running server is on.
+ *
+ * The transport is only known for a launch of ours that went over adb. A root or system
+ * launch doesn't record one, a server started outside the app (from a computer with the
+ * command it hands out, or by another manager) records nothing at all, and whatever an
+ * earlier adb launch recorded would be a lie about this server. Those cases used to read
+ * "Unknown", which looks like a fault: the server does run as adb, that is the fact worth
+ * showing, and which wire carried the command isn't knowable from here anyway.
  */
 @Composable
 private fun transportLabel(uid: Int): String = when {
     uid == 0 -> stringResource(R.string.start_method_root)
+    uid == 1000 -> stringResource(R.string.start_method_system)
+
     // "adb (...)" rather than the method names, so the transport can't be confused
     // with the start method shown next to it.
-    ShizukuSettings.getLastAdbTransport() == ShizukuSettings.ADB_TRANSPORT_TCP ->
-        stringResource(R.string.home_status_adb_usb)
+    launchedByUsOverAdb() -> when (ShizukuSettings.getLastAdbTransport()) {
+        ShizukuSettings.ADB_TRANSPORT_TCP -> stringResource(R.string.home_status_adb_usb)
+        ShizukuSettings.ADB_TRANSPORT_TLS -> stringResource(R.string.home_status_adb_wireless)
+        else -> stringResource(R.string.transport_adb)
+    }
 
-    ShizukuSettings.getLastAdbTransport() == ShizukuSettings.ADB_TRANSPORT_TLS ->
-        stringResource(R.string.home_status_adb_wireless)
+    else -> stringResource(R.string.transport_adb)
+}
 
-    else -> stringResource(R.string.transport_unknown)
+/** True when the running server is one this app started over adb. */
+private fun launchedByUsOverAdb(): Boolean = when (ShizukuSettings.getRunningStartMethod()) {
+    ShizukuSettings.StartMethod.WIRELESS, ShizukuSettings.StartMethod.USB -> true
+    else -> false
 }
