@@ -6,6 +6,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -18,8 +19,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.foundation.background
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.rounded.AdminPanelSettings
+import androidx.compose.material.icons.rounded.BatterySaver
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.Notifications
+import androidx.compose.material.icons.rounded.Visibility
+import androidx.compose.material.icons.rounded.Wifi
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -35,6 +42,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -142,6 +151,7 @@ fun PermissionsScreen(onBack: () -> Unit) {
         ) {
             item {
                 PermissionRow(
+                    icon = Icons.Rounded.Notifications,
                     headline = stringResource(R.string.permissions_notifications),
                     reason = stringResource(R.string.permissions_notifications_summary),
                     granted = notifications,
@@ -157,6 +167,7 @@ fun PermissionsScreen(onBack: () -> Unit) {
 
             item {
                 PermissionRow(
+                    icon = Icons.Rounded.Wifi,
                     headline = stringResource(R.string.permissions_nearby),
                     reason = stringResource(R.string.permissions_nearby_summary),
                     granted = localNetwork,
@@ -174,6 +185,7 @@ fun PermissionsScreen(onBack: () -> Unit) {
 
             item {
                 PermissionRow(
+                    icon = Icons.Rounded.AdminPanelSettings,
                     headline = stringResource(R.string.permissions_write_secure_settings),
                     reason = stringResource(R.string.permissions_write_secure_settings_summary),
                     granted = writeSecureSettings,
@@ -194,6 +206,7 @@ fun PermissionsScreen(onBack: () -> Unit) {
 
             item {
                 PermissionRow(
+                    icon = Icons.Rounded.Visibility,
                     headline = stringResource(R.string.permissions_accessibility),
                     reason = stringResource(R.string.permissions_accessibility_summary),
                     granted = accessibility,
@@ -204,6 +217,7 @@ fun PermissionsScreen(onBack: () -> Unit) {
 
             item {
                 PermissionRow(
+                    icon = Icons.Rounded.BatterySaver,
                     headline = stringResource(R.string.tools_battery),
                     reason = stringResource(R.string.permissions_battery_summary),
                     granted = batteryIgnored,
@@ -229,6 +243,7 @@ fun PermissionsScreen(onBack: () -> Unit) {
  */
 @Composable
 private fun PermissionRow(
+    icon: ImageVector,
     headline: String,
     reason: String,
     granted: Boolean,
@@ -242,6 +257,25 @@ private fun PermissionRow(
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // The icon-led badge the KernelSU-style cards use: the icon in a tinted rounded
+            // square, so a page of these can be told apart before any of the text is read.
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(MaterialTheme.shapes.medium)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(headline, style = MaterialTheme.typography.bodyLarge)
                 Text(
