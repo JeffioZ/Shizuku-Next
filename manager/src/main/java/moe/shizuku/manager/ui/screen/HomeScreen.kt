@@ -11,6 +11,7 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -718,14 +719,33 @@ private fun readDeviceStatus(): Pair<Int?, Int?> = readSelinuxStatus() to readSe
  */
 @Composable
 private fun StatusFacts(vararg facts: Pair<Int, String>) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        facts.toList().chunked(2).forEach { row ->
-            Row(modifier = Modifier.fillMaxWidth().padding(top = 2.dp)) {
-                row.forEach { (labelRes, value) ->
-                    StatusFact(labelRes, value, Modifier.weight(1f))
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        // On a wide card (landscape, tablets) two columns leave each pair stranded in the
+        // middle of an empty half — the pairs end up far apart. Fit all four across
+        // instead and let them spread over the width.
+        val wide = maxWidth >= 460.dp
+        val perRow = if (wide) 4 else 2
+
+        Column(modifier = Modifier.fillMaxWidth()) {
+            facts.toList().chunked(perRow).forEach { row ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+                    horizontalArrangement =
+                        if (wide) Arrangement.SpaceBetween else Arrangement.Start
+                ) {
+                    row.forEach { (labelRes, value) ->
+                        // Wide: each pair sizes to its content and the row spreads them out.
+                        // Otherwise every pair takes half the card and the values line up.
+                        StatusFact(
+                            labelRes,
+                            value,
+                            if (wide) Modifier else Modifier.weight(1f),
+                            alignValues = !wide
+                        )
+                    }
+                    // Keep the columns even when the last row holds fewer facts.
+                    if (!wide) repeat(perRow - row.size) { Spacer(modifier = Modifier.weight(1f)) }
                 }
-                // Keep the columns even when the last row holds a single fact.
-                if (row.size == 1) Spacer(modifier = Modifier.weight(1f))
             }
         }
     }
@@ -736,7 +756,12 @@ private fun StatusFacts(vararg facts: Pair<Int, String>) {
  * the title above them instead of each pair drifting to its own centre.
  */
 @Composable
-private fun StatusFact(@StringRes labelRes: Int, value: String, modifier: Modifier = Modifier) {
+private fun StatusFact(
+    @StringRes labelRes: Int,
+    value: String,
+    modifier: Modifier = Modifier,
+    alignValues: Boolean = true
+) {
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically
@@ -747,8 +772,8 @@ private fun StatusFact(@StringRes labelRes: Int, value: String, modifier: Modifi
             color = LocalContentColor.current.copy(alpha = 0.75f),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            // Fixed width so the values stack under one another in a column.
-            modifier = Modifier.width(78.dp)
+            // Fixed width in the grid, so the values stack under one another in a column.
+            modifier = if (alignValues) Modifier.width(78.dp) else Modifier
         )
         Spacer(modifier = Modifier.width(6.dp))
         Text(
