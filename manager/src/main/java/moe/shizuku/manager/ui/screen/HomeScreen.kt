@@ -625,7 +625,7 @@ private fun StatusCard(
                 StatusFacts(
                     R.string.home_status_started_with to
                         (if (running) runningMethodLabel(uid) else stringResource(R.string.status_value_none)),
-                    R.string.settings_start_method to stringResource(startMethodLabelRes),
+                    R.string.home_status_started_default to stringResource(startMethodLabelRes),
                     // The wire, as opposed to the method above it: a wireless start can ride
                     // the classic port (and a system start uses no adb at all).
                     R.string.home_status_transport_label to

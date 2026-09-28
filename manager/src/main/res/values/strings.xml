@@ -8,8 +8,8 @@
     <string name="home_status_service_is_running">%1$s is running</string>
     <string name="home_status_service_not_running">%1$s is not running</string>
     <string name="home_status_service_version">Version %2$s, %1$s</string>
-    <string name="home_status_adb_wireless">adb (Wireless debugging)</string>
-    <string name="home_status_adb_usb">adb (USB debugging)</string>
+    <string name="home_status_adb_wireless">adb</string>
+    <string name="home_status_adb_usb">adb</string>
     <string name="home_status_uid">uid %1$d</string>
     <string name="home_status_service_version_update"><![CDATA[Version %2$s, %1$s<br>Start again to update to version %3$s]]></string>
 
@@ -24,9 +24,9 @@
 
     <!-- Home - Wireless Adb -->
     <string name="home_wireless_adb_title"><![CDATA[Start via Wireless debugging]]></string>
-    <string name="home_wireless_adb_summary">Starts over wireless debugging only — the wireless port, needs Wi-Fi and pairing once</string>
+    <string name="home_wireless_adb_summary">Starts over wireless debugging.</string>
     <string name="home_usb_adb_title"><![CDATA[Start via USB debugging]]></string>
-    <string name="home_usb_adb_summary">Starts over USB debugging only — the local ADB port, no pairing and no wireless debugging</string>
+    <string name="home_usb_adb_summary">Starts over USB debugging.</string>
     <string name="home_wireless_adb_description"><![CDATA[On Android 11 or above, you can enable Wireless debugging and start Shizuku directly from your device, without connecting to a computer.<p>Please view the step-by-step guide first.]]></string>
     <string name="home_wireless_adb_description_pre_11"><![CDATA[Before Android 11, connecting to a computer is required to enable Wireless debugging.]]></string>
     <string name="home_wireless_adb_view_guide_button">Step-by-step guide</string>
@@ -58,9 +58,9 @@
     <string name="dialog_wifi_required_title">Wi-Fi connection required</string>
     <string name="dialog_wifi_required_message">To start Shizuku via Wireless debugging, you must be connected to a Wi-Fi network.</string>
     <string name="enable">Enable</string>
-    <string name="auto_pair_instructions">Pair without typing a code:\n\n1. Developer options → Wireless debugging\n2. Pair device with pairing code\n\nShizuku reads the code and port straight from that dialog and starts itself — nothing to type. Keep the dialog open until pairing finishes.</string>
-    <string name="auto_pair_manual">Pair manually instead</string>
-    <string name="development_settings">Developer options</string>
+    <string name="auto_pair_instructions">Pair without typing a code:\n\n1. Developer options → Wireless debugging\n2. Pair device with pairing code\n\nShizuku reads the code and port straight from that dialog and starts itself. Keep the dialog open until pairing finishes.</string>
+    <string name="auto_pair_manual">Manual Pairing</string>
+    <string name="development_settings">Automated Pairing</string>
     <string name="notification_settings">Notification options</string>
     <string name="adb_pairing_tutorial_title">Pair Shizuku with your device</string>
     <string name="adb_pairing_tutorial_content_notification">A notification from Shizuku will help you complete the pairing.</string>
@@ -127,17 +127,18 @@
     <string name="app_management_toggle_all">Toggle all</string>
     <string name="app_management_search_hint">Search apps</string>
     <string name="app_management_sort">Sort</string>
-    <string name="apps_needs_shizuku">Shizuku isn\'t running, so there is nothing to list yet</string>
+    <string name="apps_needs_shizuku">Shizuku isn\'t running, start it to see apps</string>
     <string name="apps_empty">No apps to show</string>
     <string name="apps_no_match">No apps match your search</string>
-    <string name="app_management_sort_last_added">Last added</string>
-    <string name="app_management_sort_alphabetical">Alphabetical</string>
+    <string name="app_management_sort_last_added">Recent</string>
+    <string name="app_management_sort_alphabetical">A-Z</string>
     <string name="tab_home">Home</string>
     <string name="tab_apps">Apps</string>
     <string name="tab_tools">Tools</string>
     <string name="tab_settings">Settings</string>
     <string name="home_status_transport_label">Transport</string>
-    <string name="home_status_started_with">Started with</string>
+    <string name="home_status_started_with">Current</string>
+    <string name="home_status_started_default">Default</string>
     <string name="uid_label">UID</string>
     <string name="home_device_manager_version">Manager version</string>
     <string name="home_device_kernel_version">Kernel version</string>
@@ -151,7 +152,7 @@
     <string name="seccomp_disabled">Disabled</string>
     <string name="seccomp_strict">Strict</string>
     <string name="seccomp_filter">Filter</string>
-    <string name="status_value_none">—</string>
+    <string name="status_value_none">-</string>
     <string name="status_running_short">Running</string>
     <string name="status_stopped_short">Stopped</string>
     <string name="action_start">Start</string>
@@ -168,14 +169,14 @@
     <string name="start_waiting_for_service">Starting Shizuku…</string>
     <string name="start_failed_write_secure_settings">WRITE_SECURE_SETTINGS permission is required to start in the background</string>
     <string name="start_failed_unsupported">Background start is not supported on this device</string>
-    <string name="start_failed_wifi_required">Connect to a Wi-Fi network — the system turns wireless debugging off without one. Or start from a computer using the ADB command below.</string>
+    <string name="start_failed_wifi_required">Connect to a Wi-Fi network the system turns wireless debugging off without one. Or start from a computer using the ADB command below.</string>
     <string name="start_failed_no_port">No wireless debugging port was found. Make sure wireless debugging is enabled and Wi-Fi is connected.</string>
     <string name="start_failed_no_auth">The network is not authorized for wireless debugging. Re-pair the device.</string>
     <string name="action_dismiss">Dismiss</string>
     <string name="action_connect_wifi">Connect</string>
     <string name="action_pair">Pair</string>
     <string name="start_failed_pairing_required">This device isn\'t paired for wireless debugging (or the pairing was invalidated).</string>
-    <string name="start_failed_usb_no_port">No local ADB port is open — Android clears it on every reboot, and reopening it needs a connection to borrow. Connect to Wi-Fi and Shizuku will reopen it over wireless debugging, or run <b>adb tcpip 5555</b> from a computer.</string>
+    <string name="start_failed_usb_no_port">No local ADB port is open Android clears it on every reboot, and reopening it needs a connection to borrow. Connect to Wi-Fi and Shizuku will reopen it over wireless debugging, or run <b>adb tcpip 5555</b> from a computer.</string>
     <string name="start_failed_system_needs_app">The system start method has to be started from the app.</string>
     <string name="settings_section_startup">Startup</string>
     <string name="settings_section_wireless">Wireless debugging</string>
@@ -183,7 +184,7 @@
     <string name="settings_section_appearance">Appearance</string>
     <string name="settings_section_about">About</string>
     <string name="settings_theme">Theme</string>
-    <string name="settings_theme_system">System default</string>
+    <string name="settings_theme_system">Follow System</string>
     <string name="settings_theme_light">Light</string>
     <string name="settings_theme_dark">Dark</string>
     <string name="intents_description">Automation apps can control Shizuku with these broadcasts. The auth token must be passed in the \"auth\" extra.</string>
@@ -195,10 +196,10 @@
     <string name="intents_watchdog_on">Watchdog on</string>
     <string name="intents_watchdog_off">Watchdog off</string>
     <string name="intents_watchdog_toggle">Watchdog toggle</string>
-    <string name="intents_adb_command">ADB shell command</string>
+    <string name="intents_adb_command">Start using Computer</string>
     <string name="home_battery_warning">Shizuku may be killed in the background. Allow it to ignore battery optimizations.</string>
-    <string name="tools_battery_ignored">Ignored</string>
-    <string name="tools_battery_not_ignored">Not ignored</string>
+    <string name="tools_battery_ignored">Allowed</string>
+    <string name="tools_battery_not_ignored">Not allowed</string>
     <string name="batch_selected_count">%1$d selected</string>
     <string name="app_management_action_select_all">Select all</string>
     <string name="app_management_action_grant">Grant</string>
@@ -212,7 +213,7 @@
     <string name="home_terminal_description">Run shell commands in terminal apps through Shizuku</string>
     <string name="terminal_tutorial_miui">Users have reported that MIUI breaks the Storage Access Framework, which is used by the export function.</string>
     <string name="terminal_tutorial_miui_2">If you are using MIUI, you may have to extract the file from the assets folder in Shizuku\'s APK.</string>
-    <string name="terminal_tutorial_1">Export the files to a new folder.</string>
+    <string name="terminal_tutorial_1">Tap to export the files to a new folder.</string>
     <string name="terminal_tutorial_1_description">Two files will be exported: %1$s and %2$s. If the files already exist in the selected folder, they will be deleted.</string>
     <string name="terminal_export_files">Export files</string>
     <string name="terminal_tutorial_2">Use your terminal app to copy the files to its private files directory.</string>
@@ -253,22 +254,22 @@
     <string name="settings_watchdog">Watchdog</string>
     <string name="settings_watchdog_summary">Automatically restart Shizuku if it crashes</string>
     <string name="settings_auto_disable_wireless_debugging">Auto-disable wireless debugging</string>
-    <string name="settings_auto_disable_wireless_debugging_summary">Disable wireless debugging when stopping Shizuku. Left off, it stays enabled so Shizuku can restart without Wi-Fi.</string>
-    <string name="settings_start_method">Start method</string>
+    <string name="settings_auto_disable_wireless_debugging_summary">Disable wireless debugging when stopping Shizuku.</string>
+    <string name="settings_start_method">Default start method</string>
     <string name="settings_start_method_summary">How Start, start on boot and the watchdog launch Shizuku</string>
-    <string name="start_method_wireless">Wireless debugging</string>
-    <string name="start_method_usb">USB debugging</string>
-    <string name="start_method_system">System (UID 1000)</string>
+    <string name="start_method_wireless">Wireless</string>
+    <string name="start_method_usb">USB</string>
+    <string name="start_method_system">System</string>
     <string name="start_method_root">Root</string>
     <string name="transport_unknown">Unknown</string>
-    <string name="settings_wait_for_wifi">Wait for Wi-Fi before restarting</string>
-    <string name="settings_wait_for_wifi_summary">Unattended restarts wait for an unmetered Wi-Fi connection before attempting to start. Starts you trigger yourself never wait.</string>
+    <string name="settings_wait_for_wifi">Wait for Wi-Fi</string>
+    <string name="settings_wait_for_wifi_summary">Unattended shizuku restarts wait for an unmetered Wi-Fi connection before attempting to start.</string>
     <string name="settings_system_start_method">System start method</string>
-    <string name="settings_system_start_method_exploit">Device exploit (built-in)</string>
-    <string name="settings_system_start_method_custom">Custom command (external)</string>
+    <string name="settings_system_start_method_exploit">Device exploit</string>
+    <string name="settings_system_start_method_custom">Custom command</string>
 
-    <string name="home_system_title">Start (system)</string>
-    <string name="home_system_summary">Run Shizuku as the system user (UID 1000) instead of as adb — only works on devices with the built-in exploit</string>
+    <string name="home_system_title">Start using System UID</string>
+    <string name="home_system_summary">Run Shizuku as the system user (UID 1000) instead of as adb only works on devices with the built-in exploit</string>
     <string name="home_adb_command_summary">Start Shizuku from a computer over ADB. Tap to copy the command</string>
     <string name="home_system_description_exploit">Start Shizuku as system (UID 1000) using the built-in device exploit.</string>
     <string name="home_system_description_custom">Launch Shizuku as system (UID 1000) with your own privilege escalation; Shizuku will detect it. Tap to see the command.</string>
@@ -293,11 +294,11 @@
     <string name="settings_translation">Participate in translation</string>
     <string name="settings_translation_summary">Help us translate %s into your language</string>
     <string name="settings_user_interface">Appearance</string>
-    <string name="settings_black_night_theme">Black night theme</string>
+    <string name="settings_black_night_theme">Amoled Black</string>
     <string name="settings_black_night_theme_summary">Use the pure black theme if night mode is enabled</string>
     <string name="settings_support">Support</string>
     <string name="settings_update_stable">Stable</string>
-    <string name="settings_update_beta">Beta</string>
+    <string name="settings_update_beta">Dev</string>
     <string name="settings_help">Help</string>
     <string name="settings_report_bug">Report a bug</string>
     <string name="settings_advanced">Advanced</string>
@@ -343,7 +344,7 @@
     <string name="dark_theme">Theme</string>
     <string name="dark_theme_off">Always light</string>
     <string name="dark_theme_on">Always dark</string>
-    <string name="follow_system">Follow system</string>
+    <string name="follow_system">Follow System</string>
 
     <!-- About -->
     <string name="action_about">About</string>
@@ -428,6 +429,6 @@
     <string name="dialog_requesting_legacy_title">%1$s is requesting legacy Shizuku</string>
     <string name="dialog_requesting_legacy_message"><![CDATA[<b>%1$s</b> has modern Shizuku support, but it\'s requesting legacy Shizuku. This could because Shizuku is not running, please check in Shizuku app.<p>Legacy Shizuku has been deprecated since March 2019.]]></string>
     <string name="dialog_requesting_legacy_button_open_shizuku">Open Shizuku</string>
-    <string name="wadb_notification_attempt_now">Attempt now</string>
+    <string name="wadb_notification_attempt_now">Retry</string>
 
 </resources>
