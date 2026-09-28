@@ -18,29 +18,52 @@ import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.SettingsHelper
 import moe.shizuku.manager.utils.SettingsPage
 
+/**
+ * Starts the pairing flow — by asking how to pair, always.
+ *
+ * The two ways want different things from the user: automated pairing reads the code out
+ * of the system dialog and so needs the accessibility service running, while manual
+ * pairing needs nothing but typing it. So switching the service on is the automated
+ * branch's business, and it is only ever raised there: asking for it up front demanded
+ * something of a user who may be about to choose the way that doesn't need it at all.
+ */
 fun Context.showAccessibilityDialog() {
-    val hasWriteSecureSettings = (checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED)
+    showNavigateDialog()
+}
 
+/** True when the system makes this install's "restricted settings" a obstacle. */
+private fun Context.hasAccessRestrictedSettings(): Boolean {
     val installer = packageManager.getInstallerPackageName(packageName)
     val isInstalledByPlayOrAdb = (installer == "com.android.vending") || (installer == null)
-    val hasAccessRestrictedSettings = isInstalledByPlayOrAdb || Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE
+    return isInstalledByPlayOrAdb || Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE
+}
 
-    if (isAccessibilityEnabled()) {
-        showNavigateDialog()
-    } else if (hasWriteSecureSettings) {
-        // Switching it on silently leaves the user with no next step to follow (on TV
-        // the service drives the rest itself; on a phone the user has to open the
-        // pairing dialog), so always explain what to do next.
-        if (enableAccessibilityService()) {
-            showNavigateDialog()
-            return
-        }
-        showPermissionDialog()
-    } else if (!hasAccessRestrictedSettings) {
+/**
+ * Makes sure the accessibility service is on for automated pairing, and reports whether it
+ * is. When it can't be switched on, the dialog that explains why is shown instead.
+ *
+ * Shizuku can normally do this by itself: writing the enabled-services setting only needs
+ * WRITE_SECURE_SETTINGS, which is why the prompt never appeared on installs that had it. A
+ * fresh install doesn't have it yet, so there the user is asked — or told the one command
+ * that would save them the asking.
+ */
+private fun Context.ensureAccessibilityService(): Boolean {
+    if (isAccessibilityEnabled()) return true
+
+    if (checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED &&
+        enableAccessibilityService()
+    ) {
+        return true
+    }
+
+    if (checkSelfPermission(WRITE_SECURE_SETTINGS) != PackageManager.PERMISSION_GRANTED &&
+        !hasAccessRestrictedSettings()
+    ) {
         showPermissionDialog()
     } else {
         showEnableDialog()
     }
+    return false
 }
 
 private fun Context.showPermissionDialog() {
@@ -70,7 +93,13 @@ private fun Context.showEnableDialog() {
         .setMessage(R.string.dialog_adb_pairing_accessibility_enable)
         .setPositiveButton(R.string.enable) { _, _ ->
             SettingsPage.Accessibility.launch(this)
-        }.setNegativeButton(android.R.string.cancel, null)
+        }
+        // The way out that needs none of this: type the code yourself.
+        .setNegativeButton(R.string.auto_pair_manual) { _, _ ->
+            runCatching {
+                startActivity(Intent(this, AdbPairingTutorialActivity::class.java))
+            }
+        }
         .show()
 }
 
@@ -84,7 +113,11 @@ private fun Context.showNavigateDialog() {
             else R.string.auto_pair_instructions
         )
         .setPositiveButton(R.string.development_settings) { _, _ ->
-            SettingsPage.Developer.HighlightWirelessDebugging.launch(this)
+            // Only now, having chosen the automated way, is the accessibility service
+            // needed — and only if Shizuku can't switch it on itself.
+            if (ensureAccessibilityService()) {
+                SettingsPage.Developer.HighlightWirelessDebugging.launch(this)
+            }
         }
         .setNegativeButton(R.string.auto_pair_manual) { _, _ ->
             // Reading the code can still fail (OEM dialog, service killed) — keep the
