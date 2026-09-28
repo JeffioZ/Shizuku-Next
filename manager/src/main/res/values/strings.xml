@@ -207,7 +207,10 @@
     <string name="start_method_root">Root</string>
     <string name="transport_adb">adb</string>
     <string name="settings_adb_without_developer_options">ADB without Developer options</string>
-    <string name="settings_adb_without_developer_options_summary">Turns Developer options off and keeps the ADB settings it would take with it, so Shizuku still starts and apps that check for Developer options see it's off. Re-applied after every reboot.</string>
+    <string name="settings_adb_without_developer_options_summary">Turns Developer options off and keeps the ADB settings it would take with it, so Shizuku still starts and apps that check for Developer options see that it is off. Re-applied after every reboot.</string>
+    <string name="settings_adb_without_developer_options_confirm_title">Turn Developer options off?</string>
+    <string name="settings_adb_without_developer_options_confirm_message">Shizuku keeps working. It puts the ADB settings back and re-applies them after a reboot. While Developer options is off its settings screen is hidden, so you cannot change USB or wireless debugging by hand, and pairing a new device needs that screen. Switch this off to put Developer options back.</string>
+    <string name="settings_adb_without_developer_options_confirm">Turn off</string>
     <string name="settings_adb_without_developer_options_failed">Shizuku could not change the settings. Grant WRITE_SECURE_SETTINGS on the permissions page first.</string>
     <string name="settings_wait_for_wifi">Wait for Wi-Fi</string>
     <string name="settings_wait_for_wifi_summary">Unattended shizuku restarts wait for an unmetered Wi-Fi connection before attempting to start.</string>

@@ -100,6 +100,30 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
     var adbWithoutDeveloperOptions by remember {
         mutableStateOf(ShizukuSettings.getAdbWithoutDeveloperOptions())
     }
+    var adbWithoutDeveloperOptionsPrompt by remember { mutableStateOf(false) }
+
+    /**
+     * Applies the setting and keeps the switch honest: if the writes were refused (no
+     * WRITE_SECURE_SETTINGS yet) the setting is put back rather than left showing on for
+     * something that did not happen.
+     */
+    fun setAdbWithoutDeveloperOptions(enable: Boolean) {
+        val applied = if (enable) {
+            applyAdbWithoutDeveloperOptions(context)
+        } else {
+            restoreDeveloperOptions(context)
+            true
+        }
+        ShizukuSettings.setAdbWithoutDeveloperOptions(context, enable && applied)
+        adbWithoutDeveloperOptions = ShizukuSettings.getAdbWithoutDeveloperOptions()
+        if (!applied) {
+            Toast.makeText(
+                context,
+                context.getString(R.string.settings_adb_without_developer_options_failed),
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
 
     var closeTcpDialog by remember { mutableStateOf(false) }
     var restartAction by remember { mutableStateOf<(() -> Unit)?>(null) }
@@ -241,20 +265,14 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                                 Switch(
                                     checked = adbWithoutDeveloperOptions,
                                     onCheckedChange = { checked ->
-                                        ShizukuSettings.setAdbWithoutDeveloperOptions(context, checked)
-                                        adbWithoutDeveloperOptions = checked
-                                        val applied = if (checked) {
-                                            applyAdbWithoutDeveloperOptions(context)
+                                        // Hiding Developer options is not something to do to
+                                        // someone on a stray tap, so it asks first, with what
+                                        // it costs spelled out. Putting it back is the safe
+                                        // direction and needs no ceremony.
+                                        if (checked) {
+                                            adbWithoutDeveloperOptionsPrompt = true
                                         } else {
-                                            restoreDeveloperOptions(context)
-                                            true
-                                        }
-                                        if (!applied) {
-                                            Toast.makeText(
-                                                context,
-                                                context.getString(R.string.settings_adb_without_developer_options_failed),
-                                                Toast.LENGTH_LONG
-                                            ).show()
+                                            setAdbWithoutDeveloperOptions(false)
                                         }
                                     }
                                 )
@@ -583,6 +601,29 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
             },
             dismissButton = {
                 TextButton(onClick = { closeTcpDialog = false }) {
+                    Text(stringResource(android.R.string.cancel))
+                }
+            }
+        )
+    }
+
+    if (adbWithoutDeveloperOptionsPrompt) {
+        AlertDialog(
+            onDismissRequest = { adbWithoutDeveloperOptionsPrompt = false },
+            title = {
+                Text(stringResource(R.string.settings_adb_without_developer_options_confirm_title))
+            },
+            text = {
+                Text(stringResource(R.string.settings_adb_without_developer_options_confirm_message))
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    adbWithoutDeveloperOptionsPrompt = false
+                    setAdbWithoutDeveloperOptions(true)
+                }) { Text(stringResource(R.string.settings_adb_without_developer_options_confirm)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { adbWithoutDeveloperOptionsPrompt = false }) {
                     Text(stringResource(android.R.string.cancel))
                 }
             }
