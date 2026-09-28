@@ -45,6 +45,7 @@ import kotlinx.coroutines.withContext
 import moe.shizuku.manager.R
 import moe.shizuku.manager.home.isAccessibilityEnabled
 import moe.shizuku.manager.start.hasPermission
+import moe.shizuku.manager.ui.component.SegmentedCard
 import moe.shizuku.manager.start.localNetworkPermission
 import moe.shizuku.manager.utils.SettingsHelper
 import moe.shizuku.manager.utils.SettingsPage
@@ -107,79 +108,67 @@ fun PermissionsScreen(onBack: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(13.dp)
         ) {
             item {
-                SegmentedColumnLike {
-                    PermissionRow(
-                        headline = { Text(stringResource(R.string.permissions_notifications)) },
-                        reason = { Text(stringResource(R.string.permissions_notifications_summary)) },
-                        granted = notifications,
-                        actionLabel = stringResource(R.string.permissions_action_allow),
-                        onAction = { permissionLauncher.launch(POST_NOTIFICATIONS) }
-                    )
-                }
+                PermissionRow(
+                    headline = stringResource(R.string.permissions_notifications),
+                    reason = stringResource(R.string.permissions_notifications_summary),
+                    granted = notifications,
+                    actionLabel = stringResource(R.string.permissions_action_allow),
+                    onAction = { permissionLauncher.launch(POST_NOTIFICATIONS) }
+                )
             }
 
             item {
-                SegmentedColumnLike {
-                    PermissionRow(
-                        headline = { Text(stringResource(R.string.permissions_nearby)) },
-                        reason = { Text(stringResource(R.string.permissions_nearby_summary)) },
-                        granted = localNetwork,
-                        actionLabel = stringResource(R.string.permissions_action_allow),
-                        onAction = {
-                            localNetworkPermission()?.let { permissionLauncher.launch(it) }
+                PermissionRow(
+                    headline = stringResource(R.string.permissions_nearby),
+                    reason = stringResource(R.string.permissions_nearby_summary),
+                    granted = localNetwork,
+                    actionLabel = stringResource(R.string.permissions_action_allow),
+                    onAction = { localNetworkPermission()?.let { permissionLauncher.launch(it) } }
+                )
+            }
+
+            item {
+                PermissionRow(
+                    headline = stringResource(R.string.permissions_write_secure_settings),
+                    reason = stringResource(R.string.permissions_write_secure_settings_summary),
+                    granted = writeSecureSettings,
+                    // There is no dialog for this one: only adb can grant it, so the action
+                    // copies the command to run.
+                    actionLabel = stringResource(R.string.intents_copy),
+                    onAction = {
+                        if (ClipboardUtils.put(context, writeSecureSettingsCommand)) {
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.toast_copied_to_clipboard),
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
-                    )
-                }
+                    }
+                )
             }
 
             item {
-                SegmentedColumnLike {
-                    PermissionRow(
-                        headline = { Text(stringResource(R.string.permissions_write_secure_settings)) },
-                        reason = { Text(stringResource(R.string.permissions_write_secure_settings_summary)) },
-                        granted = writeSecureSettings,
-                        // There is no dialog for this one: only adb can grant it, so the
-                        // action copies the command to run.
-                        actionLabel = stringResource(R.string.intents_copy),
-                        onAction = {
-                            if (ClipboardUtils.put(context, writeSecureSettingsCommand)) {
-                                Toast.makeText(
-                                    context,
-                                    context.getString(R.string.toast_copied_to_clipboard),
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
+                PermissionRow(
+                    headline = stringResource(R.string.permissions_accessibility),
+                    reason = stringResource(R.string.permissions_accessibility_summary),
+                    granted = accessibility,
+                    actionLabel = stringResource(R.string.enable),
+                    onAction = { SettingsPage.Accessibility.launch(context) }
+                )
+            }
+
+            item {
+                PermissionRow(
+                    headline = stringResource(R.string.tools_battery),
+                    reason = stringResource(R.string.permissions_battery_summary),
+                    granted = batteryIgnored,
+                    actionLabel = stringResource(R.string.snackbar_action_fix),
+                    onAction = {
+                        SettingsHelper.requestIgnoreBatteryOptimizationsPrivileged(context) {
+                            refresh()
                         }
-                    )
-                }
-            }
-
-            item {
-                SegmentedColumnLike {
-                    PermissionRow(
-                        headline = { Text(stringResource(R.string.permissions_accessibility)) },
-                        reason = { Text(stringResource(R.string.permissions_accessibility_summary)) },
-                        granted = accessibility,
-                        actionLabel = stringResource(R.string.enable),
-                        onAction = { SettingsPage.Accessibility.launch(context) }
-                    )
-                }
-            }
-
-            item {
-                SegmentedColumnLike {
-                    PermissionRow(
-                        headline = { Text(stringResource(R.string.tools_battery)) },
-                        reason = { Text(stringResource(R.string.permissions_battery_summary)) },
-                        granted = batteryIgnored,
-                        actionLabel = stringResource(R.string.snackbar_action_fix),
-                        onAction = {
-                            SettingsHelper.requestIgnoreBatteryOptimizationsPrivileged(context) {
-                                refresh()
-                            }
-                        }
-                    )
-                }
+                    }
+                )
             }
         }
     }
@@ -188,21 +177,37 @@ fun PermissionsScreen(onBack: () -> Unit) {
 /**
  * One required permission: what it is for, whether it is allowed, and how to change that.
  *
- * The state is the trailing half of the row rather than a sentence in the middle, so a
- * glance down the page answers "what is missing" without reading each line.
+ * Laid out by hand rather than with a list item, because these reasons run to several
+ * lines and a list item puts its trailing content at the top of a tall row — the state
+ * ended up level with the headline while the text carried on below it, which read as a
+ * label for the paragraph rather than the answer for the row.
  */
 @Composable
 private fun PermissionRow(
-    headline: @Composable () -> Unit,
-    reason: @Composable () -> Unit,
+    headline: String,
+    reason: String,
     granted: Boolean,
     actionLabel: String,
     onAction: () -> Unit
 ) {
-    moe.shizuku.manager.ui.component.SegmentedListItem(
-        headlineContent = headline,
-        supportingContent = reason,
-        trailingContent = {
+    SegmentedCard {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(headline, style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    reason,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
             if (granted) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
@@ -222,13 +227,5 @@ private fun PermissionRow(
                 TextButton(onClick = onAction) { Text(actionLabel) }
             }
         }
-    )
-}
-
-/** The list container the rest of the app uses, so this page matches it without the header. */
-@Composable
-private fun SegmentedColumnLike(content: @Composable () -> Unit) {
-    moe.shizuku.manager.ui.component.SegmentedColumn(modifier = Modifier.fillMaxWidth()) {
-        item { content() }
     }
 }

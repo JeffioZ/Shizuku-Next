@@ -322,8 +322,18 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
             }
             item {
                 SegmentedColumn(modifier = Modifier.fillMaxWidth()) {
-                    // Battery optimisation moved to the permissions page: it answers the same
-                    // question as the rest of that page (may this app do its job?)
+                    // Battery optimisation moved onto the permissions page: it answers the
+                    // same question as the rest of that page (may this app do its job?)
+                    item {
+                        SegmentedListItem(
+                            headlineContent = { Text(stringResource(R.string.settings_permissions)) },
+                            supportingContent = { Text(stringResource(R.string.settings_permissions_summary)) },
+                            trailingContent = {
+                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+                            },
+                            onClick = { onOpenDetail(Detail.PERMISSIONS) }
+                        )
+                    }
                     item {
                         SegmentedListItem(
                             headlineContent = { Text(stringResource(R.string.tools_stealth)) },
@@ -461,16 +471,6 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
                             },
                             onClick = { updateDialog = true }
-                        )
-                    }
-                    item {
-                        SegmentedListItem(
-                            headlineContent = { Text(stringResource(R.string.settings_permissions)) },
-                            supportingContent = { Text(stringResource(R.string.settings_permissions_summary)) },
-                            trailingContent = {
-                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
-                            },
-                            onClick = { onOpenDetail(Detail.PERMISSIONS) }
                         )
                     }
                     item {
