@@ -6,7 +6,9 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,6 +32,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -43,9 +46,11 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
@@ -54,11 +59,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import moe.shizuku.manager.Helps
 import moe.shizuku.manager.R
 import moe.shizuku.manager.authorization.AuthorizationManager
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter
+import moe.shizuku.manager.ui.component.SegmentedCard
 import moe.shizuku.manager.utils.ShizukuStateMachine
 
 enum class SortOrder { LAST_ADDED, ALPHABETICAL }
@@ -76,6 +83,8 @@ fun AppsScreen() {
     var version by remember { mutableIntStateOf(0) }
     var sortMenu by remember { mutableStateOf(false) }
     var pendingBatch by remember { mutableStateOf<Boolean?>(null) }
+    // Set to the state every listed app should end up in, once the user confirms.
+    var pendingToggleAll by remember { mutableStateOf<Boolean?>(null) }
     var permissionLimited by remember { mutableStateOf(false) }
     var loading by remember { mutableStateOf(true) }
     var running by remember { mutableStateOf(ShizukuStateMachine.isRunning()) }
@@ -121,6 +130,7 @@ fun AppsScreen() {
     }
 
     val selectionMode = selected.isNotEmpty()
+    val scope = rememberCoroutineScope()
 
     Column(modifier = Modifier.fillMaxSize()) {
         if (selectionMode) {
@@ -149,6 +159,25 @@ fun AppsScreen() {
                 title = { Text(stringResource(R.string.tab_apps)) },
                 windowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
                 actions = {
+                    // Long-press and Select all exist for picking individual apps; this is
+                    // the one-tap version for when every listed app should be flipped.
+                    if (shown.isNotEmpty()) {
+                        TextButton(onClick = {
+                            scope.launch {
+                                val allGranted = withContext(Dispatchers.IO) {
+                                    shown.all {
+                                        runCatching {
+                                            AuthorizationManager.granted(
+                                                it.packageName,
+                                                it.applicationInfo!!.uid
+                                            )
+                                        }.getOrDefault(false)
+                                    }
+                                }
+                                pendingToggleAll = !allGranted
+                            }
+                        }) { Text(stringResource(R.string.app_management_toggle_all)) }
+                    }
                     IconButton(onClick = { sortMenu = true }) {
                         Icon(Icons.Filled.Sort, contentDescription = null)
                     }
@@ -178,7 +207,13 @@ fun AppsScreen() {
         )
 
         Box(modifier = Modifier.fillMaxSize()) {
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            // Every app is its own card, so they need room between them; the padding
+            // keeps the cards off the edges like the cards on the other tabs.
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             items(shown, key = { it.packageName }) { pi ->
                 val uid = pi.applicationInfo!!.uid
                 val granted = remember(pi.packageName, version) {
@@ -186,6 +221,15 @@ fun AppsScreen() {
                 }
                 val isSelected = pi.packageName in selected
 
+                SegmentedCard(
+                    // A selected row tints its card, so a multi-select pass reads at a
+                    // glance instead of needing the checkbox to be spotted each time.
+                    color = if (selectionMode && isSelected) {
+                        MaterialTheme.colorScheme.secondaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.surfaceContainerHigh
+                    }
+                ) {
                 ListItem(
                     modifier = Modifier.combinedClickable(
                         onClick = {
@@ -232,8 +276,10 @@ fun AppsScreen() {
                                 }
                             )
                         }
-                    }
+                    },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                 )
+                }
             }
         }
 
@@ -286,6 +332,48 @@ fun AppsScreen() {
             confirmButton = {
                 TextButton(onClick = { permissionLimited = false }) {
                     Text(stringResource(android.R.string.ok))
+                }
+            }
+        )
+    }
+
+    pendingToggleAll?.let { grant ->
+        AlertDialog(
+            onDismissRequest = { pendingToggleAll = null },
+            title = {
+                Text(
+                    stringResource(
+                        if (grant) R.string.app_management_batch_grant_title
+                        else R.string.app_management_batch_revoke_title
+                    )
+                )
+            },
+            // Only what is listed: searching first is how you narrow this down.
+            text = { Text(stringResource(R.string.app_management_toggle_all_message, shown.size)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    val target = shown.toList()
+                    pendingToggleAll = null
+                    scope.launch {
+                        val limited = withContext(Dispatchers.IO) {
+                            var limited = false
+                            for (pi in target) {
+                                val result = runCatching {
+                                    if (grant) AuthorizationManager.grant(pi.packageName, pi.applicationInfo!!.uid)
+                                    else AuthorizationManager.revoke(pi.packageName, pi.applicationInfo!!.uid)
+                                }
+                                if (result.exceptionOrNull() is SecurityException) limited = true
+                            }
+                            limited
+                        }
+                        if (limited) permissionLimited = true
+                        version++
+                    }
+                }) { Text(stringResource(android.R.string.ok)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingToggleAll = null }) {
+                    Text(stringResource(android.R.string.cancel))
                 }
             }
         )

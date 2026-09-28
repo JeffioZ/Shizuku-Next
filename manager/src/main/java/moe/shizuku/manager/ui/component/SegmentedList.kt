@@ -10,6 +10,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
 import moe.shizuku.manager.ui.theme.LocalAmoledTheme
@@ -47,6 +48,40 @@ fun SegmentedColumn(
     ) {
         val scope = SegmentedColumnScope()
         Column { scope.content() }
+    }
+}
+
+/**
+ * One rounded card around a single row, for lists where every entry is its own card —
+ * the app list, where a flat run of rows reads as one undifferentiated block.
+ *
+ * Same surface and outline as [SegmentedColumn], so the two kinds of list sit together
+ * without looking like they came from different apps.
+ */
+@Composable
+fun SegmentedCard(
+    modifier: Modifier = Modifier,
+    color: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
+    content: @Composable () -> Unit
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .then(
+                if (LocalAmoledTheme.current) {
+                    Modifier.border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                        shape = MaterialTheme.shapes.large
+                    )
+                } else {
+                    Modifier
+                }
+            ),
+        shape = MaterialTheme.shapes.large,
+        color = color
+    ) {
+        content()
     }
 }
 

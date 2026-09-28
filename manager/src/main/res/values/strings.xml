@@ -172,7 +172,7 @@
     <string name="start_failed_unsupported">Background start is not supported on this device</string>
     <string name="start_failed_wifi_required">Connect to a Wi-Fi network the system turns wireless debugging off without one. Or start from a computer using the ADB command below.</string>
     <string name="start_failed_no_port">No wireless debugging port was found. Make sure wireless debugging is enabled and Wi-Fi is connected.</string>
-    <string name="start_failed_no_port_no_permission">No wireless debugging port was found, and Shizuku can\'t turn wireless debugging on without WRITE_SECURE_SETTINGS: <b>adb shell pm grant moe.shizuku.privileged.api android.permission.WRITE_SECURE_SETTINGS</b>. Or start Shizuku over USB debugging once — it grants itself afterwards.</string>
+    <string name="start_failed_no_port_no_permission">No wireless debugging port was found, and Shizuku can\'t turn wireless debugging on without WRITE_SECURE_SETTINGS: <b>adb shell pm grant moe.shizuku.privileged.api android.permission.WRITE_SECURE_SETTINGS</b>. Or start Shizuku over USB debugging once it grants itself afterwards.</string>
     <string name="start_failed_no_auth">The network is not authorized for wireless debugging. Re-pair the device.</string>
     <string name="action_dismiss">Dismiss</string>
     <string name="action_connect_wifi">Connect</string>
@@ -211,6 +211,7 @@
     <string name="app_management_batch_grant_title">Grant permission</string>
     <string name="app_management_batch_revoke_title">Revoke permission</string>
     <string name="app_management_batch_message">Apply to %1$d selected app(s)?</string>
+    <string name="app_management_toggle_all_message">Apply to all %1$d listed apps?</string>
 
     <!-- Terminal -->
     <string name="home_terminal_title">Use Shizuku in terminal apps</string>
