@@ -3,6 +3,11 @@ name: Build App
 on:
   workflow_dispatch:
     inputs:
+      version:
+        description: 'Version to release, e.g. 14.0.3. Leave blank to bump the patch of the current one.'
+        type: string
+        required: false
+
       prerelease:
         description: 'Prerelease'
         type: boolean
@@ -13,7 +18,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      # Write, because the version bump below is committed and pushed before the build.
+      contents: write
       id-token: write
       attestations: write
       artifact-metadata: write
@@ -36,6 +42,36 @@ jobs:
           ref: ${{ github.ref_name }}
           submodules: 'recursive'
           fetch-depth: 0
+
+      # build.gradle's version is what names the APK, the tag and the release title, so it
+      # is bumped here — before the build — and not after the release, where the built APK
+      # would already carry the old number and disagree with everything else.
+      - name: Bump Version
+        id: bumpVersion
+        run: |
+          CURRENT=$(grep -oP 'baseVersionName = "\K[0-9]+\.[0-9]+\.[0-9]+' build.gradle)
+          WANTED="${{ inputs.version }}"
+          [ -z "$WANTED" ] && WANTED=$(echo "$CURRENT" | awk -F. '{printf "%d.%d.%d", $1, $2, $3 + 1}')
+          echo "current $CURRENT, releasing $WANTED"
+
+          if ! echo "$WANTED" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::'$WANTED' is not a version in the form x.y.z"
+            exit 1
+          fi
+          echo "version=$WANTED" >> $GITHUB_OUTPUT
+
+          if [ "$WANTED" = "$CURRENT" ]; then
+            echo "build.gradle already says $WANTED, nothing to bump."
+            exit 0
+          fi
+
+          sed -i "s/baseVersionName = \"$CURRENT\"/baseVersionName = \"$WANTED\"/" build.gradle
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # [skip ci] is belt and braces: a push made with GITHUB_TOKEN does not start
+          # workflows anyway, but this keeps it quiet if that ever changes.
+          git commit -am "chore: bump version to $WANTED [skip ci]"
+          git push origin "HEAD:${{ github.ref_name }}"
 
       - name: Setup Java
         uses: actions/setup-java@v5
@@ -163,6 +199,10 @@ jobs:
           }
           buckets, other = collections.defaultdict(list), []
           for subject in subjects:
+              # Version bumps are not news for the release notes: neither the one this run
+              # pushes nor the one that set the version being released.
+              if subject.lower().startswith("chore: bump version"):
+                  continue
               match = re.match(r"^(\w+)(?:\(([^)]+)\))?!?:\s*(.+)$", subject)
               if match and match.group(1) in titles:
                   scope = f"**{match.group(2)}:** " if match.group(2) else ""
@@ -222,10 +262,12 @@ jobs:
             NOTES="--generate-notes"
           fi
 
+          # The version is the name too: a release left unnamed shows as "Draft" in the
+          # list, which reads as a missing title rather than an intentional one.
           if gh release view "$RELEASE_VERSION" --json id > /dev/null 2>&1; then
-            # A re-run for the same version: refresh both the notes and the APKs.
-            gh release edit "$RELEASE_VERSION" $NOTES $FLAGS
+            # A re-run for the same version: refresh the name, notes and APKs.
+            gh release edit "$RELEASE_VERSION" --title "$RELEASE_VERSION" $NOTES $FLAGS
             gh release upload "$RELEASE_VERSION" files/*.apk --clobber
           else
-            gh release create "$RELEASE_VERSION" files/*.apk $NOTES $FLAGS
+            gh release create "$RELEASE_VERSION" files/*.apk --title "$RELEASE_VERSION" $NOTES $FLAGS
           fi
