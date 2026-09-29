@@ -114,8 +114,13 @@ object ShizukuStateMachine {
                 Settings.Global.putInt(appContext.contentResolver, Settings.Global.ADB_ENABLED, 0)
             }
             // Wireless debugging is kept on by default that is what lets Shizuku restart
-            // with no Wi-Fi so turning it off with Shizuku is opt-in.
-            if (ShizukuSettings.getAutoDisableWirelessDebugging()) {
+            // with no Wi-Fi so turning it off with Shizuku is opt-in. The opt-in is
+            // ignored while the experiment that keeps it on without a network is in use:
+            // stopping Shizuku would otherwise undo the state the whole trick exists to
+            // hold, and the next start would have to win it all over again.
+            if (ShizukuSettings.getAutoDisableWirelessDebugging() &&
+                !ShizukuSettings.getForceWirelessDebugging()
+            ) {
                 Settings.Global.putInt(appContext.contentResolver, "adb_wifi_enabled", 0)
             }
         } catch (e: Exception) {

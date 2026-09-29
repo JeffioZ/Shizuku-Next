@@ -225,13 +225,28 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                     item {
                         SegmentedListItem(
                             headlineContent = { Text(stringResource(R.string.settings_auto_disable_wireless_debugging)) },
-                            supportingContent = { Text(stringResource(R.string.settings_auto_disable_wireless_debugging_summary)) },
+                            supportingContent = {
+                                Text(
+                                    stringResource(
+                                        if (forceWireless) R.string.settings_unavailable_while_forcing_wireless
+                                        else R.string.settings_auto_disable_wireless_debugging_summary
+                                    )
+                                )
+                            },
                             trailingContent = {
-                                Switch(checked = autoDisableWireless, onCheckedChange = {
-                                    ShizukuSettings.getPreferences().edit()
-                                        .putBoolean(ShizukuSettings.Keys.KEY_AUTO_DISABLE_WIRELESS_DEBUGGING, it).apply()
-                                    autoDisableWireless = it
-                                })
+                                Switch(
+                                    checked = autoDisableWireless && !forceWireless,
+                                    // Turning wireless debugging off when Shizuku stops is
+                                    // the one thing the experiment cannot survive, so this
+                                    // row is not offered while it is on rather than
+                                    // flipped and then flipped back by hand.
+                                    enabled = !forceWireless,
+                                    onCheckedChange = {
+                                        ShizukuSettings.getPreferences().edit()
+                                            .putBoolean(ShizukuSettings.Keys.KEY_AUTO_DISABLE_WIRELESS_DEBUGGING, it).apply()
+                                        autoDisableWireless = it
+                                    }
+                                )
                             }
                         )
                     }
@@ -283,12 +298,26 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                     item {
                         SegmentedListItem(
                             headlineContent = { Text(stringResource(R.string.settings_wait_for_wifi)) },
-                            supportingContent = { Text(stringResource(R.string.settings_wait_for_wifi_summary)) },
+                            supportingContent = {
+                                Text(
+                                    stringResource(
+                                        if (forceWireless) R.string.settings_unavailable_while_forcing_wireless
+                                        else R.string.settings_wait_for_wifi_summary
+                                    )
+                                )
+                            },
                             trailingContent = {
-                                Switch(checked = waitForWifi, onCheckedChange = {
-                                    ShizukuSettings.setWaitForWifi(it)
-                                    waitForWifi = it
-                                })
+                                Switch(
+                                    checked = waitForWifi && !forceWireless,
+                                    // Waiting for a network is what the experiment starts
+                                    // without, so asking for both at once is not a state
+                                    // worth offering.
+                                    enabled = !forceWireless,
+                                    onCheckedChange = {
+                                        ShizukuSettings.setWaitForWifi(it)
+                                        waitForWifi = it
+                                    }
+                                )
                             }
                         )
                     }
