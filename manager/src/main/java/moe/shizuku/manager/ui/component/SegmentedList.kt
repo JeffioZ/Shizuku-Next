@@ -3,12 +3,21 @@ package moe.shizuku.manager.ui.component
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.alpha
@@ -106,18 +115,57 @@ fun SegmentedListItem(
     leadingContent: (@Composable () -> Unit)? = null,
     trailingContent: (@Composable () -> Unit)? = null,
     onClick: (() -> Unit)? = null,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    centerTrailing: Boolean = false
 ) {
     val dimmed = if (enabled) modifier else modifier.alpha(0.45f)
+    val clickable = if (onClick != null) dimmed.clickable(enabled = enabled, onClick = onClick) else dimmed
 
-    ListItem(
-        modifier = if (onClick != null) dimmed.clickable(enabled = enabled, onClick = onClick) else dimmed,
-        headlineContent = headlineContent,
-        supportingContent = supportingContent,
-        leadingContent = leadingContent,
-        trailingContent = trailingContent,
-        colors = androidx.compose.material3.ListItemDefaults.colors(
-            containerColor = androidx.compose.ui.graphics.Color.Transparent
+    if (!centerTrailing) {
+        ListItem(
+            modifier = clickable,
+            headlineContent = headlineContent,
+            supportingContent = supportingContent,
+            leadingContent = leadingContent,
+            trailingContent = trailingContent,
+            colors = androidx.compose.material3.ListItemDefaults.colors(
+                containerColor = androidx.compose.ui.graphics.Color.Transparent
+            )
         )
-    )
+        return
+    }
+
+    // Material 3 puts the trailing slot level with the headline as soon as the supporting
+    // text wraps onto a second line, which leaves a switch or an arrow sitting beside the
+    // first line instead of beside the row. Centring it means owning the layout, so the
+    // typography Material 3 would have supplied is provided here instead.
+    Row(
+        modifier = clickable
+            .fillMaxWidth()
+            .defaultMinSize(minHeight = 56.dp)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (leadingContent != null) {
+            leadingContent()
+            Spacer(modifier = Modifier.width(16.dp))
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            CompositionLocalProvider(
+                LocalTextStyle provides MaterialTheme.typography.bodyLarge,
+                LocalContentColor provides MaterialTheme.colorScheme.onSurface
+            ) { headlineContent() }
+
+            if (supportingContent != null) {
+                CompositionLocalProvider(
+                    LocalTextStyle provides MaterialTheme.typography.bodyMedium,
+                    LocalContentColor provides MaterialTheme.colorScheme.onSurfaceVariant
+                ) { supportingContent() }
+            }
+        }
+        if (trailingContent != null) {
+            Spacer(modifier = Modifier.width(16.dp))
+            trailingContent()
+        }
+    }
 }

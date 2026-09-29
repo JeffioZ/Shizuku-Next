@@ -28,9 +28,11 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.AdminPanelSettings
 import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
@@ -68,6 +70,7 @@ import moe.shizuku.manager.R
 import moe.shizuku.manager.ui.screen.AppsScreen
 import moe.shizuku.manager.ui.screen.HomeScreen
 import moe.shizuku.manager.ui.screen.IntentsScreen
+import moe.shizuku.manager.ui.screen.ManageScreen
 import moe.shizuku.manager.ui.screen.PermissionsScreen
 import moe.shizuku.manager.ui.screen.SettingsScreen
 import moe.shizuku.manager.ui.screen.StealthScreen
@@ -95,6 +98,9 @@ private data class Tab(
 private val tabs = listOf(
     Tab(R.string.tab_home, Icons.Filled.Home, Icons.Outlined.Home),
     Tab(R.string.tab_apps, Icons.Filled.Apps, Icons.Outlined.Apps),
+    // Apps answers "which apps may use Shizuku"; Manage answers "what may they do on the
+    // device", so they belong next to each other rather than either side of Settings.
+    Tab(R.string.tab_manage, Icons.Filled.AdminPanelSettings, Icons.Outlined.AdminPanelSettings),
     Tab(R.string.tab_settings, Icons.Filled.Settings, Icons.Outlined.Settings),
 )
 
@@ -189,7 +195,8 @@ private fun MainTabs(
                 when (page) {
                     0 -> HomeScreen(bottomPadding = bottomPadding)
                     1 -> AppsScreen(bottomPadding = bottomPadding)
-                    2 -> SettingsScreen(bottomPadding = bottomPadding, onOpenDetail = onOpenDetail)
+                    2 -> ManageScreen(bottomPadding = bottomPadding)
+                    3 -> SettingsScreen(bottomPadding = bottomPadding, onOpenDetail = onOpenDetail)
                 }
             }
         }

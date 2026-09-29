@@ -371,4 +371,115 @@
     <string name="dialog_requesting_legacy_button_open_shizuku">Open Shizuku</string>
     <string name="wadb_notification_attempt_now">Retry</string>
 
+    <!-- Manage tab -->
+    <string name="tab_manage">Manage</string>
+    <string name="manage_search_hint">Search apps</string>
+    <string name="manage_filter_all">All</string>
+    <string name="manage_filter_user">User</string>
+    <string name="manage_filter_system">System</string>
+    <string name="manage_filter_disabled">Disabled</string>
+    <string name="manage_filter_hidden">Hidden</string>
+    <string name="manage_filter_empty">Nothing in this filter.</string>
+    <string name="manage_empty">No apps found.</string>
+    <string name="manage_status_system">System app</string>
+    <string name="manage_status_removed">Removed, data kept</string>
+    <string name="manage_status_disabled">Disabled</string>
+    <string name="manage_status_suspended">Suspended</string>
+
+    <!-- One app, and what it may do on the device -->
+    <string name="app_detail_missing">This app is no longer installed.</string>
+    <string name="app_open_info">App info</string>
+    <string name="app_section_permissions">System permissions</string>
+    <string name="app_section_runtime">Runtime permissions</string>
+    <string name="app_section_ops">App ops</string>
+    <string name="app_section_actions">Actions</string>
+    <string name="app_section_battery">Battery</string>
+    <string name="app_section_info">Info</string>
+    <string name="app_permissions_note">Only permissions whose protection includes development, or the dangerous ones, can be changed through adb; the platform refuses the rest however trusted Shizuku is, so those rows keep their switch off.</string>
+    <string name="app_permissions_none">This app declares no system permissions.</string>
+    <string name="app_permission_locked">%1$s, not changeable through adb</string>
+    <string name="app_permission_granted">Permission granted</string>
+    <string name="app_permission_revoked">Permission revoked</string>
+    <string name="app_grant_confirm_title">Grant %1$s to %2$s?</string>
+    <string name="app_grant_confirm_message">With this permission the app can act with the power of adb. Only grant it to an app you trust.</string>
+    <string name="app_grant_confirm_ok">Grant</string>
+    <string name="app_action_failed">That was refused. Nothing changed.</string>
+
+    <string name="app_ops_note">App ops are what the platform itself consults, and adb can change the ones below. A few capabilities are special access in system settings rather than app ops all files access, usage access, exact alarms, modifying system settings and no app can change those.</string>
+    <string name="app_ops_needs_shizuku">Start Shizuku to read and change app ops.</string>
+    <string name="app_op_background">Run in background</string>
+    <string name="app_op_background_note">Deny stops it running at all while you are not using it.</string>
+    <string name="app_op_foreground">Foreground services</string>
+    <string name="app_op_foreground_note">Deny stops the services it keeps running with a notification.</string>
+    <string name="app_op_wake_lock">Keep awake</string>
+    <string name="app_op_wake_lock_note">Deny stops it holding the device awake.</string>
+    <string name="app_op_notifications">Show notifications</string>
+    <string name="app_op_notifications_note">Deny drops its notifications.</string>
+    <string name="app_op_clipboard">Read clipboard</string>
+    <string name="app_op_clipboard_note">Deny stops it reading what you copied in another app.</string>
+    <string name="app_op_overlay">Draw over other apps</string>
+    <string name="app_op_overlay_note">Deny stops its overlays; some apps need this to work at all.</string>
+    <string name="app_op_install">Install other apps</string>
+    <string name="app_op_install_note">Deny stops it asking to install an APK.</string>
+    <string name="app_op_set">App op changed</string>
+    <string name="app_op_mode_default">Default</string>
+    <string name="app_op_mode_allow">Allow</string>
+    <string name="app_op_mode_ignore">Ignore</string>
+    <string name="app_op_mode_deny">Deny</string>
+
+    <string name="app_action_force_stop">Force stop</string>
+    <string name="app_action_force_stop_note">Stops it now. It can start again on its own.</string>
+    <string name="app_action_suspend">Suspend</string>
+    <string name="app_action_unsuspend">Unsuspend</string>
+    <string name="app_action_suspend_note">Greys it out and stops it running, keeping its data.</string>
+    <string name="app_action_disable">Disable</string>
+    <string name="app_action_enable">Enable</string>
+    <string name="app_action_disable_note">Hides it and stops it running until it is enabled again.</string>
+    <string name="app_action_clear_data">Clear data</string>
+    <string name="app_action_clear_data_note">Deletes its files, settings and accounts.</string>
+    <string name="app_action_uninstall">Uninstall for this user</string>
+    <string name="app_action_uninstall_note">Removes the app and keeps its data.</string>
+    <string name="app_action_restore">Restore system app</string>
+    <string name="app_action_restore_note">Puts a removed system app back for this user.</string>
+    <string name="app_confirm_title">Are you sure?</string>
+    <string name="app_confirm_disable">Disable %1$s? It stops running until you enable it again.</string>
+    <string name="app_confirm_clear_data">Delete all data for %1$s? This cannot be undone.</string>
+    <string name="app_confirm_uninstall">Remove %1$s for this user? Its data is kept.</string>
+
+    <string name="app_battery_needs_shizuku">Start Shizuku to read and change battery settings.</string>
+    <string name="app_battery_bucket">Standby bucket</string>
+    <string name="app_battery_pick_title">Standby bucket</string>
+    <string name="app_bucket_active">Unrestricted</string>
+    <string name="app_bucket_active_note">It may run in the background whenever it wants.</string>
+    <string name="app_bucket_default">Default</string>
+    <string name="app_bucket_default_note">The system decides how much it may run.</string>
+    <string name="app_bucket_exempted">Exempted</string>
+    <string name="app_bucket_exempted_note">The system exempts this app from app standby, so the bucket below is not the one in force.</string>
+    <string name="app_bucket_frequent">Frequent</string>
+    <string name="app_bucket_frequent_note">Allowed to run often, but not freely.</string>
+    <string name="app_bucket_rare">Rare</string>
+    <string name="app_bucket_rare_note">Limited to little background time.</string>
+    <string name="app_bucket_restricted">Restricted</string>
+    <string name="app_bucket_restricted_note">Rarely allowed to run in the background.</string>
+    <string name="app_bucket_never">Never</string>
+    <string name="app_bucket_never_note">Never allowed to run in the background. The harshest bucket there is.</string>
+    <string name="app_battery_unrestricted">Ignore battery optimisation</string>
+    <string name="app_battery_unrestricted_note">Keeps it awake through Doze. Costs battery.</string>
+
+    <string name="app_info_version">Version</string>
+    <string name="app_info_uid">UID</string>
+    <string name="app_info_target_sdk">Target SDK</string>
+    <string name="app_info_min_sdk">Minimum SDK</string>
+    <string name="app_info_abi">ABI</string>
+    <string name="app_info_data_dir">Data directory</string>
+    <string name="app_info_signature">Signature</string>
+    <string name="app_info_installer">Installed from</string>
+    <string name="app_info_installed">Installed</string>
+    <string name="app_info_updated">Updated</string>
+    <string name="app_info_debuggable">Debuggable</string>
+    <string name="app_info_backup">Backup allowed</string>
+    <string name="app_info_launcher">Launcher entry</string>
+    <string name="app_info_yes">Yes</string>
+    <string name="app_info_no">No</string>
+
 </resources>

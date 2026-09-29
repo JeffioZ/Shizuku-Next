@@ -1,0 +1,194 @@
+package moe.shizuku.manager.ui.component
+
+import android.content.pm.PackageInfo
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.core.graphics.drawable.toBitmap
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
+/**
+ * The pictures the two app screens share: a filter chip that carries its own count, the
+ * count badge inside it, app icons, and the centred block the empty states are built from.
+ * They live here rather than in either screen because Apps and Manage are the same list
+ * about different questions, and they should not drift apart.
+ */
+
+/**
+ * One filter, sized to its share of the row rather than to its label, with its label and how
+ * many apps it holds centred together. A stock chip sizes to its text, which left the four
+ * ragged on the left and hid the counts somewhere else entirely.
+ */
+@Composable
+fun AppFilterChip(
+    label: String,
+    count: Int,
+    selected: Boolean,
+    modifier: Modifier = Modifier,
+    // A row of chips that shares the width evenly wants each chip to fill its slot; a row
+    // that scrolls, because there are more filters than fit, wants them to hug their text.
+    fill: Boolean = true,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = modifier
+            .height(34.dp)
+            .clip(MaterialTheme.shapes.large)
+            .selectable(selected = selected, role = Role.Tab, onClick = onClick),
+        shape = MaterialTheme.shapes.large,
+        color = if (selected) {
+            MaterialTheme.colorScheme.secondaryContainer
+        } else {
+            Color.Transparent
+        },
+        border = BorderStroke(
+            1.dp,
+            if (selected) Color.Transparent else MaterialTheme.colorScheme.outlineVariant
+        )
+    ) {
+        Row(
+            modifier = if (fill) {
+                Modifier.fillMaxSize().padding(horizontal = 6.dp)
+            } else {
+                Modifier.padding(horizontal = 12.dp)
+            },
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                label,
+                style = MaterialTheme.typography.labelLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = if (selected) {
+                    MaterialTheme.colorScheme.onSecondaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
+            )
+            // Only the filter in force carries its number: the four labels together read
+            // as one row of names, and the count for the one you picked is the count you
+            // were asking about. It also leaves the label the room it needs to stay whole.
+            if (selected) {
+                Spacer(modifier = Modifier.width(6.dp))
+                CountBadge(count, selected)
+            }
+        }
+    }
+}
+
+/**
+ * Just the number, in a small rounded chip — the same shape family as the filter it sits
+ * in, rather than a circle, so a selected filter reads as one object. Enough to read at a
+ * glance, not enough to shout.
+ */
+@Composable
+fun CountBadge(count: Int, selected: Boolean) {
+    Box(
+        modifier = Modifier
+            .defaultMinSize(minWidth = 18.dp, minHeight = 18.dp)
+            .clip(MaterialTheme.shapes.small)
+            // Background before padding, so the tint covers the whole chip and not just
+            // the space the digits take up inside it.
+            .background(
+                if (selected) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.surfaceContainerHighest
+                }
+            )
+            .padding(horizontal = 5.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            count.toString(),
+            style = MaterialTheme.typography.labelSmall,
+            maxLines = 1,
+            color = if (selected) {
+                MaterialTheme.colorScheme.onPrimary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            }
+        )
+    }
+}
+
+/** Centred content for the states that aren't a list. */
+@Composable
+fun CenteredMessage(content: @Composable ColumnScope.() -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(32.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, content = content)
+    }
+}
+
+@Composable
+fun AppIcon(pi: PackageInfo) {
+    val context = LocalContext.current
+    val icon = remember(pi.packageName) {
+        runCatching { pi.applicationInfo!!.loadIcon(context.packageManager) }.getOrNull()
+    }
+    AppIcon(icon)
+}
+
+/**
+ * The icon for a package that has no [PackageInfo] to hand — an app that is only listed by
+ * name, or one whose application record is gone because it is no longer installed.
+ */
+@Composable
+fun AppIcon(packageName: String) {
+    val context = LocalContext.current
+    val icon = remember(packageName) {
+        runCatching { context.packageManager.getApplicationIcon(packageName) }.getOrNull()
+    }
+    AppIcon(icon)
+}
+
+@Composable
+private fun AppIcon(drawable: android.graphics.drawable.Drawable?) {
+    val bitmap by produceState<ImageBitmap?>(null, drawable) {
+        value = withContext(Dispatchers.IO) {
+            runCatching { drawable?.toBitmap(96, 96)?.asImageBitmap() }.getOrNull()
+        }
+    }
+    if (bitmap != null) {
+        Image(bitmap = bitmap!!, contentDescription = null, modifier = Modifier.size(40.dp))
+    } else {
+        Spacer(modifier = Modifier.size(40.dp))
+    }
+}

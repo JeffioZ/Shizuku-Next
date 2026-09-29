@@ -3,27 +3,17 @@ package moe.shizuku.manager.ui.screen
 import android.content.pm.PackageInfo
 import android.content.Intent
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -59,24 +49,17 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.core.graphics.drawable.toBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -84,6 +67,9 @@ import moe.shizuku.manager.Helps
 import moe.shizuku.manager.R
 import moe.shizuku.manager.authorization.AuthorizationManager
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter
+import moe.shizuku.manager.ui.component.AppFilterChip
+import moe.shizuku.manager.ui.component.AppIcon
+import moe.shizuku.manager.ui.component.CenteredMessage
 import moe.shizuku.manager.ui.component.SegmentedCard
 import moe.shizuku.manager.utils.ShizukuStateMachine
 
@@ -610,115 +596,5 @@ fun AppsScreen(bottomPadding: Dp) {
                 }
             }
         )
-    }
-}
-
-/**
- * One filter, sized to its share of the row rather than to its label, with its label and how
- * many apps it holds centred together. A stock chip sizes to its text, which left the four
- * ragged on the left and hid the counts somewhere else entirely.
- */
-@Composable
-private fun AppFilterChip(
-    label: String,
-    count: Int,
-    selected: Boolean,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
-) {
-    Surface(
-        modifier = modifier
-            .height(34.dp)
-            .clip(MaterialTheme.shapes.large)
-            .selectable(selected = selected, role = Role.Tab, onClick = onClick),
-        shape = MaterialTheme.shapes.large,
-        color = if (selected) {
-            MaterialTheme.colorScheme.secondaryContainer
-        } else {
-            Color.Transparent
-        },
-        border = BorderStroke(
-            1.dp,
-            if (selected) Color.Transparent else MaterialTheme.colorScheme.outlineVariant
-        )
-    ) {
-        Row(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 6.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                label,
-                style = MaterialTheme.typography.labelLarge,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                color = if (selected) {
-                    MaterialTheme.colorScheme.onSecondaryContainer
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                }
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            CountBadge(count, selected)
-        }
-    }
-}
-
-/** Just the number, in a small circle — enough to read at a glance, not enough to shout. */
-@Composable
-private fun CountBadge(count: Int, selected: Boolean) {
-    Box(
-        modifier = Modifier
-            .size(18.dp)
-            .clip(CircleShape)
-            .background(
-                if (selected) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.surfaceContainerHighest
-                }
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            count.toString(),
-            style = MaterialTheme.typography.labelSmall,
-            maxLines = 1,
-            color = if (selected) {
-                MaterialTheme.colorScheme.onPrimary
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            }
-        )
-    }
-}
-
-/** Centred content for the states that aren't a list. */
-@Composable
-private fun CenteredMessage(content: @Composable ColumnScope.() -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(32.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, content = content)
-    }
-}
-
-@Composable
-private fun AppIcon(pi: PackageInfo) {
-    val context = LocalContext.current
-    val bitmap by produceState<ImageBitmap?>(null, pi.packageName) {
-        value = withContext(Dispatchers.IO) {
-            runCatching {
-                pi.applicationInfo!!.loadIcon(context.packageManager).toBitmap(96, 96).asImageBitmap()
-            }.getOrNull()
-        }
-    }
-    if (bitmap != null) {
-        Image(bitmap = bitmap!!, contentDescription = null, modifier = Modifier.size(40.dp))
-    } else {
-        Spacer(modifier = Modifier.size(40.dp))
     }
 }
