@@ -6,6 +6,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -19,6 +20,7 @@ import com.topjohnwu.superuser.CallbackList
 import com.topjohnwu.superuser.Shell
 import java.net.ConnectException
 import java.net.SocketTimeoutException
+import java.util.concurrent.TimeoutException
 import javax.net.ssl.SSLProtocolException
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -42,6 +44,13 @@ import rikka.lifecycle.Resource
 import rikka.lifecycle.Status
 
 private class NotRootedException: Exception()
+
+/**
+ * The agent the system start abuses. It is not shipped with this app: whoever needs it
+ * installs it, and whether it lands as the system uid is the difference between the
+ * payload running as uid 1000 and the starter refusing it.
+ */
+private const val FOTA_AGENT_PACKAGE = "com.sdet.fotaagent"
 
 class StarterActivity : AppBarActivity() {
 
@@ -76,6 +85,13 @@ class StarterActivity : AppBarActivity() {
                     is ConnectException -> {
                         message = R.string.cannot_connect_port
                     }
+                    // The service never appeared. Nothing in this activity can say why - the
+                    // starter runs from the agent, so its output is the agent's - but its own
+                    // log is on the device and this is where to look.
+                    is TimeoutException -> {
+                        message = R.string.start_failed_no_binder
+                    }
+
                     is SSLProtocolException -> {
                         // Not paired yet: run the pairing flow automatically instead of
                         // failing and asking the user to pair manually.
@@ -175,19 +191,42 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
      * the vulnerable component, and is opt-in via the "System start method"
      * setting.
      */
+    /**
+     * What the device offers before anything is sent, in the activity's own log. On a device
+     * where the agent runs the payload, the starter's output belongs to the agent and cannot
+     * be read from here, so the few facts this side can see are worth stating: whether the
+     * agent is there, which uid it has, and whether it is the one whose payload a system-uid
+     * start depends on.
+     */
+    private fun agentReport(): String = try {
+        val pm = appContext.packageManager
+        val info = pm.getPackageInfo(FOTA_AGENT_PACKAGE, PackageManager.GET_ACTIVITIES)
+        val uid = info.applicationInfo?.uid ?: -1
+        val hasMain = info.activities?.any { it.name == "$FOTA_AGENT_PACKAGE.Main" } == true
+        val verdict = when {
+            uid == 1000 -> "system uid, the payload will run as the system uid"
+            uid >= 10000 -> "an ordinary app uid, so the payload will run as one and the server refuses it"
+            else -> "uid $uid, which the server may or may not accept"
+        }
+        "agent: installed, uid $uid ($verdict), Main activity ${if (hasMain) "present" else "missing"}"
+    } catch (e: PackageManager.NameNotFoundException) {
+        "agent: not installed"
+    }
+
     private suspend fun startSys(): Boolean {
         log("Starting with system...\n")
+        log(agentReport())
 
         return withContext(Dispatchers.IO) {
             try {
                 appContext.startActivity(
                     Intent().apply {
-                        setClassName("com.sdet.fotaagent", "com.sdet.fotaagent.Main")
+                        setClassName(FOTA_AGENT_PACKAGE, "$FOTA_AGENT_PACKAGE.Main")
                         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     }
                 )
 
-                val exploit = Intent("com.sdet.fotaagent.intent.CP_FILE").apply {
+                val exploit = Intent("$FOTA_AGENT_PACKAGE.intent.CP_FILE").apply {
                     putExtra("CP_FILE", "/data")
                     putExtra(
                         "CP_LOC",

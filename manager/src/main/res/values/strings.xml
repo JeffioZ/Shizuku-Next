@@ -140,6 +140,7 @@
     <string name="start_failed_root_unavailable">Root is no longer available on this device, so Shizuku can\'t start over root. Pick another start method.</string>
     <string name="start_failed_system_needs_app">The system start method must be started from the app.</string>
     <string name="start_failed_system_no_exploit">This device does not ship the component the system start uses (com.sdet.fotaagent), so there is nothing to escalate with here. Switch the system start method to Custom command: the app will show you what to run with an escalation your device does have.</string>
+    <string name="start_failed_no_binder">The service did not appear within a minute. The starter keeps its own log, under the tag ShizukuServiceStarter: if it never printed starter begin, the agent did not run the payload at all, and if it printed a fatal line then that line is the reason.</string>
     <string name="start_system_custom_intro">Escalate however you can, your own exploit, an automation or a root shell, and run this command: it launches the service as the system uid. The app is waiting for it to appear.</string>
     <string name="start_system_custom_copied">Command copied to the clipboard.</string>
     <string name="start_system_custom_copy_failed">The command is above, ready to copy by hand.</string>
