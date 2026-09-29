@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -57,6 +58,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -201,68 +203,90 @@ private fun MainTabs(
             }
         }
 
-        HorizontalFloatingToolbar(
-            expanded = true,
+        // The bar's own band, and the fade the pages run into. It is drawn here rather than
+        // by the pages for two reasons: it leaves with the bar, and it is already there
+        // before a page has scrolled — a long list sitting at its top still has rows under
+        // the bar, which a scrim that waited for a scroll would leave with a hard edge.
+        // A gradient and not a blur: blurring a scrolling page means drawing it into an
+        // offscreen layer and re-blurring it every frame.
+        Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .windowInsetsPadding(WindowInsets.navigationBars)
-                .padding(bottom = FloatingToolbarDefaults.ScreenOffset)
-                .onSizeChanged { barHeight = with(density) { it.height.toDp() } },
-            contentPadding = PaddingValues(0.dp),
-            scrollBehavior = scrollBehavior
-        ) {
-            Row(
-                modifier = Modifier
-                    .heightIn(min = FloatingToolbarDefaults.ContainerSize)
-                    .then(
-                        if (LocalAmoledTheme.current) {
-                            Modifier.border(
-                                width = 1.dp,
-                                color = MaterialTheme.colorScheme.outlineVariant,
-                                shape = FloatingToolbarDefaults.ContainerShape
-                            )
-                        } else {
-                            Modifier
-                        }
+                .fillMaxWidth()
+                // Before the insets, so the fade reaches the bottom of the screen instead of
+                // stopping at the top of the gesture area: below the bar is page the bar is
+                // floating over too. It lands on the colour the pages themselves draw, so it
+                // dissolves into them in every theme, black included.
+                .background(
+                    Brush.verticalGradient(
+                        0f to Color.Transparent,
+                        1f to MaterialTheme.colorScheme.background
                     )
-                    .padding(FloatingToolbarDefaults.ContentPadding),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically
+                )
+                .windowInsetsPadding(WindowInsets.navigationBars)
+                .padding(bottom = FloatingToolbarDefaults.ScreenOffset),
+            contentAlignment = Alignment.Center
+        ) {
+            HorizontalFloatingToolbar(
+                expanded = true,
+                modifier = Modifier
+                    .onSizeChanged { barHeight = with(density) { it.height.toDp() } },
+                contentPadding = PaddingValues(0.dp),
+                scrollBehavior = scrollBehavior
             ) {
-                tabs.forEachIndexed { index, tab ->
-                    val selected = pagerState.currentPage == index
-                    ToggleButton(
-                        checked = selected,
-                        onCheckedChange = {
-                            if (!selected) scope.launch { pagerState.animateScrollToPage(index) }
-                        },
-                        shapes = ToggleButtonShapes(
-                            shape = CircleShape,
-                            pressedShape = CircleShape,
-                            checkedShape = CircleShape
-                        ),
-                        colors = ToggleButtonDefaults.toggleButtonColors(
-                            containerColor = Color.Transparent,
-                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            checkedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            checkedContentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                Row(
+                    modifier = Modifier
+                        .heightIn(min = FloatingToolbarDefaults.ContainerSize)
+                        .then(
+                            if (LocalAmoledTheme.current) {
+                                Modifier.border(
+                                    width = 1.dp,
+                                    color = MaterialTheme.colorScheme.outlineVariant,
+                                    shape = FloatingToolbarDefaults.ContainerShape
+                                )
+                            } else {
+                                Modifier
+                            }
                         )
-                    ) {
-                        Icon(
-                            if (selected) tab.selectedIcon else tab.unselectedIcon,
-                            contentDescription = stringResource(tab.label)
-                        )
-                        AnimatedVisibility(
-                            visible = selected,
-                            enter = expandHorizontally(MaterialTheme.motionScheme.defaultSpatialSpec()),
-                            exit = shrinkHorizontally(MaterialTheme.motionScheme.defaultSpatialSpec())
-                        ) {
-                            Text(
-                                stringResource(tab.label),
-                                modifier = Modifier
-                                    .padding(start = ButtonDefaults.IconSpacing)
-                                    .clearAndSetSemantics { }
+                        .padding(FloatingToolbarDefaults.ContentPadding),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    tabs.forEachIndexed { index, tab ->
+                        val selected = pagerState.currentPage == index
+                        ToggleButton(
+                            checked = selected,
+                            onCheckedChange = {
+                                if (!selected) scope.launch { pagerState.animateScrollToPage(index) }
+                            },
+                            shapes = ToggleButtonShapes(
+                                shape = CircleShape,
+                                pressedShape = CircleShape,
+                                checkedShape = CircleShape
+                            ),
+                            colors = ToggleButtonDefaults.toggleButtonColors(
+                                containerColor = Color.Transparent,
+                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                checkedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                checkedContentColor = MaterialTheme.colorScheme.onSecondaryContainer
                             )
+                        ) {
+                            Icon(
+                                if (selected) tab.selectedIcon else tab.unselectedIcon,
+                                contentDescription = stringResource(tab.label)
+                            )
+                            AnimatedVisibility(
+                                visible = selected,
+                                enter = expandHorizontally(MaterialTheme.motionScheme.defaultSpatialSpec()),
+                                exit = shrinkHorizontally(MaterialTheme.motionScheme.defaultSpatialSpec())
+                            ) {
+                                Text(
+                                    stringResource(tab.label),
+                                    modifier = Modifier
+                                        .padding(start = ButtonDefaults.IconSpacing)
+                                        .clearAndSetSemantics { }
+                                )
+                            }
                         }
                     }
                 }
