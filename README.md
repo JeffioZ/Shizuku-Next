@@ -36,7 +36,7 @@ keep working.
 [![Bug Reports](https://img.shields.io/github/issues-search/rushiranpise/Shizuku-Next?query=label%3Abug%20state%3Aopen&style=for-the-badge&color=bf3030&labelColor=802020&label=Bug%20Reports)](https://github.com/rushiranpise/Shizuku-Next/issues?q=is%3Aissue%20state%3Aopen%20label%3Abug)
 [![Feature Requests](https://img.shields.io/github/issues-search/rushiranpise/Shizuku-Next?query=label%3Aenhancement%20state%3Aopen&style=for-the-badge&color=30a7bf&labelColor=207080&label=Feature%20Requests)](https://github.com/rushiranpise/Shizuku-Next/issues?q=is%3Aissue%20state%3Aopen%20label%3Aenhancement)
 
-[![Translate on Crowdin](https://img.shields.io/badge/Translate%20on%20Crowdin-2e3340?style=for-the-badge&logo=crowdin&logoColor=ffffff)](https://crowdin.com/project/shizuku)
+[![Translate on Crowdin](https://img.shields.io/badge/Translate%20on%20Crowdin-2e3340?style=for-the-badge&logo=crowdin&logoColor=ffffff)](https://crowdin.com/project/Shizuku-Next)
 
 </div>
 
@@ -162,7 +162,7 @@ Shizuku takes user privacy very seriously.
 
 ## 🌎 Translations
 
-Contribute translations through the [Crowdin project](https://crowdin.com/project/Shizuku-Next).
+Contribute translations through the [Crowdin project](https://crowdin.com/project/Shizuku-Next-Next).
 
 ## 🎁 Donations
 
@@ -206,7 +206,7 @@ The `:manager:assembleDebug` task generates a debuggable server. You can attach 
   shell, and the foundation all of this is built on.
 * **[thedjchi](https://github.com/thedjchi/Shizuku)** the fork this project is based on. Everything under
   *From thedjchi's fork* above is his.
-* Everyone who contributed upstream, and the translators on [Crowdin](https://crowdin.com/project/shizuku).
+* Everyone who contributed upstream, and the translators on [Crowdin](https://crowdin.com/project/Shizuku-Next).
 
 ## 📃 License
 
