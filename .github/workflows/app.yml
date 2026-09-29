@@ -188,41 +188,102 @@ jobs:
 
           prev = os.environ.get("PREV", "")
           rng = f"{prev}..HEAD" if prev else "HEAD"
-          subjects = subprocess.run(
-              ["git", "log", "--no-merges", "--pretty=format:%s", rng],
-              capture_output=True, text=True, check=True).stdout.splitlines()
+
+          # Subjects alone do not say whether a change breaks something: the `!` is in the
+          # subject, the BREAKING CHANGE footer is in the body. One NUL ends each commit, so
+          # a body that mentions the word "commit" cannot be mistaken for the next entry.
+          # Decoded as UTF-8 whatever the machine's locale is: git writes UTF-8, and a
+          # subject with an em dash in it is otherwise mangled into mojibake.
+          log = subprocess.run(
+              ["git", "log", "--no-merges", "--pretty=format:%s%x1f%b%x00", rng],
+              capture_output=True, encoding="utf-8", check=True).stdout
+          records = [record for record in log.split("\x00") if record.strip()]
+
+          SUBJECT = re.compile(r"^(\w+)(?:\(([^)]+)\))?(!)?:\s*(.+)$")
+          BREAKING_FOOTER = re.compile(r"^BREAKING[ -]CHANGE:\s*(.+)$", re.MULTILINE)
 
           titles = {
               "feat": "Features", "fix": "Fixes", "perf": "Performance",
               "refactor": "Refactoring", "docs": "Documentation", "build": "Build",
               "ci": "CI", "test": "Tests", "style": "Style", "chore": "Chores",
           }
-          buckets, other = collections.defaultdict(list), []
-          for subject in subjects:
+          # The order sections appear in: what a user upgrading cares about, first. Docs, CI
+          # and chores are not in here at all, they are folded away at the bottom.
+          ORDER = ["feat", "fix", "perf", "refactor", "build", "test", "style"]
+          FOLDED = ["docs", "ci", "chore"]
+          # What the collapsed block says it holds, in the words a reader would use.
+          FOLDED_LABELS = {"docs": "docs", "ci": "CI", "chore": "chores"}
+
+          buckets, breaking, other = collections.defaultdict(list), [], []
+          for record in records:
+              subject, _, body = record.partition("\x1f")
+              subject = subject.strip()
               # Version bumps are not news for the release notes: neither the one this run
               # pushes nor the one that set the version being released.
               if subject.lower().startswith("chore: bump version"):
                   continue
-              match = re.match(r"^(\w+)(?:\(([^)]+)\))?!?:\s*(.+)$", subject)
-              if match and match.group(1) in titles:
-                  scope = f"**{match.group(2)}:** " if match.group(2) else ""
-                  buckets[titles[match.group(1)]].append(f"- {scope}{match.group(3)}")
-              else:
-                  other.append(f"- {subject}")
 
-          sections = [f"### {name}\n" + "\n".join(buckets[name])
-                      for name in titles.values() if buckets[name]]
+              match = SUBJECT.match(subject)
+              if not match or match.group(1) not in titles:
+                  other.append(f"- {subject}")
+                  continue
+
+              type_, scope, bang, text = match.groups()
+              line = f"- **{scope}:** {text}" if scope else f"- {text}"
+              buckets[type_].append(line)
+
+              footer = BREAKING_FOOTER.search(body)
+              if bang or footer:
+                  # Listed here as well as under its own type: the top section is what has
+                  # to be read before upgrading, the type section is where the change is
+                  # described in full.
+                  breaking.append(line)
+                  if footer:
+                      detail = " ".join(
+                          footer.group(1).split("\n")[0].split()
+                      )
+                      if detail and detail not in text:
+                          breaking.append(f"  - {detail}")
+
+          sections = []
+          if breaking:
+              sections.append("### ⚠️ Breaking changes\n\n" + "\n".join(breaking))
+          for type_ in ORDER:
+              if buckets[type_]:
+                  sections.append(f"### {titles[type_]}\n\n" + "\n".join(buckets[type_]))
           if other:
-              sections.append("### Other\n" + "\n".join(other))
+              sections.append("### Other\n\n" + "\n".join(other))
+
+          folded_types = [type_ for type_ in FOLDED if buckets[type_]]
+          if folded_types:
+              # Collapsed, and the summary carries the count: a reader can see how much is
+              # being skipped without expanding it.
+              names = [FOLDED_LABELS[type_] for type_ in folded_types]
+              summary = names[0] if len(names) == 1 else \
+                  ", ".join(names[:-1]) + f" and {names[-1]}"
+              groups = [(titles[type_], buckets[type_]) for type_ in folded_types]
+              count = sum(len(items) for _, items in groups)
+              folded = "\n\n".join(f"### {title}\n\n" + "\n".join(items)
+                                    for title, items in groups)
+              sections.append(
+                  "<details>\n"
+                  f"<summary>{summary} "
+                  f"({count} {'change' if count == 1 else 'changes'})</summary>\n\n"
+                  f"{folded}\n\n"
+                  "</details>")
+
           if prev:
               sections.append(
                   "**Full Changelog**: https://github.com/"
                   f"{os.environ['GITHUB_REPOSITORY']}/compare/{prev}...{os.environ['VERSION']}")
 
           body = "\n\n".join(sections).strip()
-          if len(subjects) == 0 or not body:
+          if not records or not body:
               body = ""
-          open("release-notes.md", "w").write(body)
+          # Explicitly UTF-8: the notes carry a warning sign, and a machine without a UTF-8
+          # locale would otherwise fail to write them.
+          with open("release-notes.md", "w", encoding="utf-8") as notes:
+              notes.write(body)
           print(body or "(no commits since the previous tag)")
           PY
 
