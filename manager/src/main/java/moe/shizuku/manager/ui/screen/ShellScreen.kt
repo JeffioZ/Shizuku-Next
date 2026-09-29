@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -26,15 +27,25 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.outlined.BookmarkAdd
+import androidx.compose.material.icons.outlined.BookmarkBorder
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -82,6 +93,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import moe.shizuku.manager.R
 import moe.shizuku.manager.shell.ShellBackend
+import moe.shizuku.manager.shell.ShellBookmarks
 import moe.shizuku.manager.shell.ShellSuggestion
 import moe.shizuku.manager.shell.ShellSuggestions
 import moe.shizuku.manager.ui.component.AppIcon
@@ -167,6 +179,17 @@ fun ShellScreen(onBack: () -> Unit) {
     // A chip that needs an app to act on asks for one, rather than handing over a template
     // with a hole where the package goes.
     var pickFor by remember { mutableStateOf<QuickCommand?>(null) }
+
+    // Commands worth keeping: the ones that took a while to work out. Read once per screen.
+    var bookmarks by remember { mutableStateOf(ShellBookmarks.load(context)) }
+    var sheetOpen by remember { mutableStateOf(false) }
+    var naming by remember { mutableStateOf<NameRequest?>(null) }
+    var sortByName by remember { mutableStateOf(false) }
+    val feedback = remember { SnackbarHostState() }
+    // Deleting happens in the sheet, and a snackbar lives behind a modal sheet rather than over
+    // it, so the offer to undo is made where the deletion was: in the sheet's own header, for
+    // as long as the undo is useful.
+    var undoable by remember { mutableStateOf<ShellBookmarks.Bookmark?>(null) }
 
     // Read once, and shared: the suggestions offer these apps and their permissions, and the
     // picker is the same list in a dialog.
@@ -284,14 +307,37 @@ fun ShellScreen(onBack: () -> Unit) {
      * Fills the input from a chip and a picked package: the template, the package, and the
      * space the next argument goes in, with the caret after it.
      */
-    fun fillFromChip(quick: QuickCommand, packageName: String) {
-        val filled = buildString {
-            append(quick.command)
-            append(packageName)
-            if (quick.needsArgument) append(' ')
-        }
-        field = TextFieldValue(filled, TextRange(filled.length))
+    /** Puts a whole command in the input, with the caret after it, ready to run or edit. */
+    fun fill(text: String) {
+        field = TextFieldValue(text, TextRange(text.length))
         focus.requestFocus()
+    }
+
+    fun fillFromChip(quick: QuickCommand, packageName: String) {
+        fill(
+            buildString {
+                append(quick.command)
+                append(packageName)
+                if (quick.needsArgument) append(' ')
+            }
+        )
+    }
+
+    fun saveBookmark(command: String, name: String) {
+        if (command.isBlank()) return
+        bookmarks = listOf(ShellBookmarks.add(context, name, command)) + bookmarks
+        scope.launch { feedback.showSnackbar(context.getString(R.string.shell_bookmark_saved)) }
+    }
+
+    /**
+     * Removing one offers to put it back, the way the rest of the app treats a destructive tap:
+     * a name worth keeping is usually a command worth keeping, and a mis-tap should cost one
+     * more tap rather than the entry.
+     */
+    fun deleteBookmark(bookmark: ShellBookmarks.Bookmark) {
+        bookmarks = bookmarks.filterNot { it.id == bookmark.id }
+        ShellBookmarks.remove(context, bookmark.id)
+        undoable = bookmark
     }
 
     fun recall(direction: Int) {
@@ -332,6 +378,14 @@ fun ShellScreen(onBack: () -> Unit) {
                 }
             },
             actions = {
+                if (field.text.isNotBlank()) {
+                    IconButton(onClick = { naming = NameRequest(command = field.text.trim()) }) {
+                        Icon(
+                            Icons.Outlined.BookmarkAdd,
+                            contentDescription = stringResource(R.string.shell_bookmark_save)
+                        )
+                    }
+                }
                 if (lines.isNotEmpty()) {
                     IconButton(onClick = {
                         clipboard.setText(AnnotatedString(lines.joinToString("\n") { it.text }))
@@ -419,41 +473,67 @@ fun ShellScreen(onBack: () -> Unit) {
             }
         }
 
-        LazyColumn(
-            state = listState,
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-        ) {
-            items(lines) { line ->
-                Text(
-                    text = line.text,
-                    fontFamily = FontFamily.Monospace,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = when (line.kind) {
-                        ShellLine.Kind.COMMAND -> MaterialTheme.colorScheme.primary
-                        ShellLine.Kind.ERROR -> MaterialTheme.colorScheme.error
-                        ShellLine.Kind.EXIT -> MaterialTheme.colorScheme.error
-                        ShellLine.Kind.INFO -> MaterialTheme.colorScheme.onSurfaceVariant
-                        ShellLine.Kind.OUTPUT -> MaterialTheme.colorScheme.onSurface
-                    }
-                )
+        Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                items(lines) { line ->
+                    Text(
+                        text = line.text,
+                        fontFamily = FontFamily.Monospace,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = when (line.kind) {
+                            ShellLine.Kind.COMMAND -> MaterialTheme.colorScheme.primary
+                            ShellLine.Kind.ERROR -> MaterialTheme.colorScheme.error
+                            ShellLine.Kind.EXIT -> MaterialTheme.colorScheme.error
+                            ShellLine.Kind.INFO -> MaterialTheme.colorScheme.onSurfaceVariant
+                            ShellLine.Kind.OUTPUT -> MaterialTheme.colorScheme.onSurface
+                        }
+                    )
+                }
             }
+            // At the bottom of the log rather than the screen: the input row and the keyboard
+            // are both down there, and a message about a bookmark does not need to sit on them.
+            SnackbarHost(
+                hostState = feedback,
+                modifier = Modifier.align(Alignment.BottomCenter).padding(8.dp)
+            )
         }
 
-        // One row, two jobs: the quick commands when there is nothing typed, and suggestions
-        // for what is being typed as soon as there is. Same height either way, so starting to
-        // type does not move the log under the reader's eyes.
+        // One row with two jobs, at the same height either way so starting to type does not
+        // move the log under the reader's eyes: the quick commands when nothing is typed, and
+        // suggestions for what is being typed once there is. The saved commands lead the row in
+        // both — a row that lost its way into them the moment something was typed would hide
+        // the very command that was just saved.
         Box(modifier = Modifier.fillMaxWidth().height(64.dp)) {
-            if (field.text.isBlank()) {
-                LazyRow(
-                    // CenterStart, not CenterVertically: this is a Box, and the row should
-                    // start at the left edge while it is centred in the row's height.
-                    modifier = Modifier.align(Alignment.CenterStart),
-                    contentPadding = PaddingValues(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+            val offered = remember(field.text, suggestions) {
+                if (field.text.isBlank()) emptyList()
+                else ShellSuggestions.forInput(field.text, suggestions)
+            }
+            LazyRow(
+                // CenterStart, not CenterVertically: this is a Box, and the row should start at
+                // the left edge while it is centred in the row's height.
+                modifier = Modifier.align(Alignment.CenterStart),
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                item {
+                    AssistChip(
+                        onClick = { sheetOpen = true },
+                        enabled = !running,
+                        label = { Text(stringResource(R.string.shell_bookmarks)) },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Outlined.BookmarkBorder,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    )
+                }
+                if (field.text.isBlank()) {
                     items(QUICK) { quick ->
                         AssistChip(
                             onClick = {
@@ -467,16 +547,7 @@ fun ShellScreen(onBack: () -> Unit) {
                             label = { Text(stringResource(quick.label)) }
                         )
                     }
-                }
-            } else {
-                val offered = remember(field.text, suggestions) {
-                    ShellSuggestions.forInput(field.text, suggestions)
-                }
-                LazyRow(
-                    modifier = Modifier.align(Alignment.CenterStart),
-                    contentPadding = PaddingValues(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                } else {
                     items(offered) { suggestion ->
                         SuggestionCard(
                             suggestion = suggestion,
@@ -549,6 +620,148 @@ fun ShellScreen(onBack: () -> Unit) {
         }
     }
 
+    naming?.let { request ->
+        NameDialog(
+            title = stringResource(
+                if (request.bookmark != null) R.string.shell_bookmark_rename
+                else R.string.shell_bookmark_save
+            ),
+            initial = request.bookmark?.name ?: request.command.orEmpty().substringBefore(' '),
+            onDismiss = { naming = null },
+            onConfirm = { name ->
+                val editing = request.bookmark
+                if (editing != null) {
+                    // No notice for this one: the name changes in the list in front of you.
+                    ShellBookmarks.rename(context, editing.id, name)
+                    bookmarks = ShellBookmarks.load(context)
+                } else {
+                    saveBookmark(request.command.orEmpty(), name)
+                }
+                naming = null
+            }
+        )
+    }
+
+    if (sheetOpen) {
+        ModalBottomSheet(onDismissRequest = { sheetOpen = false }) {
+            val ordered = if (sortByName) {
+                bookmarks.sortedBy { it.name.lowercase() }
+            } else {
+                bookmarks.sortedByDescending { it.addedAt }
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    stringResource(R.string.shell_bookmarks),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f)
+                )
+                if (bookmarks.size > 1) {
+                    TextButton(onClick = { sortByName = !sortByName }) {
+                        Text(
+                            stringResource(
+                                if (sortByName) R.string.shell_bookmark_sort_name
+                                else R.string.shell_bookmark_sort_newest
+                            )
+                        )
+                    }
+                }
+            }
+
+            // The undo offer, in the sheet rather than in a snackbar: a snackbar is behind a
+            // modal sheet, which is exactly where nobody would see it.
+            undoable?.let { deleted ->
+                LaunchedEffect(deleted.id) {
+                    kotlinx.coroutines.delay(8000)
+                    if (undoable?.id == deleted.id) undoable = null
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        stringResource(R.string.shell_bookmark_deleted_name, deleted.name),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f)
+                    )
+                    TextButton(onClick = {
+                        ShellBookmarks.restore(context, deleted)
+                        bookmarks = ShellBookmarks.load(context)
+                        undoable = null
+                    }) { Text(stringResource(R.string.action_undo)) }
+                }
+            }
+
+            if (ordered.isEmpty()) {
+                Text(
+                    stringResource(R.string.shell_bookmark_empty),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp)
+                )
+            } else {
+                LazyColumn(modifier = Modifier.heightIn(max = 420.dp)) {
+                    items(ordered, key = { it.id }) { bookmark ->
+                        ListItem(
+                            // The row fills the input rather than running it. A saved command is
+                            // one that changes something often enough to have been worth saving,
+                            // so it is put where it can be read and run deliberately; the play
+                            // button beside it is for when it is already known to be right.
+                            modifier = Modifier.clickable {
+                                fill(bookmark.command)
+                                sheetOpen = false
+                            },
+                            headlineContent = { Text(bookmark.name) },
+                            supportingContent = {
+                                Text(
+                                    bookmark.command,
+                                    fontFamily = FontFamily.Monospace,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            },
+                            trailingContent = {
+                                Row {
+                                    IconButton(onClick = {
+                                        sheetOpen = false
+                                        submit(bookmark.command)
+                                    }) {
+                                        Icon(
+                                            Icons.Filled.PlayArrow,
+                                            contentDescription = stringResource(R.string.shell_bookmark_run)
+                                        )
+                                    }
+                                    IconButton(onClick = { naming = NameRequest(bookmark = bookmark) }) {
+                                        Icon(
+                                            Icons.Outlined.Edit,
+                                            contentDescription = stringResource(R.string.shell_bookmark_rename)
+                                        )
+                                    }
+                                    IconButton(onClick = { deleteBookmark(bookmark) }) {
+                                        Icon(
+                                            Icons.Outlined.Delete,
+                                            contentDescription = stringResource(R.string.shell_bookmark_delete)
+                                        )
+                                    }
+                                }
+                            },
+                            colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                        )
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+    }
+
     pickFor?.let { quick ->
         PackagePickerDialog(
             title = stringResource(quick.label),
@@ -590,6 +803,44 @@ private fun SuggestionCard(suggestion: ShellSuggestion, onClick: () -> Unit) {
             )
         }
     }
+}
+
+/** What the name dialog is for: a command being saved, or a bookmark being renamed. */
+private class NameRequest(
+    val command: String? = null,
+    val bookmark: ShellBookmarks.Bookmark? = null
+)
+
+/** Asks what to call a command, for saving it or renaming it. */
+@Composable
+private fun NameDialog(
+    title: String,
+    initial: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    var name by remember { mutableStateOf(initial) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text(stringResource(R.string.shell_bookmark_name_hint)) },
+                singleLine = true
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(name) }) {
+                Text(stringResource(android.R.string.ok))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(android.R.string.cancel)) }
+        }
+    )
 }
 
 /**
