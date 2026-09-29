@@ -754,14 +754,27 @@ private fun StatusCard(
                 // Everything about the server at a glance: how it is running now, what
                 // the Start button below will do next, and what it is running as.
                 StatusFacts(
-                    R.string.home_status_started_with to
-                        (if (running) runningMethodLabel(uid) else stringResource(R.string.status_value_none)),
-                    R.string.home_status_started_default to stringResource(startMethodLabelRes),
+                    StatusFactEntry(
+                        R.string.home_status_started_with,
+                        if (running) runningMethodLabel(uid) else stringResource(R.string.status_value_none)
+                    ),
+                    StatusFactEntry(
+                        R.string.home_status_started_default,
+                        stringResource(startMethodLabelRes)
+                    ),
                     // The wire, as opposed to the method above it: a wireless start can ride
                     // the classic port (and a system start uses no adb at all).
-                    R.string.home_status_transport_label to
-                        (if (running) transportLabel(uid) else stringResource(R.string.status_value_none)),
-                    R.string.uid_label to uidLabel(uid)
+                    StatusFactEntry(
+                        R.string.home_status_transport_label,
+                        if (running) transportLabel(uid) else stringResource(R.string.status_value_none)
+                    ),
+                    // The number is the fact; what the uid is called goes underneath it,
+                    // because "2000 (shell)" in a quarter of the width lost its own name.
+                    StatusFactEntry(
+                        R.string.uid_label,
+                        if (uid < 0) stringResource(R.string.status_value_none) else uid.toString(),
+                        uidName(uid)
+                    )
                 )
             }
 
@@ -847,14 +860,21 @@ private fun readDeviceStatus(): Pair<Int?, Int?> = readSelinuxStatus() to readSe
  * pair. Each takes an equal share of the width so the rules land in even gaps, and long
  * values ellipsise inside their share rather than pushing the next one along.
  */
+private data class StatusFactEntry(
+    @StringRes val label: Int,
+    val value: String,
+    /** A quieter line under the value, for what the value is called rather than what it is. */
+    val detail: String? = null
+)
+
 @Composable
-private fun StatusFacts(vararg facts: Pair<Int, String>) {
+private fun StatusFacts(vararg facts: StatusFactEntry) {
     Row(
         // IntrinsicSize.Min is what gives the rules a height to fill: without it the
         // divider measures against the row's (unbounded) constraint and disappears.
         modifier = Modifier.fillMaxWidth().padding(top = 2.dp).height(IntrinsicSize.Min)
     ) {
-        facts.forEachIndexed { index, (labelRes, value) ->
+        facts.forEachIndexed { index, fact ->
             if (index > 0) {
                 VerticalDivider(
                     modifier = Modifier.padding(horizontal = 10.dp),
@@ -862,7 +882,7 @@ private fun StatusFacts(vararg facts: Pair<Int, String>) {
                     color = LocalContentColor.current.copy(alpha = 0.25f)
                 )
             }
-            StatusFact(labelRes, value, Modifier.weight(1f).fillMaxHeight())
+            StatusFact(fact, Modifier.weight(1f).fillMaxHeight())
         }
     }
 }
@@ -872,23 +892,32 @@ private fun StatusFacts(vararg facts: Pair<Int, String>) {
  * first, and both line up with the title above them.
  */
 @Composable
-private fun StatusFact(@StringRes labelRes: Int, value: String, modifier: Modifier = Modifier) {
+private fun StatusFact(fact: StatusFactEntry, modifier: Modifier = Modifier) {
     Column(modifier = modifier) {
         Text(
-            stringResource(labelRes),
+            stringResource(fact.label),
             style = MaterialTheme.typography.bodySmall,
             color = LocalContentColor.current.copy(alpha = 0.7f),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
         Text(
-            value,
+            fact.value,
             // One step up from the label and no more: four facts share the width, so a
             // bigger value just eats its own ellipsis.
             style = MaterialTheme.typography.bodyMedium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
+        fact.detail?.let {
+            Text(
+                it,
+                style = MaterialTheme.typography.bodySmall,
+                color = LocalContentColor.current.copy(alpha = 0.7f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
     }
 }
 
@@ -985,12 +1014,11 @@ private fun ExitDialog(titleRes: Int, messageRes: Int) {
  * a card that already has a Transport row.
  */
 @Composable
-private fun uidLabel(uid: Int): String = when (uid) {
-    0 -> stringResource(R.string.uid_value_named, uid, stringResource(R.string.start_method_root))
-    1000 -> stringResource(R.string.uid_value_named, uid, stringResource(R.string.start_method_system))
-    2000 -> stringResource(R.string.uid_value_named, uid, stringResource(R.string.uid_shell))
-    -1 -> stringResource(R.string.status_value_none)
-    else -> uid.toString()
+private fun uidName(uid: Int): String? = when (uid) {
+    0 -> stringResource(R.string.uid_name_format, stringResource(R.string.uid_name_root))
+    1000 -> stringResource(R.string.uid_name_format, stringResource(R.string.uid_name_system))
+    2000 -> stringResource(R.string.uid_name_format, stringResource(R.string.uid_name_shell))
+    else -> null
 }
 
 /**

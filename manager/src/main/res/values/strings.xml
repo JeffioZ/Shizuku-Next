@@ -96,8 +96,10 @@
     <string name="home_status_started_with">Current</string>
     <string name="home_status_started_default">Default</string>
     <string name="uid_label">UID</string>
-    <string name="uid_value_named">%1$d (%2$s)</string>
-    <string name="uid_shell">shell</string>
+    <string name="uid_name_format">(%1$s)</string>
+    <string name="uid_name_root">root</string>
+    <string name="uid_name_system">system</string>
+    <string name="uid_name_shell">shell</string>
     <string name="home_device_manager_version">Manager version</string>
     <string name="home_device_kernel_version">Kernel version</string>
     <string name="home_device_model">Device model</string>
