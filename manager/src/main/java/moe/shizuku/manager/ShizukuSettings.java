@@ -49,6 +49,7 @@ public class ShizukuSettings {
         public static final String KEY_RUNNING_START_METHOD = "running_start_method";
         public static final String KEY_WAIT_FOR_WIFI = "wait_for_wifi";
         public static final String KEY_FORCE_WIRELESS_DEBUGGING = "force_wireless_debugging";
+        public static final String KEY_PERSIST_ADB_PORT = "persist_adb_port";
         public static final String KEY_SYSTEM_START_METHOD = "system_start_method";
     }
 
@@ -308,6 +309,21 @@ public class ShizukuSettings {
 
     public static void setForceWirelessDebugging(boolean enable) {
         getPreferences().edit().putBoolean(Keys.KEY_FORCE_WIRELESS_DEBUGGING, enable).apply();
+    }
+
+    /**
+     * Keep the classic ADB port open across reboots by writing persist.adb.tcp.port, so a
+     * start after a reboot has a port to use with no network, no hotspot and no race.
+     *
+     * The property belongs to adbd's own security context, so this can only ever work on a
+     * device where the running server is root or the system uid; see AdbPortPersistence.
+     */
+    public static boolean getPersistAdbPort() {
+        return getPreferences().getBoolean(Keys.KEY_PERSIST_ADB_PORT, false);
+    }
+
+    public static void setPersistAdbPort(boolean enable) {
+        getPreferences().edit().putBoolean(Keys.KEY_PERSIST_ADB_PORT, enable).apply();
     }
 
     /**

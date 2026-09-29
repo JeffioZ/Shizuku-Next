@@ -59,6 +59,7 @@ import moe.shizuku.manager.ui.component.SegmentedListItem
 import moe.shizuku.manager.adb.AdbStarter
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter
 import moe.shizuku.manager.start.StartMethodGuard
+import moe.shizuku.manager.start.AdbPortPersistence
 import moe.shizuku.manager.start.applyAdbWithoutDeveloperOptions
 import moe.shizuku.manager.start.restoreDeveloperOptions
 import moe.shizuku.manager.start.startMethodLabelRes
@@ -84,6 +85,7 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
     var startMethod by remember { mutableStateOf(ShizukuSettings.getStartMethod()) }
     var waitForWifi by remember { mutableStateOf(ShizukuSettings.getWaitForWifi()) }
     var forceWireless by remember { mutableStateOf(ShizukuSettings.getForceWirelessDebugging()) }
+    var persistAdbPort by remember { mutableStateOf(ShizukuSettings.getPersistAdbPort()) }
     var tcpMode by remember { mutableStateOf(ShizukuSettings.getTcpMode()) }
     var tcpPort by remember { mutableStateOf(ShizukuSettings.getTcpPort().toString()) }
     var systemStartMethod by remember { mutableStateOf(ShizukuSettings.getSystemStartMethod()) }
@@ -400,6 +402,39 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                                             ShizukuSettings.setTcpMode(checked)
                                             tcpMode = checked
                                         }
+                                    }
+                                })
+                            }
+                        )
+                    }
+                    item {
+                        SegmentedListItem(
+                            headlineContent = { Text(stringResource(R.string.settings_persist_adb_port)) },
+                            supportingContent = {
+                                Text(stringResource(R.string.settings_persist_adb_port_summary))
+                            },
+                            trailingContent = {
+                                Switch(checked = persistAdbPort, onCheckedChange = { checked ->
+                                    // The write is the platform's to allow or refuse, so the
+                                    // switch follows what actually happened rather than
+                                    // what was asked for.
+                                    scope.launch {
+                                        val outcome = AdbPortPersistence.apply(checked)
+                                        ShizukuSettings.setPersistAdbPort(
+                                            outcome == AdbPortPersistence.Outcome.APPLIED
+                                        )
+                                        persistAdbPort = ShizukuSettings.getPersistAdbPort()
+                                        val message = when (outcome) {
+                                            AdbPortPersistence.Outcome.APPLIED ->
+                                                R.string.settings_persist_adb_port_ok
+
+                                            AdbPortPersistence.Outcome.REFUSED ->
+                                                R.string.settings_persist_adb_port_refused
+
+                                            AdbPortPersistence.Outcome.UNAVAILABLE ->
+                                                R.string.settings_persist_adb_port_unavailable
+                                        }
+                                        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
                                     }
                                 })
                             }
