@@ -13,6 +13,7 @@ import android.database.ContentObserver
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.asFlow
 import androidx.work.*
@@ -30,6 +31,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import moe.shizuku.manager.AppConstants
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.adb.AdbMdns
@@ -38,8 +40,10 @@ import moe.shizuku.manager.adb.AdbStarter
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter.WorkerState
 import moe.shizuku.manager.settings.BugReportDialogActivity
+import moe.shizuku.manager.start.ForcedWirelessDebugging
 import moe.shizuku.manager.start.StartFailureKind
 import moe.shizuku.manager.start.StartStatusReporter
+import moe.shizuku.manager.start.StartTransport
 import moe.shizuku.manager.start.hasWriteSecureSettings
 import moe.shizuku.manager.start.startMethodLabelRes
 import moe.shizuku.manager.start.writeGlobalLongSetting
@@ -57,6 +61,17 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
         ShizukuReceiverStarter.updateNotification(applicationContext, state, requestedMethod)
 
     override suspend fun doWork(): Result {
+        try {
+            return startServer()
+        } finally {
+            // A local-only hotspot is only ever brought up to give discovery an
+            // interface, so it goes away with the attempt that needed it: leaving it up
+            // would be tethering nobody asked for.
+            ForcedWirelessDebugging.releaseHotspot()
+        }
+    }
+
+    private suspend fun startServer(): Result {
         try {
             requestedMethod = inputData.getInt(KEY_START_METHOD, ShizukuSettings.StartMethod.WIRELESS)
 
@@ -143,12 +158,13 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             }
             // From here the USB method always has a classic port to use.
 
-            // A wireless start always goes over the wireless (TLS) port. Taking the
-            // classic ADB port here which TCP mode keeps open is what made a
-            // "Wireless debugging" start run over USB debugging's transport and report
-            // itself as USB. Only the USB method, and platforms without wireless
-            // debugging at all, use the classic port.
+            // A wireless start goes over the wireless (TLS) port, which discovery has to
+            // find. Taking the classic ADB port whichever TCP mode keeps open is what made
+            // a "Wireless debugging" start run over USB debugging's transport and report
+            // itself as USB, so the classic port is what the USB method and platforms
+            // without wireless debugging use.
             val useClassicPort = usbMethod || !EnvironmentUtils.isTlsSupported()
+            val forcedWireless = !usbMethod && ShizukuSettings.getForceWirelessDebugging()
             val port = tcpPort.takeIf { useClassicPort }
                 ?: callbackFlow {
                 val adbMdns = AdbMdns(applicationContext, AdbMdns.TLS_CONNECT) { p ->
@@ -158,6 +174,7 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 var awaitingAuth = false
                 var timeoutJob: Job? = null
                 var unlockReceiver: BroadcastReceiver? = null
+                var nudgeJob: Job? = null
 
                 fun startDiscoveryWithTimeout() {
                     adbMdns.start()
@@ -219,13 +236,43 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 cr.registerContentObserver(Settings.Global.getUriFor("adb_wifi_enabled"), false, observer)
                 startDiscoveryWithTimeout()
 
+                // Opt-in, and only when there is no port to fall back on: keep asking for
+                // wireless debugging the way the Settings toggle cannot be asked when the
+                // device has no network, and bring up an interface for discovery if
+                // asking is not enough on its own. Cancelled with this flow, because it
+                // is only worth doing while something is trying to discover the port.
+                if (forcedWireless) {
+                    notify(WorkerState.FORCING_WIRELESS)
+                    nudgeJob = launch {
+                        ForcedWirelessDebugging.nudge(applicationContext) { message ->
+                            Log.i(AppConstants.TAG, "Forced wireless debugging: $message")
+                        }
+                    }
+                }
+
                 awaitClose {
                     adbMdns.stop()
                     timeoutJob?.cancel()
+                    nudgeJob?.cancel()
                     cr.unregisterContentObserver(observer)
                     unlockReceiver?.let { applicationContext.unregisterReceiver(it) }
                 }
-            }.first()
+            }.let { discovery ->
+                try {
+                    discovery.first()
+                } catch (e: TimeoutException) {
+                    // Nothing advertised a wireless port. TCP mode keeps the classic port
+                    // open so that a start can happen without a network at all, and
+                    // refusing it here would throw the mode away exactly when it is
+                    // needed: a reboot with no Wi-Fi to associate with.
+                    val fallback = StartTransport.classicPortFallback(tcpPort) ?: throw e
+                    Log.i(
+                        AppConstants.TAG,
+                        "Wireless discovery found nothing; starting over the classic ADB port $fallback"
+                    )
+                    fallback
+                }
+            }
             
             notify(WorkerState.CONNECTING)
             AdbStarter.startAdb(applicationContext, port, openTcpPort = usbMethod)
@@ -359,13 +406,16 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
         ) {
             val usbMethod = startMethod == ShizukuSettings.StartMethod.USB
             val cb = Constraints.Builder()
-            // A wireless start needs a network to keep wireless debugging alive. A USB
-            // start normally needs none except when it has no port and would have to
-            // reopen one over the wireless connection, which is worth waiting for rather
-            // than failing at boot. `immediate` (a start the user asked for) skips the
-            // wait: they get an answer now instead of a job that sits there.
-            val needsNetwork =
-                !usbMethod || EnvironmentUtils.getAdbTcpPort() <= 0
+            // Waiting for a network is only worth it when the start has no other way to
+            // reach the port: a wireless start needs one to find the TLS port over mDNS,
+            // while a classic port that TCP mode keeps open needs nothing, and a start
+            // that has one would sit on this constraint forever on a device with no Wi-Fi.
+            // `immediate` (a start the user asked for) skips the wait either way: they get
+            // an answer now instead of a job that sits there.
+            val needsNetwork = StartTransport.wifiRequired(
+                EnvironmentUtils.getAdbTcpPort(),
+                ShizukuSettings.getTcpMode()
+            )
             if (needsNetwork && !immediate)
                 cb.setRequiredNetworkType(NetworkType.UNMETERED)
             val constraints = cb.build()

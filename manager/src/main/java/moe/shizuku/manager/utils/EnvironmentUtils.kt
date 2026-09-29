@@ -11,6 +11,7 @@ import android.os.SystemProperties
 import android.provider.Settings
 import moe.shizuku.manager.ShizukuApplication
 import moe.shizuku.manager.ShizukuSettings
+import moe.shizuku.manager.start.StartTransport
 import com.topjohnwu.superuser.Shell
 
 private val appContext = ShizukuApplication.appContext
@@ -36,9 +37,9 @@ object EnvironmentUtils {
             else Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
     }
 
-    fun isWifiRequired(): Boolean {
-        return (getAdbTcpPort() <= 0 || !ShizukuSettings.getTcpMode())
-    }
+    /** Whether a start has to wait for a network before it can reach the TLS port. */
+    fun isWifiRequired(): Boolean =
+        StartTransport.wifiRequired(getAdbTcpPort(), ShizukuSettings.getTcpMode())
 
     fun isRooted(): Boolean {
         return Shell.getShell().isRoot

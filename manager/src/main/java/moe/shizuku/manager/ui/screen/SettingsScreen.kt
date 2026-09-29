@@ -83,6 +83,7 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
     var autoDisableWireless by remember { mutableStateOf(ShizukuSettings.getAutoDisableWirelessDebugging()) }
     var startMethod by remember { mutableStateOf(ShizukuSettings.getStartMethod()) }
     var waitForWifi by remember { mutableStateOf(ShizukuSettings.getWaitForWifi()) }
+    var forceWireless by remember { mutableStateOf(ShizukuSettings.getForceWirelessDebugging()) }
     var tcpMode by remember { mutableStateOf(ShizukuSettings.getTcpMode()) }
     var tcpPort by remember { mutableStateOf(ShizukuSettings.getTcpPort().toString()) }
     var systemStartMethod by remember { mutableStateOf(ShizukuSettings.getSystemStartMethod()) }
@@ -287,6 +288,20 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                                 Switch(checked = waitForWifi, onCheckedChange = {
                                     ShizukuSettings.setWaitForWifi(it)
                                     waitForWifi = it
+                                })
+                            }
+                        )
+                    }
+                    item {
+                        SegmentedListItem(
+                            headlineContent = { Text(stringResource(R.string.settings_force_wireless_debugging)) },
+                            supportingContent = {
+                                Text(stringResource(R.string.settings_force_wireless_debugging_summary))
+                            },
+                            trailingContent = {
+                                Switch(checked = forceWireless, onCheckedChange = {
+                                    ShizukuSettings.setForceWirelessDebugging(it)
+                                    forceWireless = it
                                 })
                             }
                         )

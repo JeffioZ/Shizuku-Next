@@ -48,6 +48,7 @@ public class ShizukuSettings {
         public static final String KEY_START_METHOD = "start_method";
         public static final String KEY_RUNNING_START_METHOD = "running_start_method";
         public static final String KEY_WAIT_FOR_WIFI = "wait_for_wifi";
+        public static final String KEY_FORCE_WIRELESS_DEBUGGING = "force_wireless_debugging";
         public static final String KEY_SYSTEM_START_METHOD = "system_start_method";
     }
 
@@ -290,6 +291,23 @@ public class ShizukuSettings {
 
     public static void setWaitForWifi(boolean enable) {
         getPreferences().edit().putBoolean(Keys.KEY_WAIT_FOR_WIFI, enable).apply();
+    }
+
+    /**
+     * Keep wireless debugging on without a Wi-Fi network by asking for it over and over,
+     * the way the Settings toggle cannot be asked while offline.
+     *
+     * Off by default, and deliberately so: what makes it work is a platform bug, so it can
+     * stop working after a system update, and it asks for a state a managed device would
+     * normally refuse to grant. Nothing relies on it, so a start that cannot use it simply
+     * behaves as it did before.
+     */
+    public static boolean getForceWirelessDebugging() {
+        return getPreferences().getBoolean(Keys.KEY_FORCE_WIRELESS_DEBUGGING, false);
+    }
+
+    public static void setForceWirelessDebugging(boolean enable) {
+        getPreferences().edit().putBoolean(Keys.KEY_FORCE_WIRELESS_DEBUGGING, enable).apply();
     }
 
     /**

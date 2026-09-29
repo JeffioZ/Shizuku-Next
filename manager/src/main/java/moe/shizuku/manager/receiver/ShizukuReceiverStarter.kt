@@ -39,6 +39,7 @@ object ShizukuReceiverStarter {
         AWAITING_RETRY,
         CONNECTING,
         WAITING_FOR_UNLOCK,
+        FORCING_WIRELESS,
         RUNNING,
         STOPPED
     }
@@ -222,6 +223,7 @@ object ShizukuReceiverStarter {
             WorkerState.AWAITING_RETRY -> R.string.wadb_notification_retry
             WorkerState.CONNECTING -> R.string.wadb_notification_connecting
             WorkerState.WAITING_FOR_UNLOCK -> R.string.wadb_notification_waiting_for_unlock
+            WorkerState.FORCING_WIRELESS -> R.string.wadb_notification_forcing_wireless
             else -> null
         }
         val msg = if (msgId != null) context.getString(msgId) else null

@@ -1,0 +1,175 @@
+package moe.shizuku.manager.start
+
+import android.content.ContentResolver
+import android.content.Context
+import android.net.wifi.WifiManager
+import android.os.Handler
+import android.os.Looper
+import android.provider.Settings
+import android.util.Log
+import kotlin.coroutines.resume
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
+import moe.shizuku.manager.AppConstants
+
+/**
+ * Keeping wireless debugging on where the system would rather turn it off.
+ *
+ * The Settings toggle cannot be used without a Wi-Fi network: the framework starts adbd's
+ * wireless TLS server when `adb_wifi_enabled` changes, then a second handler stops it
+ * again because the Wi-Fi constraint is not met, and it is that handler that decides you
+ * cannot have wireless debugging while offline. Writing the setting repeatedly lands
+ * writes inside that window until one of them is left alone, which is a known platform
+ * bug rather than anything documented and it is why this is opt-in, off by default, and
+ * best-effort: nothing here is relied on for a start to succeed.
+ *
+ * The port still has to be found afterwards, and mDNS needs an interface to resolve over,
+ * so a local-only hotspot is used when the writes alone do not get there. The hotspot is
+ * only ever for that interface and is closed again as soon as the start is done.
+ *
+ * See thedjchi/Shizuku issue 165 for the behaviour this follows.
+ */
+object ForcedWirelessDebugging {
+
+    /** The setting the framework watches. */
+    private const val KEY_WIFI_ENABLED = "adb_wifi_enabled"
+
+    /** Writes close together first: the window before the constraint check is short. */
+    private const val BURST_COUNT = 20
+    private const val BURST_INTERVAL_MS = 60L
+
+    /** Then one at a time, to reopen the window if the daemon is stopped again. */
+    private const val INTERVAL_MS = 1_000L
+
+    /** How long a start will keep asking before it carries on without. */
+    private const val WINDOW_MS = 25_000L
+
+    /** How long to try without an interface before bringing the hotspot up. */
+    private const val HOTSPOT_AFTER_MS = 3_000L
+    private const val HOTSPOT_TIMEOUT_MS = 12_000L
+
+    @Volatile
+    private var reservation: WifiManager.LocalOnlyHotspotReservation? = null
+
+    /**
+     * Asks for wireless debugging until cancelled, standing in for the toggle that a
+     * device without a network is not allowed to use.
+     *
+     * Cancelling it is the normal end: the caller cancels once the port has been found or
+     * has given up. The hotspot is deliberately left up across commands, so stop it with
+     * [releaseHotspot] when the start is finished.
+     */
+    suspend fun nudge(
+        context: Context,
+        log: (String) -> Unit = {}
+    ) = withContext(Dispatchers.IO) {
+        val cr = context.contentResolver
+        val startedAt = System.currentTimeMillis()
+        val deadline = startedAt + WINDOW_MS
+        var attempts = 0
+
+        repeat(BURST_COUNT) {
+            if (!isActive) return@withContext
+            ask(cr)
+            attempts++
+            delay(BURST_INTERVAL_MS)
+        }
+
+        while (isActive && System.currentTimeMillis() < deadline) {
+            ask(cr)
+            attempts++
+            if (reservation == null && System.currentTimeMillis() - startedAt >= HOTSPOT_AFTER_MS) {
+                log("wireless debugging is not being kept on; bringing up a local-only hotspot")
+                startHotspot(context, log)
+            }
+            delay(INTERVAL_MS)
+        }
+
+        Log.i(
+            AppConstants.TAG,
+            "Forced wireless debugging: asked $attempts times, " +
+                "hotspot ${if (reservation == null) "not running" else "running"}"
+        )
+    }
+
+    /** Stops the hotspot. Safe to call when there is none. */
+    fun releaseHotspot() {
+        runCatching { reservation?.close() }
+            .onFailure { Log.w(AppConstants.TAG, "Could not close the local-only hotspot", it) }
+        reservation = null
+    }
+
+    fun isHotspotRunning(): Boolean = reservation != null
+
+    private fun ask(cr: ContentResolver) {
+        // Best effort: without WRITE_SECURE_SETTINGS there is nothing to ask with, and a
+        // start must not fail because this experiment could not run.
+        runCatching { Settings.Global.putInt(cr, KEY_WIFI_ENABLED, 1) }
+    }
+
+    /**
+     * A local-only hotspot brings an interface up without touching the user's own
+     * tethering and without needing a network to join, which is what mDNS discovery needs
+     * to resolve the adbd service against.
+     *
+     * The reservation has to be held for the hotspot to exist, so it is parked in this
+     * object; it also dies with the process, which is a fair fallback.
+     */
+    private suspend fun startHotspot(context: Context, log: (String) -> Unit): Boolean {
+        if (reservation != null) return true
+
+        val wifi = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
+        if (wifi == null) {
+            log("no Wi-Fi service to bring a hotspot up with")
+            return false
+        }
+
+        val started = withTimeoutOrNull(HOTSPOT_TIMEOUT_MS) {
+            withContext(Dispatchers.Main) {
+                suspendCancellableCoroutine { cont ->
+                    try {
+                        wifi.startLocalOnlyHotspot(
+                            object : WifiManager.LocalOnlyHotspotCallback() {
+                                override fun onStarted(res: WifiManager.LocalOnlyHotspotReservation) {
+                                    if (cont.isActive) cont.resume(res)
+                                }
+
+                                override fun onStopped() {
+                                    if (cont.isActive) cont.resume(null)
+                                }
+
+                                override fun onFailed(reason: Int) {
+                                    Log.w(
+                                        AppConstants.TAG,
+                                        "Local-only hotspot refused: $reason"
+                                    )
+                                    if (cont.isActive) cont.resume(null)
+                                }
+                            },
+                            Handler(Looper.getMainLooper())
+                        )
+                    } catch (e: Throwable) {
+                        // SecurityException when the Wi-Fi permission is not granted, and
+                        // anything else the platform throws at this: the start carries on
+                        // without the interface.
+                        Log.w(AppConstants.TAG, "Could not start a local-only hotspot", e)
+                        if (cont.isActive) cont.resume(null)
+                    }
+                }
+            }
+        }
+
+        if (started == null) {
+            log("the local-only hotspot did not come up")
+            return false
+        }
+
+        reservation = started
+        log("local-only hotspot is up")
+        return true
+    }
+}

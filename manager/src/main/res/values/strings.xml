@@ -227,6 +227,8 @@
     <string name="settings_adb_without_developer_options_failed">Shizuku could not change the settings. Grant WRITE_SECURE_SETTINGS on the permissions page first.</string>
     <string name="settings_wait_for_wifi">Wait for Wi-Fi</string>
     <string name="settings_wait_for_wifi_summary">Automatic Shizuku restarts wait for an unmetered Wi-Fi connection.</string>
+    <string name="settings_force_wireless_debugging">Start without Wi-Fi (experimental)</string>
+    <string name="settings_force_wireless_debugging_summary">Tries to start Shizuku with no network and USB debugging turned off. It uses wireless debugging and a local hotspot to find the ADB port. This relies on an Android bug, so it may stop working after a system update. It may also leave wireless debugging enabled when Android would normally turn it off.</string>
     <string name="settings_system_start_method">System start method</string>
     <string name="settings_system_start_method_exploit">Device exploit</string>
     <string name="settings_system_start_method_custom">Custom command</string>
@@ -353,6 +355,7 @@
     <string name="wadb_notification_retry">Waiting to retry</string>
     <string name="wadb_notification_connecting">Starting Shizuku with wireless ADB</string>
     <string name="wadb_notification_waiting_for_unlock">Unlock the device to continue</string>
+    <string name="wadb_notification_forcing_wireless">Keeping wireless debugging on</string>
     <string name="wadb_error_title">Could not start after reboot</string>
     <string name="wadb_error_notify_dev">Tap to report this to the developer.</string>
     <string name="wadb_permission_error_notification_title">Permission Error</string>
