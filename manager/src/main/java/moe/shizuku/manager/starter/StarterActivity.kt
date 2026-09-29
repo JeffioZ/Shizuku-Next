@@ -27,6 +27,7 @@ import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -51,6 +52,10 @@ private class NotRootedException: Exception()
  * payload running as uid 1000 and the starter refusing it.
  */
 private const val FOTA_AGENT_PACKAGE = "com.sdet.fotaagent"
+
+/** How many times the agent is told to run the payload, and how far apart. */
+private const val FOTA_ATTEMPTS = 6
+private const val FOTA_ATTEMPT_INTERVAL_MS = 700L
 
 class StarterActivity : AppBarActivity() {
 
@@ -235,9 +240,18 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
                     )
                 }
 
-                Thread.sleep(1000)
-                appContext.sendBroadcast(exploit)
-                log("Start system success!\n")
+                // Several times, and not only for luck. The agent registers the receiver
+                // that acts on this when its activity starts, and a single send a second
+                // later is a race against that: on a device where the activity is still
+                // coming up, the one send lands nowhere and the start looks like a timeout
+                // with nothing to show for it. Repeats cost nothing when the first lands
+                // because the payload stops the agent as its last step, which leaves the
+                // later sends without a receiver.
+                repeat(FOTA_ATTEMPTS) { attempt ->
+                    if (attempt > 0) delay(FOTA_ATTEMPT_INTERVAL_MS)
+                    appContext.sendBroadcast(exploit)
+                    log("sent the agent command (attempt ${attempt + 1} of $FOTA_ATTEMPTS)\n")
+                }
                 true
             } catch (e: ActivityNotFoundException) {
                 // The exploit only exists where the device ships the component it abuses,
