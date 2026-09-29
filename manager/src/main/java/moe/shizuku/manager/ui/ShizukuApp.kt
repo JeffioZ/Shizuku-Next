@@ -1,9 +1,6 @@
 package moe.shizuku.manager.ui
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandHorizontally
-import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -38,7 +35,6 @@ import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Terminal
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.FloatingToolbarExitDirection
@@ -63,10 +59,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import moe.shizuku.manager.R
@@ -215,9 +208,12 @@ private fun MainTabs(
     val scrollBehavior = FloatingToolbarDefaults.exitAlwaysScrollBehavior(
         exitDirection = FloatingToolbarExitDirection.Bottom
     )
-    val density = LocalDensity.current
-    var barHeight by remember { mutableStateOf(0.dp) }
-    val bottomPadding = barHeight + FloatingToolbarDefaults.ScreenOffset +
+    // The bar's height as a constant, rather than as something it reports back. Measuring it
+    // and feeding that measurement into every page as bottom padding made the pages re-lay out
+    // whenever the bar re-measured mid-animation — a scroll, a tab change — which is what read
+    // as the content bouncing and left a gap the size of the bar's largest frame.
+    val bottomPadding = FloatingToolbarDefaults.ContainerSize +
+        FloatingToolbarDefaults.ScreenOffset +
         WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
     Box(
@@ -265,8 +261,7 @@ private fun MainTabs(
         ) {
             HorizontalFloatingToolbar(
                 expanded = true,
-                modifier = Modifier
-                    .onSizeChanged { barHeight = with(density) { it.height.toDp() } },
+                modifier = Modifier,
                 contentPadding = PaddingValues(0.dp),
                 scrollBehavior = scrollBehavior
             ) {
@@ -300,9 +295,13 @@ private fun MainTabs(
                         val selected = pagerState.currentPage == index
                         ToggleButton(
                             checked = selected,
-                            onCheckedChange = {
-                                if (!selected) scope.launch { pagerState.animateScrollToPage(index) }
-                            },
+                        onCheckedChange = {
+                            // Straight to the page, not through the ones between: the pager
+                            // composes what it scrolls past, so going from Settings to Home
+                            // started loading the Manage tab's six hundred apps on the way.
+                            // Swiping still animates, because that is the gesture.
+                            if (!selected) scope.launch { pagerState.scrollToPage(index) }
+                        },
                             shapes = ToggleButtonShapes(
                                 shape = CircleShape,
                                 pressedShape = CircleShape,
@@ -315,22 +314,14 @@ private fun MainTabs(
                                 checkedContentColor = MaterialTheme.colorScheme.onSecondaryContainer
                             )
                         ) {
+                            // The icon only, with the name kept for anyone reading it aloud.
+                            // The expanding label made the bar wider and taller as it grew,
+                            // which moved the pages under it; and the selected tab is already
+                            // the one in a filled pill, which is what it has to say.
                             Icon(
                                 if (selected) tab.selectedIcon else tab.unselectedIcon,
                                 contentDescription = stringResource(tab.label)
                             )
-                            AnimatedVisibility(
-                                visible = selected,
-                                enter = expandHorizontally(MaterialTheme.motionScheme.defaultSpatialSpec()),
-                                exit = shrinkHorizontally(MaterialTheme.motionScheme.defaultSpatialSpec())
-                            ) {
-                                Text(
-                                    stringResource(tab.label),
-                                    modifier = Modifier
-                                        .padding(start = ButtonDefaults.IconSpacing)
-                                        .clearAndSetSemantics { }
-                                )
-                            }
                         }
                     }
 
