@@ -72,7 +72,7 @@ object AdbStarter {
             var activePort = port
             val tcpPort = ShizukuSettings.getTcpPort()
             // Classic TCP mode rides on the USB debugging toggle. Only switch adbd
-            // into TCP mode when USB debugging is already on — switching during a
+            // into TCP mode when USB debugging is already on switching during a
             // wireless-only start would tie future restarts to a toggle that's off.
             val usbDebugging = EnvironmentUtils.isAdbEnabled()
             // Only a USB start opens/switches to the classic ADB port. Letting a
@@ -85,7 +85,7 @@ object AdbStarter {
                 log?.invoke("Connecting on port $activePort...")
 
                 AdbClient("127.0.0.1", activePort, key).use { client ->
-                    // Same pairing detection as the main path — a TLS rejection here
+                    // Same pairing detection as the main path a TLS rejection here
                     // must not surface as a raw SSL error either.
                     client.connectForPairing()
 
@@ -144,7 +144,7 @@ object AdbStarter {
                     client.command("usb:")
                 }
             }
-            // USB debugging was only borrowed to issue the command — restore it
+            // USB debugging was only borrowed to issue the command restore it
             if (!hadUsbDebugging && canWriteSettings) {
                 Settings.Global.putInt(cr, Settings.Global.ADB_ENABLED, 0)
             }
@@ -183,7 +183,7 @@ object AdbStarter {
      * Throws [AdbPairingRequiredException] when the fallback needs pairing first.
      */
     suspend fun openTcpPort(context: Context, port: Int): Boolean = withContext(Dispatchers.IO) {
-        // Wi-Fi is what keeps wireless debugging — and with it the wireless port —
+        // Wi-Fi is what keeps wireless debugging and with it the wireless port 
         // alive; without it there is nothing to borrow.
         if (!EnvironmentUtils.isWifiConnected()) {
             Log.i(TAG, "Not opening the ADB port: no Wi-Fi connection to borrow")
@@ -191,7 +191,7 @@ object AdbStarter {
         }
 
         // Best effort: without WRITE_SECURE_SETTINGS the write throws, and that must not
-        // abort the attempt — wireless debugging may already be on.
+        // abort the attempt wireless debugging may already be on.
         context.writeGlobalSetting("adb_wifi_enabled", 1)
         val wirelessPort = findWirelessPort(context) ?: run {
             Log.w(TAG, "Not opening the ADB port: no wireless debugging port was found")
@@ -251,7 +251,7 @@ object AdbStarter {
     /**
      * Every connection to adbd goes through here, so a TLS rejection is always
      * reported as [AdbPairingRequiredException] (the device doesn't trust our key
-     * yet — never paired, or the pairing was invalidated) instead of a raw SSL
+     * yet never paired, or the pairing was invalidated) instead of a raw SSL
      * error the user can't act on.
      */
     private suspend fun AdbClient.connectForPairing() {
@@ -261,11 +261,11 @@ object AdbStarter {
             if (e is AdbPairingRequiredException) throw e
             if (e is SSLException || e.isCertificateUnknown()) {
                 // Expected whenever the device doesn't trust our key, and the UI turns it
-                // into the pairing flow — so log one line, not a stack trace, which reads
+                // into the pairing flow so log one line, not a stack trace, which reads
                 // like a crash of its own.
                 Log.w(
                     TAG,
-                    "TLS handshake rejected, pairing required — " +
+                    "TLS handshake rejected, pairing required " +
                         e.message?.replace('\n', ' ')
                 )
                 throw AdbPairingRequiredException(e.message, e)

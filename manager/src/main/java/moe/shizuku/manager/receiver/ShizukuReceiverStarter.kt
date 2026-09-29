@@ -45,8 +45,8 @@ object ShizukuReceiverStarter {
 
     /**
      * Starts Shizuku with [startMethod], defaulting to the method chosen in
-     * settings. Every entry point goes through here — the Start button, start on
-     * boot, the watchdog, the manual-start intent and the pairing flow — so they
+     * settings. Every entry point goes through here the Start button, start on
+     * boot, the watchdog, the manual-start intent and the pairing flow so they
      * all behave the same instead of guessing from whichever method worked last.
      */
     fun start(
@@ -61,7 +61,7 @@ object ShizukuReceiverStarter {
         if ((UserHandleCompat.myUserId() > 0 || ShizukuStateMachine.isRunning()) && !forceStart) return
 
         // Root can be gone since the method was chosen (an OTA, root switched off), and a
-        // root start with nothing to escalate with does nothing at all — so a start that
+        // root start with nothing to escalate with does nothing at all so a start that
         // asks for root on a device without it falls back to wireless debugging instead of
         // failing silently. The setting is rewritten too, so the UI agrees with what the
         // next start will do.
@@ -83,7 +83,7 @@ object ShizukuReceiverStarter {
 
     /**
      * The system start runs the built-in exploit (or an external command) through
-     * [StarterActivity], which needs the app in the foreground — a background start
+     * [StarterActivity], which needs the app in the foreground a background start
      * such as boot or the watchdog cannot drive it.
      */
     private fun systemStart(context: Context) {
@@ -112,14 +112,14 @@ object ShizukuReceiverStarter {
 
         // This used to refuse every ADB start without WRITE_SECURE_SETTINGS, including the
         // ones that never write anything: a USB start, a classic-port start, and a wireless
-        // start whose debugging toggle is already on. On a fresh install — where the grant
-        // from the previous install is gone — that demanded a computer before Shizuku could
+        // start whose debugging toggle is already on. On a fresh install where the grant
+        // from the previous install is gone that demanded a computer before Shizuku could
         // start at all. Now only the start that actually has to switch wireless debugging on
         // is held up, and only because it cannot be done without the permission.
         if (context.needsWriteSecureSettingsFor(startMethod) && !context.hasWriteSecureSettings()) {
             StartStatusReporter.failed(
                 context.getString(R.string.start_failed_write_secure_settings),
-                // The card opens Wireless debugging so the user can switch it on by hand —
+                // The card opens Wireless debugging so the user can switch it on by hand 
                 // the permission is only how the app would have done it for them.
                 StartFailureKind.SETTINGS
             )
@@ -130,7 +130,7 @@ object ShizukuReceiverStarter {
         val hasWifi = EnvironmentUtils.isWifiConnected()
         val television = EnvironmentUtils.isTelevision()
 
-        // A wireless start needs a network — the system turns wireless debugging back off
+        // A wireless start needs a network the system turns wireless debugging back off
         // without one, so discovery can never find a port. Only fail the start the user
         // asked for, though: an unattended one (boot, watchdog) must keep trying instead,
         // because Wi-Fi routinely arrives a few seconds after boot and failing it there

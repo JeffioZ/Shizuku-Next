@@ -21,7 +21,7 @@ import moe.shizuku.manager.utils.SettingsHelper
 import moe.shizuku.manager.utils.SettingsPage
 
 /**
- * Starts the pairing flow — by asking how to pair, always.
+ * Starts the pairing flow by asking how to pair, always.
  *
  * The two ways want different things from the user: automated pairing reads the code out
  * of the system dialog and so needs the accessibility service running, while manual
@@ -46,7 +46,7 @@ private fun Context.hasAccessRestrictedSettings(): Boolean {
  *
  * Shizuku can normally do this by itself: writing the enabled-services setting only needs
  * WRITE_SECURE_SETTINGS, which is why the prompt never appeared on installs that had it. A
- * fresh install doesn't have it yet, so there the user is asked — or told the one command
+ * fresh install doesn't have it yet, so there the user is asked or told the one command
  * that would save them the asking.
  */
 private fun Context.ensureAccessibilityService(): Boolean {
@@ -116,7 +116,7 @@ private fun Context.showNavigateDialog() {
         )
         .setPositiveButton(R.string.development_settings) { _, _ ->
             // Only now, having chosen the automated way, is the accessibility service
-            // needed — and only if Shizuku can't switch it on itself.
+            // needed and only if Shizuku can't switch it on itself.
             // The screen this opens is under Developer options, which this app's own "ADB
             // without Developer options" setting hides: launching then would open nothing.
             if (!isDeveloperOptionsEnabled()) {
@@ -132,7 +132,7 @@ private fun Context.showNavigateDialog() {
             }
         }
         .setNegativeButton(R.string.auto_pair_manual) { _, _ ->
-            // Reading the code can still fail (OEM dialog, service killed) — keep the
+            // Reading the code can still fail (OEM dialog, service killed) keep the
             // notification flow one tap away as the fallback.
             runCatching {
                 startActivity(Intent(this, AdbPairingTutorialActivity::class.java))

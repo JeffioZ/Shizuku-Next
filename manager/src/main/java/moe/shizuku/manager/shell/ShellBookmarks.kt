@@ -7,8 +7,8 @@ import org.json.JSONObject
 /**
  * The commands worth keeping.
  *
- * A command that took a while to work out — the exact `settings` key, the right `cmd` subcommand
- * — is worth more than the typing it saves, so it is kept by name and run again later.
+ * A command that took a while to work out the exact `settings` key, the right `cmd` subcommand
+ * is worth more than the typing it saves, so it is kept by name and run again later.
  *
  * Stored as JSON in the app's own preferences rather than a database: the list is tens of
  * entries long, read once when the shell opens, and a table, a DAO and a migration for it would
@@ -60,7 +60,7 @@ object ShellBookmarks {
 
     /**
      * Keeps [command] under [name]. Saving the same command twice under different names is
-     * allowed — the same line is often wanted with different arguments already filled in — so
+     * allowed the same line is often wanted with different arguments already filled in so
      * the identity is the entry, not the text.
      */
     fun add(context: Context, name: String, command: String): Bookmark {

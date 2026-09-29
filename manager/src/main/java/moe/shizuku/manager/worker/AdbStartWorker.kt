@@ -78,7 +78,7 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
 
             // All of the writes below go through helpers that swallow a permission denial:
             // on a fresh install (or after a re-signed update) the app has no
-            // WRITE_SECURE_SETTINGS yet, and a settings write *throws* without it — which
+            // WRITE_SECURE_SETTINGS yet, and a settings write *throws* without it which
             // used to abort the start and get reported as a pairing problem. A start that
             // can't nudge adbd should still try to connect.
             if (usbMethod) {
@@ -104,11 +104,11 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                     }
                 }
             }
-            // else: wireless is off and we are starting over it — the callbackFlow
+            // else: wireless is off and we are starting over it the callbackFlow
             // below writes adb_wifi_enabled=1 so the start proceeds over wireless.
 
             var tcpPort = EnvironmentUtils.getAdbTcpPort()
-            // "TCP mode off" means don't keep a port open for wireless restarts — but
+            // "TCP mode off" means don't keep a port open for wireless restarts but
             // a USB start exists to use that port, so it opens and keeps it instead of
             // closing the very thing it needs.
             if (tcpPort > 0 && !ShizukuSettings.getTcpMode() && !usbMethod) {
@@ -119,7 +119,7 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 // A reboot clears the classic ADB port (it isn't persistent) and the
                 // port can only be created by a `tcpip` request over a live connection.
                 // Borrow the wireless connection to reopen it, then carry on over the
-                // classic port — so a USB start repairs itself instead of needing a
+                // classic port so a USB start repairs itself instead of needing a
                 // computer after every reboot.
                 notify(WorkerState.CONNECTING)
                 if (AdbStarter.openTcpPort(applicationContext, ShizukuSettings.getTcpPort())) {
@@ -130,7 +130,7 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
 
             // A USB start is USB only: the classic ADB port, where the connection
             // authenticates itself and Android asks to allow USB debugging. It never
-            // falls back to wireless discovery — going through the wireless port is
+            // falls back to wireless discovery going through the wireless port is
             // what used to make a "USB" start depend on Wi-Fi and pairing.
             if (usbMethod && tcpPort <= 0) {
                 StartStatusReporter.failed(
@@ -144,7 +144,7 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             // From here the USB method always has a classic port to use.
 
             // A wireless start always goes over the wireless (TLS) port. Taking the
-            // classic ADB port here — which TCP mode keeps open — is what made a
+            // classic ADB port here which TCP mode keeps open is what made a
             // "Wireless debugging" start run over USB debugging's transport and report
             // itself as USB. Only the USB method, and platforms without wireless
             // debugging at all, use the classic port.
@@ -212,7 +212,7 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                     }
                 }
 
-                // Required for discovery — without it the device never advertises
+                // Required for discovery without it the device never advertises
                 // _adb-tls-connect and the worker just times out. Best effort: if we may
                 // not write, discovery still gets its chance before we complain.
                 applicationContext.writeGlobalSetting("adb_wifi_enabled", 1)
@@ -272,7 +272,7 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                         StartFailureKind.GENERIC
 
                 // A bare "Socket closed" (or any other IO failure) tells the user nothing
-                // — the connection to adbd went away mid-attempt. Say that instead.
+                // the connection to adbd went away mid-attempt. Say that instead.
                 is IOException ->
                     applicationContext.getString(R.string.start_failed_connection_lost) to
                         StartFailureKind.GENERIC
@@ -360,7 +360,7 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             val usbMethod = startMethod == ShizukuSettings.StartMethod.USB
             val cb = Constraints.Builder()
             // A wireless start needs a network to keep wireless debugging alive. A USB
-            // start normally needs none — except when it has no port and would have to
+            // start normally needs none except when it has no port and would have to
             // reopen one over the wireless connection, which is worth waiting for rather
             // than failing at boot. `immediate` (a start the user asked for) skips the
             // wait: they get an answer now instead of a job that sits there.

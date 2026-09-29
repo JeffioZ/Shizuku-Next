@@ -18,7 +18,7 @@ enum class StartFailureKind {
     /** The ADB TLS handshake was rejected: the device needs pairing. */
     PAIRING,
 
-    /** No local ADB port is open — it can be opened from the card. */
+    /** No local ADB port is open it can be opened from the card. */
     PORT,
 
     /**
@@ -72,7 +72,7 @@ fun Context.runningMethodLabel(): String? = runningStartMethodLabelRes()?.let { 
 
 /**
  * The same, ready to append to a notification: " · Wireless debugging", or nothing at
- * all when the method isn't known — so every status notification can say how Shizuku is
+ * all when the method isn't known so every status notification can say how Shizuku is
  * running without inventing a value.
  */
 fun Context.runningMethodSuffix(): String = runningMethodLabel()?.let { " · $it" } ?: ""

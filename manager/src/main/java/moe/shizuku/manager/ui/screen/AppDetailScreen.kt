@@ -169,7 +169,7 @@ fun AppDetailScreen(
             },
             actions = {
                 // The platform's own page for the app: everything this screen deliberately
-                // does not carry — notification settings, storage, the uninstall button,
+                // does not carry notification settings, storage, the uninstall button,
                 // granted-at-install permissions. Away from a removed app it is the
                 // fastest way to anything the app itself owns.
                 if (loaded?.uninstalled != true) {
@@ -618,7 +618,7 @@ private fun PermissionRow(
     onToggle: (Boolean) -> Unit
 ) {
     // Both lines matter: the short name is what reads, and the full name is what decides
-    // which permission this actually is — a row reading WRITE could be any of several.
+    // which permission this actually is a row reading WRITE could be any of several.
     val supporting = buildString {
         append(permission.name)
         append('\n')
@@ -666,7 +666,7 @@ private fun facts(app: AppDetail, yes: String, no: String): List<Pair<Int, Strin
     val facts = ArrayList<Pair<Int, String>>()
 
     fun fact(@StringRes label: Int, value: String?) {
-        facts.add(label to (value?.takeIf { it.isNotBlank() } ?: "—"))
+        facts.add(label to (value?.takeIf { it.isNotBlank() } ?: ""))
     }
 
     fact(R.string.app_info_version, app.versionName?.let { "$it (${app.versionCode})" })

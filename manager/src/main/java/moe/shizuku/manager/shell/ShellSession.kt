@@ -28,7 +28,7 @@ data class ShellLine(val text: String, val kind: Kind) {
  *
  * There is no tty to be had from an app. rish allocates its pty on the server, and only when
  * the caller's own stdin already is one; an app has no terminal and cannot open `/dev/ptmx`,
- * so anything that insists on a tty — an interactive `nano`, an ssh password prompt — cannot
+ * so anything that insists on a tty an interactive `nano`, an ssh password prompt cannot
  * be run from here. That is what the rish export is for.
  *
  * What is possible is one command at a time, and that is enough for most of it as long as the
@@ -46,7 +46,7 @@ class ShellSession {
 
     /**
      * The process a Shizuku command is running in, so Stop has something to destroy. A root
-     * command runs inside a `su` job, which offers no handle on it — the screen says so
+     * command runs inside a `su` job, which offers no handle on it the screen says so
      * rather than pretending the button works.
      */
     @Volatile
@@ -91,7 +91,7 @@ class ShellSession {
      * The directory the session opens in.
      *
      * Shared storage when the device has it, because that is where files live that the rest
-     * of the phone can also see, and `/data/local/tmp` otherwise — which every device has and
+     * of the phone can also see, and `/data/local/tmp` otherwise which every device has and
      * the shell can always write. This is only where commands *start*: the shell runs as the
      * uid Shizuku runs as, so `cd /system`, `cd /sdcard` or (with root) `cd /data/data` are
      * all a `cd` away.
@@ -121,7 +121,7 @@ class ShellSession {
     /**
      * True when [command] is a bare `cd` this side should handle.
      *
-     * A compound command that merely contains one — `cd /system && ls` — is not: its `cd`
+     * A compound command that merely contains one `cd /system && ls` is not: its `cd`
      * belongs to that command's own shell, and reading the whole line as a path is how the
      * session once ended up in a directory called "/system && ls".
      */

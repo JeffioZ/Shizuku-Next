@@ -15,7 +15,7 @@ class NotifAttemptReceiver : BroadcastReceiver() {
             ShizukuSettings.getStartMethod()
         )
 
-        // User-initiated ("Retry now") — never wait for Wi-Fi.
+        // User-initiated ("Retry now") never wait for Wi-Fi.
         AdbStartWorker.enqueue(context, startMethod = startMethod, immediate = true)
     }
 }

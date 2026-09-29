@@ -47,7 +47,7 @@ class WatchdogService : Service() {
                 attemptRestart()
             }
             ShizukuStateMachine.State.RUNNING -> {
-                // Server is back — no longer need the screen-on retry
+                // Server is back no longer need the screen-on retry
                 pendingRestart = false
             }
             else -> Unit
@@ -64,7 +64,7 @@ class WatchdogService : Service() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action != Intent.ACTION_USER_PRESENT) return
             if (pendingRestart) {
-                Log.d(TAG, "Screen unlocked with pending restart — retrying now")
+                Log.d(TAG, "Screen unlocked with pending restart retrying now")
                 attemptRestart()
             } else {
                 // Self-heal on unlock: catches deaths whose CRASHED transition was
@@ -78,7 +78,7 @@ class WatchdogService : Service() {
      * Event-based crash detection alone is not enough: the CRASHED transition is
      * lost if the manager process was dead when the server died, and the state
      * machine boots as STOPPED after every process restart. So whenever the
-     * watchdog (re)starts — and on screen unlock — probe whether the server is
+     * watchdog (re)starts and on screen unlock probe whether the server is
      * actually running and restart it if not, unless the user stopped it on
      * purpose (manual stop sets the suppression flag; any start request or a
      * confirmed RUNNING state clears it).
@@ -91,7 +91,7 @@ class WatchdogService : Service() {
             if (ShizukuSettings.getManuallyStopped()) return@launch
             when (ShizukuStateMachine.get()) {
                 // A start/stop appears to be in flight. Give it ample time to
-                // resolve instead of skipping outright — a state stuck at
+                // resolve instead of skipping outright a state stuck at
                 // STARTING/STOPPING from a silently failed operation would
                 // otherwise disable this check forever.
                 ShizukuStateMachine.State.STARTING,
@@ -102,7 +102,7 @@ class WatchdogService : Service() {
                 else -> Unit
             }
             if (ShizukuStateMachine.update() != ShizukuStateMachine.State.RUNNING) {
-                Log.d(TAG, "Server not running while watchdog active — attempting restart")
+                Log.d(TAG, "Server not running while watchdog active attempting restart")
                 attemptRestart()
             }
         }
@@ -118,7 +118,7 @@ class WatchdogService : Service() {
                 val usbMethod =
                     ShizukuSettings.getStartMethod() == ShizukuSettings.StartMethod.USB
                 if (usbMethod && tcpPort > 0 && EnvironmentUtils.isUsbDebuggingEnabled()) {
-                    // Direct TCP restart for the USB method — fastest path, no mDNS
+                    // Direct TCP restart for the USB method fastest path, no mDNS
                     // needed. A wireless setup must restart over TLS below: taking the
                     // classic port here is what made a wireless setup come back
                     // reporting itself as USB debugging after a crash.
@@ -149,7 +149,7 @@ class WatchdogService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == "ACTION_STOP_SERVICE") {
-            // User explicitly turned the watchdog off via the notification — persist
+            // User explicitly turned the watchdog off via the notification persist
             // the setting directly instead of calling setWatchdog() (which would
             // redundantly call stop() while we're already stopping via stopSelf).
             ShizukuSettings.getPreferences().edit()

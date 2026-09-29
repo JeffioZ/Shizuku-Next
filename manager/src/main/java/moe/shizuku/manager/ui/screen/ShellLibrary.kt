@@ -42,7 +42,7 @@ import moe.shizuku.manager.shell.ShellCommands
  * The library, as a sheet: a search field over every command the shell knows, each with what it
  * does underneath it.
  *
- * The rows are the command and its description, and nothing else — a filter row by tag would be
+ * The rows are the command and its description, and nothing else a filter row by tag would be
  * a second way to do what the search field already does, and the tags are what the search
  * matches, so typing "battery" finds them whether or not the word is in the command.
  */
@@ -106,7 +106,7 @@ internal fun LibrarySheet(
  * Asks for whatever the chosen command has left as `<placeholders>`.
  *
  * One field per variable, in the order they appear, and the ones that name an app get a button
- * that opens the app list — because the value of `<package>` is a package name nobody types, and
+ * that opens the app list because the value of `<package>` is a package name nobody types, and
  * the shell already knows every one on the device. What comes back is a finished command put in
  * the input, not a run: the point of filling it in is to read it first.
  */

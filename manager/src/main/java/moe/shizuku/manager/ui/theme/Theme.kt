@@ -31,7 +31,7 @@ private val BrandColor = Color(0xFF3F51B5)
 
 /**
  * True while the pure black (AMOLED) scheme is in use. Cards and the page are the
- * same colour in that scheme, so surfaces need something else to stay visible — see
+ * same colour in that scheme, so surfaces need something else to stay visible see
  * [moe.shizuku.manager.ui.component.SegmentedColumn].
  */
 val LocalAmoledTheme = staticCompositionLocalOf { false }
@@ -82,7 +82,7 @@ fun ShizukuTheme(content: @Composable () -> Unit) {
 
     // The AMOLED switch only repaints the base surface roles, while the container
     // roles that the cards and the navigation bar actually use kept the standard
-    // dark greys — a black page with grey cards. Spread the black across every
+    // dark greys a black page with grey cards. Spread the black across every
     // surface role; row dividers keep the list readable without the card shape.
     val colorScheme = if (amoled) baseScheme.copy(
         background = Color.Black,

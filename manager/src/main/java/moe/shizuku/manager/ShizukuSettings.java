@@ -131,7 +131,7 @@ public class ShizukuSettings {
      * How the server that is running now was started. Kept separately from
      * [getStartMethod] (which is what the next start will use), so the UI can show both
      * and they can't be mistaken for each other. [START_METHOD_UNRECORDED] means no
-     * start of ours launched it — e.g. it was started by another tool.
+     * start of ours launched it e.g. it was started by another tool.
      */
     public static int getRunningStartMethod() {
         return getPreferences().getInt(Keys.KEY_RUNNING_START_METHOD, START_METHOD_UNRECORDED);
@@ -153,7 +153,7 @@ public class ShizukuSettings {
         int ADB = 1;
     }
 
-    /** Which method was observed to work last — informational (status card, transport). */
+    /** Which method was observed to work last informational (status card, transport). */
     @LaunchMethod
     public static int getLastLaunchMode() {
         return getPreferences().getInt("mode", LaunchMethod.UNKNOWN);
@@ -168,8 +168,8 @@ public class ShizukuSettings {
     }
 
     /**
-     * Wireless debugging is left on by default — that is what lets Shizuku restart with
-     * no Wi-Fi and USB debugging off — so turning it off when stopping is opt-in.
+     * Wireless debugging is left on by default that is what lets Shizuku restart with
+     * no Wi-Fi and USB debugging off so turning it off when stopping is opt-in.
      */
     public static boolean getAutoDisableWirelessDebugging() {
         return getPreferences().getBoolean(Keys.KEY_AUTO_DISABLE_WIRELESS_DEBUGGING, false);

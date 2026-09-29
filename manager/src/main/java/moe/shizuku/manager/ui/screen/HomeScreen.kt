@@ -127,8 +127,8 @@ fun HomeScreen(bottomPadding: Dp) {
     val scope = rememberCoroutineScope()
 
     // Android 16+ gates local-network discovery behind a runtime permission, and discovery is
-    // the first thing a wireless start does. Asking here — on the path that needs it, when the
-    // user asks for a start — is what keeps a fresh install from failing to find the port with
+    // the first thing a wireless start does. Asking here on the path that needs it, when the
+    // user asks for a start is what keeps a fresh install from failing to find the port with
     // only the pairing tutorial able to grant it.
     var pendingLocalNetworkAction by remember { mutableStateOf<(() -> Unit)?>(null) }
     val localNetworkLauncher = rememberLauncherForActivityResult(
@@ -296,7 +296,7 @@ fun HomeScreen(bottomPadding: Dp) {
                             )
 
                             // Two of these failures are answered by a screen that lives
-                            // under Developer options, which our own setting can hide — so
+                            // under Developer options, which our own setting can hide so
                             // those cards say why, and offer the one tap that puts it back
                             // instead of a button that opens nothing.
                             val needsDeveloperOptions =
@@ -692,7 +692,7 @@ private fun StatusCard(
     uid: Int,
     @StringRes startMethodLabelRes: Int
 ) {
-    // "Stopped" is a normal state, not an error — a red container made the
+    // "Stopped" is a normal state, not an error a red container made the
     // primary action clash. Use a neutral surface instead.
     val containerColor = if (running) {
         MaterialTheme.colorScheme.secondaryContainer
@@ -788,7 +788,7 @@ private fun kernelVersion(): String = System.getProperty("os.version").orEmpty()
 
 /**
  * The kernel's SELinux state, worked out the way KernelSU's manager works it out:
- * ask `getenforce` as an ordinary app, and treat a refusal as the answer — selinuxfs is
+ * ask `getenforce` as an ordinary app, and treat a refusal as the answer selinuxfs is
  * world-readable on disk but denied to app domains, and a permissive policy would have
  * allowed the read. That is what makes this work with no root, no server and no KSU.
  */
@@ -892,7 +892,7 @@ private fun StatusFact(@StringRes labelRes: Int, value: String, modifier: Modifi
     }
 }
 
-/** Restart's blue — see the note where it is used. */
+/** Restart's blue see the note where it is used. */
 private val RestartBlue = Color(0xFF2563EB)
 
 /**
@@ -995,7 +995,7 @@ private fun uidLabel(uid: Int): String = when (uid) {
 
 /**
  * The method the running server was started with. Falls back to the ADB transport when
- * no launch of ours was recorded — e.g. the server was started by another tool.
+ * no launch of ours was recorded e.g. the server was started by another tool.
  */
 @Composable
 private fun runningMethodLabel(uid: Int): String =

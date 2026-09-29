@@ -8,8 +8,8 @@ import moe.shizuku.manager.utils.EnvironmentUtils
 /**
  * Checks that the configured start method can actually run here.
  *
- * Root can be gone since the method was chosen — an OTA that relocks the bootloader, a
- * ROM that no longer grants it, root switched off in the manager — while the stored
+ * Root can be gone since the method was chosen an OTA that relocks the bootloader, a
+ * ROM that no longer grants it, root switched off in the manager while the stored
  * setting stays as it was. Shizuku would then try to escalate on every start (boot, the
  * watchdog, the Start button), find nothing to escalate with, and quietly do nothing: the
  * app looks configured but never starts.
@@ -23,7 +23,7 @@ object StartMethodGuard {
 
     /**
      * Whether this process dropped a stored Root method because the device has no root.
-     * In memory only — the point is to explain a change to whoever looks next, and the
+     * In memory only the point is to explain a change to whoever looks next, and the
      * screen that made the change may not be the one that shows it.
      */
     @Volatile
@@ -54,7 +54,7 @@ object StartMethodGuard {
 
     /**
      * True when this device can run [method]. Every method but Root always can, since
-     * none of the others needs privileges of its own — and neither does Root require
+     * none of the others needs privileges of its own and neither does Root require
      * them to be *offered*: it is only hidden where escalating is impossible.
      */
     fun isAvailable(@ShizukuSettings.StartMethod method: Int): Boolean =

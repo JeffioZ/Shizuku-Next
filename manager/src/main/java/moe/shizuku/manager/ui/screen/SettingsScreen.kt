@@ -720,7 +720,7 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                 add(ShizukuSettings.StartMethod.WIRELESS.toString() to stringResource(R.string.start_method_wireless))
                 add(ShizukuSettings.StartMethod.USB.toString() to stringResource(R.string.start_method_usb))
                 add(ShizukuSettings.StartMethod.SYSTEM.toString() to stringResource(R.string.start_method_system))
-                // Offered only where it can work — the same rule the home screen's root
+                // Offered only where it can work the same rule the home screen's root
                 // row follows.
                 if (rootAvailable) {
                     add(ShizukuSettings.StartMethod.ROOT.toString() to stringResource(R.string.start_method_root))

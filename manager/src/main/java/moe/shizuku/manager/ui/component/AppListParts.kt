@@ -117,7 +117,7 @@ fun AppFilterChip(
 }
 
 /**
- * Just the number, in a small rounded chip — the same shape family as the filter it sits
+ * Just the number, in a small rounded chip the same shape family as the filter it sits
  * in, rather than a circle, so a selected filter reads as one object. Enough to read at a
  * glance, not enough to shout.
  */
@@ -158,14 +158,14 @@ fun CountBadge(count: Int, selected: Boolean) {
  *
  * A row's state belongs here rather than at the end of the line under the name: that line is
  * the package name, which is long, and a suffix bolted onto it is the first thing a narrow
- * screen cuts off — leaving a stray separator and no state at all.
+ * screen cuts off leaving a stray separator and no state at all.
  */
 /** How much a chip wants to be noticed. */
 enum class ChipEmphasis {
     /** A fact about the app: it came with the system. */
     NONE,
 
-    /** A state worth seeing — disabled, suspended — without shouting it. */
+    /** A state worth seeing disabled, suspended without shouting it. */
     SOFT,
 
     /** Something is wrong: the app is not installed any more. */
@@ -223,7 +223,7 @@ fun AppIcon(pi: PackageInfo) {
 }
 
 /**
- * The icon for a package that has no [PackageInfo] to hand — an app that is only listed by
+ * The icon for a package that has no [PackageInfo] to hand an app that is only listed by
  * name, or one whose application record is gone because it is no longer installed.
  */
 @Composable

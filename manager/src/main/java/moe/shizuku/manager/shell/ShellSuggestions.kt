@@ -36,9 +36,9 @@ data class SuggestionSource(
  *
  * The kind is decided by the token itself rather than by the command before it: a dotted token
  * starting with `android` is a permission, any other dotted token is a package name, anything
- * else is a command. Crude, and right nearly always — `pm grant com.foo
+ * else is a command. Crude, and right nearly always `pm grant com.foo
  * android.permission.CAMERA` picks a package and then a permission, `dumpsys battery` picks
- * none — without a table saying what each of the hundred-odd commands takes. A table would be
+ * none without a table saying what each of the hundred-odd commands takes. A table would be
  * wrong on the next release; this cannot be.
  *
  * The package names are the user's own installed apps and the permissions are the ones their
@@ -72,7 +72,7 @@ object ShellSuggestions {
     }
 
     /**
-     * The token at the end of the input — what the next suggestion would replace — and whether
+     * The token at the end of the input what the next suggestion would replace and whether
      * there is one at all. After a space there is not: the next word is a new token.
      */
     fun tokenAt(input: String): String {
@@ -92,7 +92,7 @@ object ShellSuggestions {
         }
 
         return when (kindOfToken(token)) {
-            // A token with no dot in it is a command first — but it can just as well be the
+            // A token with no dot in it is a command first but it can just as well be the
             // beginning of an app's name, and `green` meaning Greenify is not something the
             // shape of the word can tell us. So the apps whose names start with it come after
             // the commands that do, and the card's second line says which is which.
@@ -174,7 +174,7 @@ object ShellSuggestions {
     /**
      * The commands worth offering, which are the ones this shell is actually used for: the
      * package manager, the activity manager, `cmd`, `settings`, `dumpsys` and the file tools
-     * that are on every device. Names only — a suggestion is for the first word, and the rest
+     * that are on every device. Names only a suggestion is for the first word, and the rest
      * of the line is the user's.
      */
     val COMMANDS: List<Pair<String, String>> = listOf(

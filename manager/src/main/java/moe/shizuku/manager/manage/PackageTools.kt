@@ -44,8 +44,8 @@ enum class PermissionKind { PRIVILEGED, RUNTIME }
  * One permission an app declares.
  *
  * [changeable] is the honest part: adb (and so Shizuku) can only change a permission the
- * platform marks as *development* or *dangerous*. Everything else — a plain `signature`
- * permission, for instance — is shown because the app asked for it, but the switch is
+ * platform marks as *development* or *dangerous*. Everything else a plain `signature`
+ * permission, for instance is shown because the app asked for it, but the switch is
  * disabled rather than left to fail.
  */
 data class AppPermission(
@@ -82,7 +82,7 @@ data class AppOp(
  *
  * [settable] marks the one bucket adb cannot assign: an app lands in "exempted" because the
  * system put it there (it is on the battery optimisation exemption list), so it is reported
- * but never offered as a choice — and `am set-standby-bucket <pkg> exempted` silently does
+ * but never offered as a choice and `am set-standby-bucket <pkg> exempted` silently does
  * nothing, which is why it is worth saying so rather than letting a switch lie.
  */
 enum class StandbyBucket(
@@ -105,7 +105,7 @@ enum class StandbyBucket(
     companion object {
         /**
          * `am get-standby-bucket` answers with the bucket number, and the names are
-         * accepted too — both are read, because the answer has changed shape across
+         * accepted too both are read, because the answer has changed shape across
          * releases.
          */
         fun from(raw: String?): StandbyBucket? = when (raw?.trim()?.lowercase()) {
@@ -166,7 +166,7 @@ private val OPS = listOf(
 )
 
 /*
- * Not in that list, because the platform refuses to let adb change them — measured, not
+ * Not in that list, because the platform refuses to let adb change them measured, not
  * assumed: `cmd appops set ... allow` exits 0 and the op reads back unchanged for
  * SCHEDULE_EXACT_ALARM, WRITE_SETTINGS, MANAGE_EXTERNAL_STORAGE and GET_USAGE_STATS. They
  * are special access in system settings now, which is also where the user has to go for
@@ -363,7 +363,7 @@ object PackageTools {
     /**
      * The ABI the app was installed for, taken from the directory its native libraries were
      * unpacked into (`.../lib/arm64`). `ApplicationInfo.primaryCpuAbi` holds the same answer
-     * but is not part of the public SDK, and the APK path does not mention it — on Android
+     * but is not part of the public SDK, and the APK path does not mention it on Android
      * 11+ the libraries sit beside the APK rather than inside its path.
      *
      * Null means the app ships no native code, which the row shows as nothing to report.
@@ -393,7 +393,7 @@ object PackageTools {
         }
     }.getOrNull()
 
-    /** The permission state as the platform reports it — the only answer worth trusting. */
+    /** The permission state as the platform reports it the only answer worth trusting. */
     private fun granted(context: Context, packageName: String, permission: String): Boolean? =
         runCatching {
             val pm = context.packageManager
@@ -412,7 +412,7 @@ object PackageTools {
      *
      * The IPC call is tried first because it is the same call `pm` makes, without the
      * process. But it can land on a permission the platform refuses to change, and some
-     * releases answer a refused change with silence — so the permission's own state is
+     * releases answer a refused change with silence so the permission's own state is
      * what decides the result, not the call's return, and the shell is tried as a second
      * opinion before giving up.
      */
@@ -505,7 +505,7 @@ object PackageTools {
      * Runs [cmd] and reports its exit code.
      *
      * [runShellCommand] returns the output, which is nothing at all for the commands that
-     * matter here — `am force-stop` prints nothing on success, so an empty answer cannot
+     * matter here `am force-stop` prints nothing on success, so an empty answer cannot
      * be told from a failure. Asking the shell for the status instead makes success and
      * failure distinguishable, which is what lets a row say "it did not work" honestly.
      */

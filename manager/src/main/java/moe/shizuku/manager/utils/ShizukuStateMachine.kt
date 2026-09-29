@@ -44,7 +44,7 @@ object ShizukuStateMachine {
             if (newState == State.RUNNING) {
                 ShizukuSettings.setManuallyStopped(false)
                 // The server is up, so it can hand us the ADB-only permission the wireless
-                // flow needs — the user shouldn't have to reach for a computer for it.
+                // flow needs the user shouldn't have to reach for a computer for it.
                 grantWriteSecureSettingsIfNeeded()
                 // Remember how the server was launched so later background starts
                 // know whether to use root or wireless debugging (previously done by
@@ -64,7 +64,7 @@ object ShizukuStateMachine {
 
             // Deliberately NOT clearing the recorded transport when the server stops.
             // It describes how the server was launched, so it stays true after the
-            // launch ends — and clearing it here also wiped it on every transient
+            // launch ends and clearing it here also wiped it on every transient
             // STOPPED while a start was still coming up (the binder is not up yet),
             // which left a running server being reported as "Unknown".
             listeners.forEach { it(newState) }
@@ -101,7 +101,7 @@ object ShizukuStateMachine {
      * that in settings.
      *
      * Called from the transition rather than from [setDead] because the binder dying can
-     * be noticed by [update] first — which reaches STOPPED from STOPPING just the same,
+     * be noticed by [update] first which reaches STOPPED from STOPPING just the same,
      * and used to skip this entirely.
      */
     private fun disableDebuggingTogglesIfAsked() {
@@ -113,8 +113,8 @@ object ShizukuStateMachine {
             if (ShizukuSettings.getAutoDisableUsbDebugging()) {
                 Settings.Global.putInt(appContext.contentResolver, Settings.Global.ADB_ENABLED, 0)
             }
-            // Wireless debugging is kept on by default — that is what lets Shizuku restart
-            // with no Wi-Fi — so turning it off with Shizuku is opt-in.
+            // Wireless debugging is kept on by default that is what lets Shizuku restart
+            // with no Wi-Fi so turning it off with Shizuku is opt-in.
             if (ShizukuSettings.getAutoDisableWirelessDebugging()) {
                 Settings.Global.putInt(appContext.contentResolver, "adb_wifi_enabled", 0)
             }

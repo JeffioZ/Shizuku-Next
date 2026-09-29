@@ -94,7 +94,7 @@ enum class AppFilter {
     /** Shizuku's permission is granted to these. */
     GRANTED,
 
-    /** It is not — the apps you can still hand it to. */
+    /** It is not the apps you can still hand it to. */
     REVOKED,
 
     /**
@@ -502,7 +502,7 @@ fun AppsScreen(bottomPadding: Dp) {
         }
 
         // Say why the page is empty: still loading, no server to ask, nothing matching
-        // the search, or genuinely no apps — a blank page explains nothing.
+        // the search, or genuinely no apps a blank page explains nothing.
         if (loading || shown.isEmpty()) {
             CenteredMessage {
                 when {
@@ -547,7 +547,7 @@ fun AppsScreen(bottomPadding: Dp) {
         }
     }
 
-    // The undo offer sits above the list — and above the floating bar, which is drawn over
+    // The undo offer sits above the list and above the floating bar, which is drawn over
     // the page rather than beside it, so the same padding the list uses to clear the bar is
     // what keeps the snackbar from appearing underneath it.
     SnackbarHost(

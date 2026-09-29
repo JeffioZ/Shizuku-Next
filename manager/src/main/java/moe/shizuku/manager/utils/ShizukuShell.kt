@@ -9,7 +9,7 @@ private const val TAG = "ShizukuShell"
  * Runs [cmd] as shell through Shizuku and returns its output, or null when it couldn't
  * run at all (server down, permission denied, no output).
  *
- * For the few facts an app is not allowed to read itself — the SELinux status lives in
+ * For the few facts an app is not allowed to read itself the SELinux status lives in
  * selinuxfs, which is world-readable on disk but denied to app domains by policy.
  */
 fun runShellCommand(cmd: String): String? {

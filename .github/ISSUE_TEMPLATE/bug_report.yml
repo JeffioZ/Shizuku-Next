@@ -10,7 +10,7 @@ body:
       options:
         - label: I am reporting an issue with Shizuku itself, NOT an issue about compatibility with another app
           required: true
-        - label: I read the [wiki](https://github.com/thedjchi/Shizuku/wiki#troubleshooting) (the upstream wiki — it documents the behaviour this fork inherits) and followed all relevant troubleshooting steps
+        - label: I read the [wiki](https://github.com/thedjchi/Shizuku/wiki#troubleshooting) (the upstream wiki it documents the behaviour this fork inherits) and followed all relevant troubleshooting steps
           required: true
         - label: I searched through all [issues](https://github.com/rushiranpise/Shizuku-Next/issues) and confirmed that this is a new bug
           required: true

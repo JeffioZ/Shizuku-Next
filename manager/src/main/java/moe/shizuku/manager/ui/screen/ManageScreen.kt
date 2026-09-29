@@ -84,7 +84,7 @@ enum class ManageFilter {
     DISABLED,
 
     /**
-     * Apps with no launcher entry, so they never appear in the app drawer — services,
+     * Apps with no launcher entry, so they never appear in the app drawer services,
      * system pieces and background components. The same meaning the Apps tab gives it.
      */
     HIDDEN
@@ -92,7 +92,7 @@ enum class ManageFilter {
 
 /**
  * The Manage tab: every installed app, and behind each one the things that are normally
- * only reachable from a computer — system permissions, app ops, run state and battery
+ * only reachable from a computer system permissions, app ops, run state and battery
  * policy.
  *
  * Unlike the Apps tab this list is read straight from the local package manager, so it
@@ -129,7 +129,7 @@ fun ManageScreen(bottomPadding: Dp) {
     }
 
     // An app that is no longer installed keeps its row but has no application record, so it
-    // belongs to neither half — it stays reachable through All, where its row says so.
+    // belongs to neither half it stays reachable through All, where its row says so.
     val systemPackages = remember(apps) {
         apps.filter { (it.applicationInfo?.flags ?: 0) and ApplicationInfo.FLAG_SYSTEM != 0 }
             .map { it.packageName }.toSet()
@@ -236,7 +236,7 @@ fun ManageScreen(bottomPadding: Dp) {
         )
 
         // Five filters no longer fit as one row of equal-width chips on a phone, and
-        // shrinking the labels to make them fit is how a label ends up cut in half — so
+        // shrinking the labels to make them fit is how a label ends up cut in half so
         // this row scrolls instead, and each chip takes the width its own text needs.
         Row(
             modifier = Modifier
@@ -317,7 +317,7 @@ fun ManageScreen(bottomPadding: Dp) {
                         SegmentedListItem(
                             modifier = Modifier.clickable { openPackage = pi.packageName },
                             leadingContent = {
-                                // A removed app has no icon to load — the row keeps the
+                                // A removed app has no icon to load the row keeps the
                                 // space so the labels stay aligned with the rest.
                                 if (removed) Box(modifier = Modifier.padding(20.dp)) else AppIcon(pi)
                             },

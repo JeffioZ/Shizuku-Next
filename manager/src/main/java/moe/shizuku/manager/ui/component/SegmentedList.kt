@@ -61,7 +61,7 @@ fun SegmentedColumn(
 }
 
 /**
- * One rounded card around a single row, for lists where every entry is its own card —
+ * One rounded card around a single row, for lists where every entry is its own card 
  * the app list, where a flat run of rows reads as one undifferentiated block.
  *
  * Same surface and outline as [SegmentedColumn], so the two kinds of list sit together

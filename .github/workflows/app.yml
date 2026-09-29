@@ -44,7 +44,7 @@ jobs:
           fetch-depth: 0
 
       # build.gradle's version is what names the APK, the tag and the release title, so it
-      # is bumped here — before the build — and not after the release, where the built APK
+      # is bumped here before the build and not after the release, where the built APK
       # would already carry the old number and disagree with everything else.
       - name: Bump Version
         id: bumpVersion

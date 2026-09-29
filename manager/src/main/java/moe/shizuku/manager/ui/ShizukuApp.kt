@@ -115,7 +115,7 @@ private val tabs = listOf(
 fun ShizukuApp() {
     ShizukuTheme {
         // Detail screens are shown outside the Scaffold, so wrap everything in a
-        // Surface — otherwise LocalContentColor falls back to black and plain
+        // Surface otherwise LocalContentColor falls back to black and plain
         // Text becomes unreadable in dark themes.
         Surface(
             modifier = Modifier.fillMaxSize(),
@@ -241,7 +241,7 @@ private fun MainTabs(
 
         // The bar's own band, and the fade the pages run into. It is drawn here rather than
         // by the pages for two reasons: it leaves with the bar, and it is already there
-        // before a page has scrolled — a long list sitting at its top still has rows under
+        // before a page has scrolled a long list sitting at its top still has rows under
         // the bar, which a scrim that waited for a scroll would leave with a hard edge.
         // A gradient and not a blur: blurring a scrolling page means drawing it into an
         // offscreen layer and re-blurring it every frame.

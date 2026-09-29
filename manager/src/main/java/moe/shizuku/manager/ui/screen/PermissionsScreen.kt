@@ -66,8 +66,8 @@ import rikka.core.util.ClipboardUtils
  * Everything this app is not allowed to do until the user (or adb) says so, and whether each
  * one is currently allowed.
  *
- * Kept in one place because the states are spread across three different mechanisms — runtime
- * permissions, an adb-only permission, and the battery whitelist — and the app used to ask
+ * Kept in one place because the states are spread across three different mechanisms runtime
+ * permissions, an adb-only permission, and the battery whitelist and the app used to ask
  * for them at the moment they were needed, from whatever screen happened to trigger it. The
  * battery row moved here from settings for the same reason: it is the same question.
  */
@@ -237,7 +237,7 @@ fun PermissionsScreen(onBack: () -> Unit) {
  * One required permission: what it is for, whether it is allowed, and how to change that.
  *
  * Laid out by hand rather than with a list item, because these reasons run to several
- * lines and a list item puts its trailing content at the top of a tall row — the state
+ * lines and a list item puts its trailing content at the top of a tall row the state
  * ended up level with the headline while the text carried on below it, which read as a
  * label for the paragraph rather than the answer for the row.
  */

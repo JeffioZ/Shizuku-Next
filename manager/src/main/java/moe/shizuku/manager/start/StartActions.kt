@@ -13,7 +13,7 @@ import moe.shizuku.manager.utils.EnvironmentUtils
  * it, so the user doesn't have to go and run a command on a computer.
  *
  * The port can only be created over a live connection and the only one the app can
- * raise by itself is the wireless one, which needs Wi-Fi — so when there is no network
+ * raise by itself is the wireless one, which needs Wi-Fi so when there is no network
  * this reports back with the Wi-Fi kind, which turns the card's action into "Connect"
  * and leaves the user one tap from the actual fix.
  */
@@ -45,7 +45,7 @@ suspend fun openAdbPortAndStart(context: Context) {
         !EnvironmentUtils.isWifiConnected() ->
             StartStatusReporter.failed(message, StartFailureKind.WIFI)
 
-        // Wi-Fi is there and it still didn't work — offer the same fix again.
+        // Wi-Fi is there and it still didn't work offer the same fix again.
         else -> StartStatusReporter.failed(message, StartFailureKind.PORT)
     }
 }

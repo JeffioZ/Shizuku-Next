@@ -20,7 +20,7 @@ class MainActivity : ComponentActivity() {
 
     /**
      * Starting Shizuku is announced in a notification, which also carries the buttons to
-     * retry or cancel the attempt — but on Android 13+ the app has to ask for the
+     * retry or cancel the attempt but on Android 13+ the app has to ask for the
      * notification permission at runtime, or none of it is ever shown.
      */
     private val notificationPermission =

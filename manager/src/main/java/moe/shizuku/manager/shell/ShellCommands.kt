@@ -13,7 +13,7 @@ data class LibraryCommand(
  *
  * Written for this fork rather than taken from anywhere: the shell app this is modelled on is
  * GPL-3.0 and this project is not, so its list could not come across even if the wording had
- * been rewritten wholesale. The coverage is our own judgement — the package manager, the
+ * been rewritten wholesale. The coverage is our own judgement the package manager, the
  * activity manager, `cmd`, `settings`, `app ops`, input, display, network, battery, files and
  * the facts that are only readable through the shell.
  *

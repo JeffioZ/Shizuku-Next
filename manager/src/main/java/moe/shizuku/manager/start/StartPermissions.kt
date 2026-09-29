@@ -42,7 +42,7 @@ fun Context.hasPermission(permission: String): Boolean =
     checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
 
 /**
- * Whether a start over [method] is going to need local-network discovery — and so the
+ * Whether a start over [method] is going to need local-network discovery and so the
  * permission above. A wireless start discovers the TLS port; a USB start only needs that
  * discovery when the classic port is closed and it has to borrow a connection to open it.
  */
@@ -54,7 +54,7 @@ fun Context.needsLocalNetworkPermissionFor(@ShizukuSettings.StartMethod method: 
 }
 
 /**
- * True when the system won't put the request dialog up for [permission] again — the user
+ * True when the system won't put the request dialog up for [permission] again the user
  * answered "don't ask again", or denied it twice, which Android treats the same way.
  *
  * Only ask this *after* a request came back denied, because before the first request the
@@ -94,7 +94,7 @@ fun Context.isWirelessDebuggingEnabled(): Boolean =
  *
  * Only the wireless flow ever does: it may have to switch wireless debugging on, and the
  * TLS port isn't advertised without it. USB and the classic ADB port need nothing of the
- * sort, and neither does a wireless start where the toggle is already on — so those
+ * sort, and neither does a wireless start where the toggle is already on so those
  * shouldn't be held up for a permission they won't use.
  */
 fun Context.needsWriteSecureSettingsFor(@ShizukuSettings.StartMethod startMethod: Int): Boolean =
@@ -103,8 +103,8 @@ fun Context.needsWriteSecureSettingsFor(@ShizukuSettings.StartMethod startMethod
 /**
  * Writes a global setting, and shrugs when the app isn't allowed to.
  *
- * Every one of these writes is a nudge to adbd — switch a debugging toggle on, or bounce
- * it so it re-announces itself — and without WRITE_SECURE_SETTINGS the settings provider
+ * Every one of these writes is a nudge to adbd switch a debugging toggle on, or bounce
+ * it so it re-announces itself and without WRITE_SECURE_SETTINGS the settings provider
  * *throws* instead of ignoring it. That used to take the whole start down with it, and the
  * SecurityException was then reported as "network not authorized, re-pair the device",
  * which is nowhere near what happened. A denied nudge should fail the nudge, nothing more.
@@ -131,7 +131,7 @@ private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
  * Grants us WRITE_SECURE_SETTINGS through the already running server.
  *
  * The permission can only be handed out over ADB, which used to mean every fresh install
- * — and every install after a re-signed update — needed a computer before wireless
+ * and every install after a re-signed update needed a computer before wireless
  * debugging could be switched on. A running server *is* ADB (or root), so it can pass the
  * permission on the same way `pm grant` does, and the user never has to run that command.
  *

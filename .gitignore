@@ -13,7 +13,7 @@
 /signing.properties
 /.kotlin
 
-# Release signing material — never commit these.
+# Release signing material never commit these.
 /key.jks
 *.jks
 *.keystore

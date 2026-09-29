@@ -129,7 +129,7 @@ private const val MAX_HISTORY = 100
  * One of the commands the shell offers, which are the ones the manager already runs itself.
  *
  * [insertOnly] is the split that matters: something that only reads the device can be run by
- * a tap, and something that changes it cannot — `pm grant` needs a package and a permission,
+ * a tap, and something that changes it cannot `pm grant` needs a package and a permission,
  * and a chip that fired it half-written would be a trap. Those write their command into the
  * input instead, so what runs is what you can read.
  */
@@ -159,8 +159,8 @@ private val QUICK = listOf(
 /**
  * The shell, in the app rather than in a terminal app.
  *
- * Every command is its own process — see [ShellSession] for why a real tty is not on offer
- * here — with the working directory and anything exported to `export` carried from one to the
+ * Every command is its own process see [ShellSession] for why a real tty is not on offer
+ * here with the working directory and anything exported to `export` carried from one to the
  * next, so it reads like a session even though nothing outlives a command. Two backends, and
  * the same screen for both: through Shizuku (whatever uid the server runs as: 2000 over adb,
  * 0 with root, 1000 with the exploit) or through `su`, which works with Shizuku stopped.
@@ -181,7 +181,7 @@ fun ShellScreen(onBack: () -> Unit) {
 
     // A TextFieldValue rather than a plain String, for one reason: a chip that fills the
     // input has to leave the caret at the end of what it wrote. With a String the caret
-    // stayed where it was — at the start of an empty field — so the rest of the command was
+    // stayed where it was at the start of an empty field so the rest of the command was
     // typed in front of the template ("com.foo pm grant").
     var field by rememberSaveable(stateSaver = TextFieldValue.Saver) {
         mutableStateOf(TextFieldValue(""))
@@ -634,7 +634,7 @@ fun ShellScreen(onBack: () -> Unit) {
         }
 
         Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
-            // Selectable, so one line — or part of one — can be copied without taking the lot.
+            // Selectable, so one line or part of one can be copied without taking the lot.
             SelectionContainer {
                 LazyColumn(
                     state = listState,
@@ -661,7 +661,7 @@ fun ShellScreen(onBack: () -> Unit) {
         // One row with two jobs, at the same height either way so starting to type does not
         // move the log under the reader's eyes: the quick commands when nothing is typed, and
         // suggestions for what is being typed once there is. The saved commands lead the row in
-        // both — a row that lost its way into them the moment something was typed would hide
+        // both a row that lost its way into them the moment something was typed would hide
         // the very command that was just saved.
         // The tools give the log the whole screen when it is expanded: an output worth
         // searching is an output worth reading without a chip row in the way.
@@ -994,7 +994,7 @@ fun ShellScreen(onBack: () -> Unit) {
 
 /**
  * One suggestion, as a small card: what tapping it writes, and what it is. The second line is
- * what makes it usable — `Greenify` and `com.oasisfeng.greenify` are the same thing only once
+ * what makes it usable `Greenify` and `com.oasisfeng.greenify` are the same thing only once
  * you have seen both, and `CAMERA` is only the end of a permission nobody types out in full.
  */
 /** A name for a saved output that sorts by when it was taken and says what made it. */
