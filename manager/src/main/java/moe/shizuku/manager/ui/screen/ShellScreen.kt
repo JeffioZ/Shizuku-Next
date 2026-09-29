@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -47,11 +48,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import android.content.pm.PackageInfo
+import android.content.pm.PackageManager
 import androidx.annotation.StringRes
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.TextButton
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -61,6 +72,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -68,6 +80,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import moe.shizuku.manager.R
 import moe.shizuku.manager.shell.ShellBackend
+import moe.shizuku.manager.ui.component.AppIcon
+import moe.shizuku.manager.ui.component.appLabel
 import moe.shizuku.manager.shell.ShellLine
 import moe.shizuku.manager.shell.ShellSession
 import moe.shizuku.manager.utils.EnvironmentUtils
@@ -90,7 +104,13 @@ private const val MAX_HISTORY = 100
 private data class QuickCommand(
     @StringRes val label: Int,
     val command: String,
-    val insertOnly: Boolean = false
+    val insertOnly: Boolean = false,
+    /**
+     * Whether a package alone finishes the command. Nothing here is complete on a package
+     * except force stop: the rest take an argument after it, and the space left behind is
+     * where that argument goes.
+     */
+    val needsArgument: Boolean = true
 )
 
 private val QUICK = listOf(
@@ -101,7 +121,7 @@ private val QUICK = listOf(
     QuickCommand(R.string.shell_quick_grant, "pm grant ", insertOnly = true),
     QuickCommand(R.string.shell_quick_revoke, "pm revoke ", insertOnly = true),
     QuickCommand(R.string.shell_quick_app_ops, "cmd appops set ", insertOnly = true),
-    QuickCommand(R.string.shell_quick_force_stop, "am force-stop ", insertOnly = true)
+    QuickCommand(R.string.shell_quick_force_stop, "am force-stop ", insertOnly = true, needsArgument = false)
 )
 
 /**
@@ -140,6 +160,9 @@ fun ShellScreen(onBack: () -> Unit) {
     // A chip that fills the input leaves the cursor in it, so the command can be finished
     // without reaching for the field again.
     val focus = remember { FocusRequester() }
+    // A chip that needs an app to act on asks for one, rather than handing over a template
+    // with a hole where the package goes.
+    var pickFor by remember { mutableStateOf<QuickCommand?>(null) }
     var rootAvailable by remember { mutableStateOf<Boolean?>(null) }
     var uid by remember { mutableIntStateOf(-1) }
     val history = remember { mutableStateListOf<String>() }
@@ -231,6 +254,20 @@ fun ShellScreen(onBack: () -> Unit) {
             }
             running = false
         }
+    }
+
+    /**
+     * Fills the input from a chip and a picked package: the template, the package, and the
+     * space the next argument goes in, with the caret after it.
+     */
+    fun fillFromChip(quick: QuickCommand, packageName: String) {
+        val filled = buildString {
+            append(quick.command)
+            append(packageName)
+            if (quick.needsArgument) append(' ')
+        }
+        field = TextFieldValue(filled, TextRange(filled.length))
+        focus.requestFocus()
     }
 
     fun recall(direction: Int) {
@@ -390,8 +427,7 @@ fun ShellScreen(onBack: () -> Unit) {
                 AssistChip(
                     onClick = {
                         if (quick.insertOnly) {
-                            field = TextFieldValue(quick.command, TextRange(quick.command.length))
-                            focus.requestFocus()
+                            pickFor = quick
                         } else {
                             submit(quick.command)
                         }
@@ -459,4 +495,109 @@ fun ShellScreen(onBack: () -> Unit) {
             }
         }
     }
+
+    pickFor?.let { quick ->
+        PackagePickerDialog(
+            title = stringResource(quick.label),
+            onDismiss = { pickFor = null }
+        ) { packageName ->
+            pickFor = null
+            fillFromChip(quick, packageName)
+        }
+    }
+}
+
+/**
+ * The app a chip is about to act on.
+ *
+ * Read straight from the local package manager, so it needs no server and lists what is
+ * installed rather than what has asked Shizuku for anything. Search is by label or package
+ * name, which is why it sits above a list of every app on the device.
+ */
+@Composable
+private fun PackagePickerDialog(
+    title: String,
+    onDismiss: () -> Unit,
+    onPick: (String) -> Unit
+) {
+    val context = LocalContext.current
+    val pm = context.packageManager
+    var apps by remember { mutableStateOf<List<PackageInfo>>(emptyList()) }
+    var query by remember { mutableStateOf("") }
+    var loading by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        apps = withContext(Dispatchers.IO) {
+            runCatching {
+                @Suppress("DEPRECATION")
+                pm.getInstalledPackages(0)
+            }.getOrDefault(emptyList()).sortedBy { appLabel(pm, it).lowercase() }
+        }
+        loading = false
+    }
+
+    val shown = remember(apps, query) {
+        val q = query.trim()
+        if (q.isEmpty()) {
+            apps
+        } else {
+            apps.filter {
+                appLabel(pm, it).contains(q, ignoreCase = true) ||
+                    it.packageName.contains(q, ignoreCase = true)
+            }
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text(stringResource(R.string.manage_search_hint)) },
+                    singleLine = true
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                when {
+                    loading -> Box(
+                        modifier = Modifier.fillMaxWidth().height(120.dp),
+                        contentAlignment = Alignment.Center
+                    ) { CircularProgressIndicator() }
+
+                    shown.isEmpty() -> Text(
+                        stringResource(R.string.apps_no_match),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 24.dp)
+                    )
+
+                    else -> LazyColumn(modifier = Modifier.heightIn(max = 420.dp)) {
+                        items(shown, key = { it.packageName }) { pi ->
+                            ListItem(
+                                modifier = Modifier.clickable { onPick(pi.packageName) },
+                                leadingContent = { AppIcon(pi) },
+                                headlineContent = { Text(appLabel(pm, pi)) },
+                                supportingContent = {
+                                    Text(
+                                        pi.packageName,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                },
+                                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        // Picking an app is the whole answer, so there is nothing left to confirm.
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(android.R.string.cancel)) }
+        }
+    )
 }

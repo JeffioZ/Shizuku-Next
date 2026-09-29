@@ -1,6 +1,7 @@
 package moe.shizuku.manager.ui.component
 
 import android.content.pm.PackageInfo
+import android.content.pm.PackageManager
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -40,10 +41,17 @@ import kotlinx.coroutines.withContext
 
 /**
  * The pictures the two app screens share: a filter chip that carries its own count, the
- * count badge inside it, app icons, and the centred block the empty states are built from.
- * They live here rather than in either screen because Apps and Manage are the same list
- * about different questions, and they should not drift apart.
+ * count badge inside it, app icons, the state chip and the centred block the empty states
+ * are built from. They live here rather than in either screen because Apps and Manage are
+ * the same list about different questions, and they should not drift apart.
  */
+
+/** The label, or the package name when there is no application record to read one from. */
+fun appLabel(pm: PackageManager, pi: PackageInfo): String =
+    runCatching { pi.applicationInfo?.loadLabel(pm)?.toString() }
+        .getOrNull()
+        ?.takeIf { it.isNotBlank() }
+        ?: pi.packageName
 
 /**
  * One filter, sized to its share of the row rather than to its label, with its label and how

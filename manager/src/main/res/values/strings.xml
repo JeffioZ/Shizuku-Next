@@ -410,7 +410,7 @@
     <string name="manage_filter_hidden">Hidden</string>
     <string name="manage_filter_empty">Nothing in this filter.</string>
     <string name="manage_empty">No apps found.</string>
-    <string name="manage_status_system">System app</string>
+    <string name="manage_status_system">System</string>
     <string name="manage_status_removed">Removed, data kept</string>
     <string name="manage_status_disabled">Disabled</string>
     <string name="manage_status_suspended">Suspended</string>

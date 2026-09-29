@@ -59,6 +59,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ui.component.AppFilterChip
+import moe.shizuku.manager.ui.component.appLabel
 import moe.shizuku.manager.ui.component.AppIcon
 import moe.shizuku.manager.ui.component.CenteredMessage
 import moe.shizuku.manager.ui.component.ChipEmphasis
@@ -186,14 +187,14 @@ fun ManageScreen(bottomPadding: Dp) {
             byFilter
         } else {
             byFilter.filter {
-                labelOf(pm, it).contains(trimmed, ignoreCase = true) ||
+                appLabel(pm, it).contains(trimmed, ignoreCase = true) ||
                     it.packageName.contains(trimmed, ignoreCase = true)
             }
         }
         when (sortOrder) {
             SortOrder.RECENTLY_INSTALLED -> filtered.sortedByDescending { it.firstInstallTime }
             SortOrder.RECENTLY_UPDATED -> filtered.sortedByDescending { it.lastUpdateTime }
-            SortOrder.ALPHABETICAL -> filtered.sortedBy { labelOf(pm, it).lowercase() }
+            SortOrder.ALPHABETICAL -> filtered.sortedBy { appLabel(pm, it).lowercase() }
         }
     }
 
@@ -320,7 +321,7 @@ fun ManageScreen(bottomPadding: Dp) {
                                 // space so the labels stay aligned with the rest.
                                 if (removed) Box(modifier = Modifier.padding(20.dp)) else AppIcon(pi)
                             },
-                            headlineContent = { Text(labelOf(pm, pi)) },
+                            headlineContent = { Text(appLabel(pm, pi)) },
                             // The package name is the whole line, and it ellipsises rather than
                             // being cut, because nothing follows it any more.
                             supportingContent = {
@@ -385,10 +386,3 @@ fun ManageScreen(bottomPadding: Dp) {
         }
     }
 }
-
-/** The label, or the package name when there is no application to ask. */
-internal fun labelOf(pm: PackageManager, pi: PackageInfo): String =
-    runCatching { pi.applicationInfo?.loadLabel(pm)?.toString() }
-        .getOrNull()
-        ?.takeIf { it.isNotBlank() }
-        ?: pi.packageName
