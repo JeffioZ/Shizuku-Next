@@ -186,6 +186,11 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 }
 
                 fun handleAuth() {
+                    // Only once: this is called again every time the setting changes, and
+                    // the experiment below makes it change over and over. A second call
+                    // would post the same "waiting for unlock" notification again and
+                    // leave another receiver behind.
+                    if (unlockReceiver != null) return
                     val km = applicationContext.getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
                     if (km.isKeyguardLocked) {
                         val notification = ShizukuReceiverStarter.buildNotification(
@@ -221,7 +226,13 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 val observer = object : ContentObserver(null) {
                     override fun onChange(selfChange: Boolean) {
                         when (Settings.Global.getInt(cr, "adb_wifi_enabled", 0)) {
-                            0 -> if (awaitingAuth) {
+                            // Reading 0 is the framework refusing the setting again, which
+                            // is precisely the state the experiment is asking it out of, so
+                            // it must not end the attempt: closing here killed the whole
+                            // thing about a second in, before the hotspot was up or the
+                            // writes had a chance, and the result was a start that only
+                            // ever said it was waiting.
+                            0 -> if (awaitingAuth && !forcedWireless) {
                                 close(SecurityException("Network is not authorized for wireless debugging"))
                             } else handleAuth()
                             1 -> startDiscoveryWithTimeout()
@@ -414,7 +425,8 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             // an answer now instead of a job that sits there.
             val needsNetwork = StartTransport.wifiRequired(
                 EnvironmentUtils.getAdbTcpPort(),
-                ShizukuSettings.getTcpMode()
+                ShizukuSettings.getTcpMode(),
+                ShizukuSettings.getForceWirelessDebugging()
             )
             if (needsNetwork && !immediate)
                 cb.setRequiredNetworkType(NetworkType.UNMETERED)

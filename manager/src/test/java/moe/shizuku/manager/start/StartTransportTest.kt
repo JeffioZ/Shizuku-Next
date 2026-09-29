@@ -38,4 +38,11 @@ class StartTransportTest {
         assertNull(StartTransport.classicPortFallback(-1))
         assertNull(StartTransport.classicPortFallback(0))
     }
+
+    @Test
+    fun `the experiment does not wait for a network either`() {
+        // Waiting would gate the start the setting exists to make possible.
+        assertFalse(StartTransport.wifiRequired(tcpPort = -1, tcpMode = false, forceWireless = true))
+        assertFalse(StartTransport.wifiRequired(tcpPort = 5555, tcpMode = false, forceWireless = true))
+    }
 }

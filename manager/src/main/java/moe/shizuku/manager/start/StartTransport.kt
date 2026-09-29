@@ -12,8 +12,15 @@ package moe.shizuku.manager.start
  */
 object StartTransport {
 
-    /** Whether a start has to wait for a network before it can reach the TLS port. */
-    fun wifiRequired(tcpPort: Int, tcpMode: Boolean): Boolean = tcpPort <= 0 || !tcpMode
+    /**
+     * Whether a start has to wait for a network before it can reach the TLS port.
+     *
+     * [forceWireless] is the experimental setting that asks for wireless debugging
+     * without a network at all: waiting for one would gate the exact start it exists to
+     * make possible, which is why it overrides everything else here.
+     */
+    fun wifiRequired(tcpPort: Int, tcpMode: Boolean, forceWireless: Boolean = false): Boolean =
+        !forceWireless && (tcpPort <= 0 || !tcpMode)
 
     /**
      * The port to use when discovery over mDNS has found nothing, or null when there is

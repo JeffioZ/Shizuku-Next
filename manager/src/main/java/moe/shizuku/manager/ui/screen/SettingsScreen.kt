@@ -299,9 +299,25 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                                 Text(stringResource(R.string.settings_force_wireless_debugging_summary))
                             },
                             trailingContent = {
-                                Switch(checked = forceWireless, onCheckedChange = {
-                                    ShizukuSettings.setForceWirelessDebugging(it)
-                                    forceWireless = it
+                                Switch(checked = forceWireless, onCheckedChange = { checked ->
+                                    // The two settings this one cannot work with are turned
+                                    // off along with it, and both are rows in this same
+                                    // list, so nothing moves out of sight: waiting for a
+                                    // network is the thing the attempt is trying to start
+                                    // without, and turning wireless debugging off when
+                                    // Shizuku stops would undo it on the way out.
+                                    if (checked) {
+                                        ShizukuSettings.setWaitForWifi(false)
+                                        waitForWifi = false
+                                        ShizukuSettings.getPreferences().edit()
+                                            .putBoolean(
+                                                ShizukuSettings.Keys.KEY_AUTO_DISABLE_WIRELESS_DEBUGGING,
+                                                false
+                                            ).apply()
+                                        autoDisableWireless = false
+                                    }
+                                    ShizukuSettings.setForceWirelessDebugging(checked)
+                                    forceWireless = checked
                                 })
                             }
                         )

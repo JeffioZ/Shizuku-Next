@@ -48,8 +48,6 @@ object ForcedWirelessDebugging {
     /** How long a start will keep asking before it carries on without. */
     private const val WINDOW_MS = 25_000L
 
-    /** How long to try without an interface before bringing the hotspot up. */
-    private const val HOTSPOT_AFTER_MS = 3_000L
     private const val HOTSPOT_TIMEOUT_MS = 12_000L
 
     @Volatile
@@ -68,11 +66,23 @@ object ForcedWirelessDebugging {
         log: (String) -> Unit = {}
     ) = withContext(Dispatchers.IO) {
         val cr = context.contentResolver
-        val startedAt = System.currentTimeMillis()
-        val deadline = startedAt + WINDOW_MS
-        var attempts = 0
 
-        repeat(BURST_COUNT) {
+        // The interface comes first. On some devices a hotspot is all it takes for the
+        // framework to leave wireless debugging alone, and on the rest it is what lets the
+        // daemon keep its port, so there is nothing to gain by spending the first seconds
+        // of an attempt that may be short asking without one.
+        startHotspot(context, log)
+
+        if (!ask(cr)) {
+            log("the wireless debugging setting could not be written")
+            return@withContext
+        }
+        log("asking for wireless debugging")
+
+        val deadline = System.currentTimeMillis() + WINDOW_MS
+        var attempts = 1
+
+        repeat(BURST_COUNT - 1) {
             if (!isActive) return@withContext
             ask(cr)
             attempts++
@@ -82,10 +92,6 @@ object ForcedWirelessDebugging {
         while (isActive && System.currentTimeMillis() < deadline) {
             ask(cr)
             attempts++
-            if (reservation == null && System.currentTimeMillis() - startedAt >= HOTSPOT_AFTER_MS) {
-                log("wireless debugging is not being kept on; bringing up a local-only hotspot")
-                startHotspot(context, log)
-            }
             delay(INTERVAL_MS)
         }
 
@@ -105,11 +111,11 @@ object ForcedWirelessDebugging {
 
     fun isHotspotRunning(): Boolean = reservation != null
 
-    private fun ask(cr: ContentResolver) {
-        // Best effort: without WRITE_SECURE_SETTINGS there is nothing to ask with, and a
-        // start must not fail because this experiment could not run.
+    /** Whether the write was allowed at all. Without it there is nothing to keep asking. */
+    private fun ask(cr: ContentResolver): Boolean =
         runCatching { Settings.Global.putInt(cr, KEY_WIFI_ENABLED, 1) }
-    }
+            .onFailure { Log.w(AppConstants.TAG, "Could not ask for wireless debugging", it) }
+            .isSuccess
 
     /**
      * A local-only hotspot brings an interface up without touching the user's own

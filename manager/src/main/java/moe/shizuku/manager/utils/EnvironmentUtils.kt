@@ -38,8 +38,11 @@ object EnvironmentUtils {
     }
 
     /** Whether a start has to wait for a network before it can reach the TLS port. */
-    fun isWifiRequired(): Boolean =
-        StartTransport.wifiRequired(getAdbTcpPort(), ShizukuSettings.getTcpMode())
+    fun isWifiRequired(): Boolean = StartTransport.wifiRequired(
+        getAdbTcpPort(),
+        ShizukuSettings.getTcpMode(),
+        ShizukuSettings.getForceWirelessDebugging()
+    )
 
     fun isRooted(): Boolean {
         return Shell.getShell().isRoot
