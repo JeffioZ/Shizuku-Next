@@ -16,8 +16,8 @@ class BootCompleteReceiver : BroadcastReceiver() {
         // back before anything tries to use them.
         reapplyAdbWithoutDeveloperOptionsIfEnabled(context)
 
-        // The receiver is enabled by either setting now, so ask before starting: it used to
-        // be enabled only alongside start on boot, which made the component the pref.
+        // The receiver is enabled by either start on boot or ADB without Developer options,
+        // so its presence says nothing about this setting; ask the setting itself.
         if (ShizukuSettings.getStartOnBoot(context)) ShizukuReceiverStarter.start(context)
         if (ShizukuSettings.getWatchdog()) WatchdogService.start(context)
     }

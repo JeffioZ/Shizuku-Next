@@ -197,10 +197,15 @@ public class ShizukuSettings {
         return token;
     }
 
+    /**
+     * Whether the user asked for a start after a reboot.
+     *
+     * This is the stored setting, not the state of [BootCompleteReceiver]: the receiver is
+     * shared with "ADB without Developer options", so reading the component back made the
+     * setting unable to turn itself on - the write asked whether it was already enabled.
+     */
     public static boolean getStartOnBoot(Context context) {
-        ComponentName bootCompleteReceiver = new ComponentName(context.getPackageName(), BootCompleteReceiver.class.getName());
-        int state = context.getPackageManager().getComponentEnabledSetting(bootCompleteReceiver);
-        return state == PackageManager.COMPONENT_ENABLED_STATE_ENABLED;
+        return getPreferences().getBoolean(Keys.KEY_START_ON_BOOT, false);
     }
 
     public static void setStartOnBoot(Context context, boolean enable) {
@@ -224,8 +229,12 @@ public class ShizukuSettings {
         updateBootReceiver(context);
     }
 
-    /** The receiver is needed by either setting, so it follows both of them. */
-    private static void updateBootReceiver(Context context) {
+    /**
+     * The receiver is needed by either setting, so it follows both of them. This also runs on
+     * every app start: installs written while the setting read the component back have the
+     * preference on but the receiver still disabled, and this puts them right again.
+     */
+    public static void updateBootReceiver(Context context) {
         boolean needed = getStartOnBoot(context) || getAdbWithoutDeveloperOptions();
         ComponentName bootCompleteReceiver = new ComponentName(context.getPackageName(), BootCompleteReceiver.class.getName());
         context.getPackageManager().setComponentEnabledSetting(

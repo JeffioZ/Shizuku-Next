@@ -40,6 +40,10 @@ class ShizukuApplication : Application() {
 
     private fun init(context: Context) {
         ShizukuSettings.initialize(context)
+        // The preference is the source of truth, so re-apply it to the boot receiver here:
+        // installs from before this read the component back and can be stuck disabled with
+        // start on boot switched on.
+        ShizukuSettings.updateBootReceiver(context)
         LocaleDelegate.defaultLocale = ShizukuSettings.getLocale()
         AppCompatDelegate.setDefaultNightMode(ShizukuSettings.getNightMode())
 
