@@ -370,6 +370,7 @@
     <string name="shell_quick_revoke">Revoke permission</string>
     <string name="shell_quick_app_ops">App op</string>
     <string name="shell_quick_force_stop">Force stop</string>
+    <string name="shell_adb_prefix_dropped">Ran on the device: the adb prefix is what you would type on a computer.</string>
     <string name="shell_input_hint">Command</string>
     <string name="shell_run">Run</string>
     <string name="shell_stop">Stop</string>

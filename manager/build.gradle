@@ -30,6 +30,11 @@ android {
         compose = true
         prefab = true
     }
+    testOptions {
+        // The shell's suggestion rules are pure logic and are tested as such; this keeps the
+        // odd android.jar stub that gets touched from throwing instead of answering.
+        unitTests.returnDefaultValues = true
+    }
     signingConfigs {
         sign {}
     }
@@ -178,6 +183,11 @@ dependencies {
     implementation "com.materialkolor:material-kolor:3.0.1"
     implementation "androidx.compose.runtime:runtime-livedata"
     implementation "androidx.lifecycle:lifecycle-runtime-compose:2.9.0"
+
+    // The first tests in this module: the shell's suggestion rules turn on the shape of a word
+    // (`android.permission.C` and `com.fo` are told apart by their dots), which is exactly the
+    // sort of thing a device cannot confirm by having commands typed at it.
+    testImplementation "junit:junit:4.13.2"
     implementation "androidx.lifecycle:lifecycle-viewmodel-compose:2.9.0"
     debugImplementation "androidx.compose.ui:ui-tooling"
 

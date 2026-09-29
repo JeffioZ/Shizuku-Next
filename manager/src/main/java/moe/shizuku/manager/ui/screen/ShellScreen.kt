@@ -53,10 +53,12 @@ import android.content.pm.PackageManager
 import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -80,6 +82,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import moe.shizuku.manager.R
 import moe.shizuku.manager.shell.ShellBackend
+import moe.shizuku.manager.shell.ShellSuggestion
+import moe.shizuku.manager.shell.ShellSuggestions
 import moe.shizuku.manager.ui.component.AppIcon
 import moe.shizuku.manager.ui.component.appLabel
 import moe.shizuku.manager.shell.ShellLine
@@ -163,6 +167,13 @@ fun ShellScreen(onBack: () -> Unit) {
     // A chip that needs an app to act on asks for one, rather than handing over a template
     // with a hole where the package goes.
     var pickFor by remember { mutableStateOf<QuickCommand?>(null) }
+
+    // Read once, and shared: the suggestions offer these apps and their permissions, and the
+    // picker is the same list in a dialog.
+    var installed by remember { mutableStateOf<List<PackageInfo>>(emptyList()) }
+    val suggestions = remember(installed) {
+        ShellSuggestions.from(context.packageManager, installed)
+    }
     var rootAvailable by remember { mutableStateOf<Boolean?>(null) }
     var uid by remember { mutableIntStateOf(-1) }
     val history = remember { mutableStateListOf<String>() }
@@ -178,6 +189,12 @@ fun ShellScreen(onBack: () -> Unit) {
         // Probing root spawns a shell, so it happens once, off the main thread.
         rootAvailable = withContext(Dispatchers.IO) {
             runCatching { EnvironmentUtils.isRooted() }.getOrDefault(false)
+        }
+        installed = withContext(Dispatchers.IO) {
+            runCatching {
+                @Suppress("DEPRECATION")
+                context.packageManager.getInstalledPackages(PackageManager.GET_PERMISSIONS)
+            }.getOrDefault(emptyList())
         }
         uid = withContext(Dispatchers.IO) {
             runCatching { if (Shizuku.pingBinder()) Shizuku.getUid() else -1 }.getOrDefault(-1)
@@ -206,10 +223,17 @@ fun ShellScreen(onBack: () -> Unit) {
      * `cd`, which the shell resolves for us, and `export`, which has nothing to live in.
      */
     fun submit(raw: String) {
-        val command = raw.trim()
+        // `adb shell ls` is what a computer types, and it arrives here out of habit. The
+        // prefix is dropped and said out loud, because a command that ran somewhere other
+        // than where it looks like it ran is worth one line of honesty.
+        val inner = ShellSuggestions.withoutAdbPrefix(raw)
+        val command = (inner ?: raw).trim()
         if (command.isEmpty() || running) return
 
         field = TextFieldValue("")
+        if (inner != null) {
+            feed(ShellLine(context.getString(R.string.shell_adb_prefix_dropped), ShellLine.Kind.INFO))
+        }
         feed(ShellLine("$cwd $ $command", ShellLine.Kind.COMMAND))
         if (history.isEmpty() || history.last() != command) {
             history.add(command)
@@ -418,23 +442,52 @@ fun ShellScreen(onBack: () -> Unit) {
             }
         }
 
-        LazyRow(
-            modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(QUICK) { quick ->
-                AssistChip(
-                    onClick = {
-                        if (quick.insertOnly) {
-                            pickFor = quick
-                        } else {
-                            submit(quick.command)
-                        }
-                    },
-                    enabled = !running,
-                    label = { Text(stringResource(quick.label)) }
-                )
+        // One row, two jobs: the quick commands when there is nothing typed, and suggestions
+        // for what is being typed as soon as there is. Same height either way, so starting to
+        // type does not move the log under the reader's eyes.
+        Box(modifier = Modifier.fillMaxWidth().height(64.dp)) {
+            if (field.text.isBlank()) {
+                LazyRow(
+                    // CenterStart, not CenterVertically: this is a Box, and the row should
+                    // start at the left edge while it is centred in the row's height.
+                    modifier = Modifier.align(Alignment.CenterStart),
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(QUICK) { quick ->
+                        AssistChip(
+                            onClick = {
+                                if (quick.insertOnly) {
+                                    pickFor = quick
+                                } else {
+                                    submit(quick.command)
+                                }
+                            },
+                            enabled = !running,
+                            label = { Text(stringResource(quick.label)) }
+                        )
+                    }
+                }
+            } else {
+                val offered = remember(field.text, suggestions) {
+                    ShellSuggestions.forInput(field.text, suggestions)
+                }
+                LazyRow(
+                    modifier = Modifier.align(Alignment.CenterStart),
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(offered) { suggestion ->
+                        SuggestionCard(
+                            suggestion = suggestion,
+                            onClick = {
+                                val filled = ShellSuggestions.insertInto(field.text, suggestion.insert)
+                                field = TextFieldValue(filled, TextRange(filled.length))
+                                focus.requestFocus()
+                            }
+                        )
+                    }
+                }
             }
         }
 
@@ -499,10 +552,42 @@ fun ShellScreen(onBack: () -> Unit) {
     pickFor?.let { quick ->
         PackagePickerDialog(
             title = stringResource(quick.label),
+            installed = installed,
             onDismiss = { pickFor = null }
         ) { packageName ->
             pickFor = null
             fillFromChip(quick, packageName)
+        }
+    }
+}
+
+/**
+ * One suggestion, as a small card: what tapping it writes, and what it is. The second line is
+ * what makes it usable — `Greenify` and `com.oasisfeng.greenify` are the same thing only once
+ * you have seen both, and `CAMERA` is only the end of a permission nobody types out in full.
+ */
+@Composable
+private fun SuggestionCard(suggestion: ShellSuggestion, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        modifier = Modifier.widthIn(min = 148.dp, max = 288.dp)
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
+            Text(
+                suggestion.label,
+                style = MaterialTheme.typography.labelLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                suggestion.detail,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }
@@ -517,24 +602,15 @@ fun ShellScreen(onBack: () -> Unit) {
 @Composable
 private fun PackagePickerDialog(
     title: String,
+    installed: List<PackageInfo>,
     onDismiss: () -> Unit,
     onPick: (String) -> Unit
 ) {
     val context = LocalContext.current
     val pm = context.packageManager
-    var apps by remember { mutableStateOf<List<PackageInfo>>(emptyList()) }
     var query by remember { mutableStateOf("") }
-    var loading by remember { mutableStateOf(true) }
-
-    LaunchedEffect(Unit) {
-        apps = withContext(Dispatchers.IO) {
-            runCatching {
-                @Suppress("DEPRECATION")
-                pm.getInstalledPackages(0)
-            }.getOrDefault(emptyList()).sortedBy { appLabel(pm, it).lowercase() }
-        }
-        loading = false
-    }
+    val loading = installed.isEmpty()
+    val apps = remember(installed) { installed.sortedBy { appLabel(pm, it).lowercase() } }
 
     val shown = remember(apps, query) {
         val q = query.trim()
