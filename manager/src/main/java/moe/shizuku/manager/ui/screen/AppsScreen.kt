@@ -1,5 +1,6 @@
 package moe.shizuku.manager.ui.screen
 
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.Intent
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -58,6 +59,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
@@ -70,7 +72,9 @@ import moe.shizuku.manager.receiver.ShizukuReceiverStarter
 import moe.shizuku.manager.ui.component.AppFilterChip
 import moe.shizuku.manager.ui.component.AppIcon
 import moe.shizuku.manager.ui.component.CenteredMessage
+import moe.shizuku.manager.ui.component.ChipEmphasis
 import moe.shizuku.manager.ui.component.SegmentedCard
+import moe.shizuku.manager.ui.component.StatusChip
 import moe.shizuku.manager.utils.ShizukuStateMachine
 
 enum class SortOrder {
@@ -405,6 +409,20 @@ fun AppsScreen(bottomPadding: Dp) {
                 }
                 val isSelected = pi.packageName in selected
 
+                // The same chip the Manage tab uses, for the same reason: a state that is only
+                // knowable from the filter you happen to be on is a state nobody sees. One chip
+                // at a time, most actionable first, so a narrow row cannot end up crowded.
+                val flags = pi.applicationInfo!!.flags
+                val state = when {
+                    !pi.applicationInfo!!.enabled ->
+                        stringResource(R.string.manage_status_disabled) to ChipEmphasis.SOFT
+                    flags and ApplicationInfo.FLAG_SUSPENDED != 0 ->
+                        stringResource(R.string.manage_status_suspended) to ChipEmphasis.SOFT
+                    pi.packageName in launcherless ->
+                        stringResource(R.string.manage_status_hidden) to ChipEmphasis.NONE
+                    else -> null
+                }
+
                 SegmentedCard(
                     // A selected row tints its card, so a multi-select pass reads at a
                     // glance instead of needing the checkbox to be spotted each time.
@@ -441,24 +459,40 @@ fun AppsScreen(bottomPadding: Dp) {
                                 .getOrDefault(pi.packageName)
                         )
                     },
-                    supportingContent = { Text(pi.packageName) },
+                    // The package name is the whole line and ellipsises, because the chip and
+                    // the switch now share the row's right side.
+                    supportingContent = {
+                        Text(pi.packageName, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    },
                     trailingContent = {
-                        if (selectionMode) {
-                            Checkbox(checked = isSelected, onCheckedChange = null)
-                        } else {
-                            Switch(
-                                checked = granted,
-                                onCheckedChange = { checked ->
-                                    val result = runCatching {
-                                        if (checked) AuthorizationManager.grant(pi.packageName, uid)
-                                        else AuthorizationManager.revoke(pi.packageName, uid)
+                        // One Row, so the chip and the control sit beside each other rather than
+                        // on top of one another: the slot places what it is given as a single
+                        // child.
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (state != null) {
+                                StatusChip(
+                                    text = state.first,
+                                    emphasis = state.second,
+                                    modifier = Modifier.padding(end = 8.dp)
+                                )
+                            }
+                            if (selectionMode) {
+                                Checkbox(checked = isSelected, onCheckedChange = null)
+                            } else {
+                                Switch(
+                                    checked = granted,
+                                    onCheckedChange = { checked ->
+                                        val result = runCatching {
+                                            if (checked) AuthorizationManager.grant(pi.packageName, uid)
+                                            else AuthorizationManager.revoke(pi.packageName, uid)
+                                        }
+                                        if (result.exceptionOrNull() is SecurityException) {
+                                            permissionLimited = true
+                                        }
+                                        version++
                                     }
-                                    if (result.exceptionOrNull() is SecurityException) {
-                                        permissionLimited = true
-                                    }
-                                    version++
-                                }
-                            )
+                                )
+                            }
                         }
                     },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent)
