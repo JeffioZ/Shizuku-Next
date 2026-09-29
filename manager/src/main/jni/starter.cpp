@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <sys/system_properties.h>
 #include <cerrno>
+#include <cstdarg>
 #include <string>
 #include <termios.h>
 #include "android.h"
@@ -30,8 +31,26 @@
  * whole start is silent: the manager waits a minute for a binder, reports a timeout, and
  * nothing says whether this process even ran.
  */
-#define perrorf(...) do { fprintf(stderr, __VA_ARGS__); LOGE(__VA_ARGS__); } while (0)
-#define info(...) do { printf(__VA_ARGS__); LOGI(__VA_ARGS__); fflush(stdout); } while (0)
+static FILE *s_manager_log = nullptr;
+
+/** Writes one already formatted message to the manager's copy of this log, if it has one. */
+static void log_to_manager(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+
+static void log_to_manager(const char *fmt, ...) {
+    if (s_manager_log == nullptr) return;
+
+    va_list args;
+    va_start(args, fmt);
+    vfprintf(s_manager_log, fmt, args);
+    va_end(args);
+    fflush(s_manager_log);
+}
+
+// Every message goes to stdout, stderr and logcat as before, and a copy is written where
+// the manager can read it. It is a copy, not a redirection: the adb and root starts show
+// their progress through this process's stdout, and that has to keep working.
+#define perrorf(...) do { fprintf(stderr, __VA_ARGS__); LOGE(__VA_ARGS__); log_to_manager(__VA_ARGS__); } while (0)
+#define info(...) do { printf(__VA_ARGS__); LOGI(__VA_ARGS__); fflush(stdout); log_to_manager(__VA_ARGS__); } while (0)
 
 #define EXIT_FATAL_SET_CLASSPATH 3
 #define EXIT_FATAL_FORK 4
@@ -254,23 +273,31 @@ static std::string package_from_path(const char *path) {
  * be needed to find out what happened. Best effort: with no writable place, logcat is still
  * told everything.
  */
-static void redirect_log_to_manager(const char *manager_path) {
+static void open_manager_log(const char *manager_path) {
     std::string package = package_from_path(manager_path);
     if (package.empty()) return;
 
+    char dir[PATH_MAX];
+    snprintf(dir, sizeof(dir), "/storage/emulated/0/Android/data/%s", package.c_str());
+    // Both levels, because the app only creates this directory on first use and a missing
+    // one is exactly how a start ends up with nowhere to leave a log.
+    mkdir(dir, 0775);
+    strncat(dir, "/files", sizeof(dir) - strlen(dir) - 1);
+    mkdir(dir, 0775);
+
     char path[PATH_MAX];
-    snprintf(path, sizeof(path), "/storage/emulated/0/Android/data/%s/files/starter.log",
-             package.c_str());
+    snprintf(path, sizeof(path), "%s/starter.log", dir);
 
-    FILE *log = fopen(path, "w");
-    if (log == nullptr) {
-        log = fopen("/data/local/tmp/shizuku_starter.log", "w");
+    s_manager_log = fopen(path, "w");
+    if (s_manager_log == nullptr) {
+        // Writabe for root and for the adb shell, not for the system uid: /data/local/tmp is
+        // group shell, and "other" may only traverse it. Kept because the root and adb paths
+        // can use it, and because it is readable over adb when the app's own directory is not.
+        s_manager_log = fopen("/data/local/tmp/shizuku_starter.log", "w");
     }
-    if (log == nullptr) return;
-
-    dup2(fileno(log), STDOUT_FILENO);
-    dup2(fileno(log), STDERR_FILENO);
-    setvbuf(stdout, nullptr, _IOLBF, 0);
+    if (s_manager_log == nullptr) {
+        perrorf("warn: no writable place for the starter's log in %s\n", dir);
+    }
 }
 
 int main(int argc, char *argv[]) {
@@ -288,7 +315,7 @@ int main(int argc, char *argv[]) {
         ssize_t length = readlink("/proc/self/exe", self, sizeof(self) - 1);
         if (length > 0) {
             self[length] = '\0';
-            redirect_log_to_manager(self);
+            open_manager_log(self);
         }
     }
 

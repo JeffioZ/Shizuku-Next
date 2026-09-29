@@ -40,6 +40,11 @@ class ShizukuApplication : Application() {
 
     private fun init(context: Context) {
         ShizukuSettings.initialize(context)
+        // The starter writes its own log into this app's external files directory when a
+        // device exploit runs it, and that directory is only created on first use: create it
+        // now, so the path exists before anything tries to write to it. Without this a start
+        // that failed had nowhere to leave its account of itself.
+        runCatching { getExternalFilesDir(null)?.mkdirs() }
         // The preference is the source of truth, so re-apply it to the boot receiver here:
         // installs from before this read the component back and can be stuck disabled with
         // start on boot switched on.
