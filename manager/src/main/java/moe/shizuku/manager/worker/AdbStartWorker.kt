@@ -57,14 +57,6 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
     /** The method this start was asked for, so notifications retry the same way. */
     private var requestedMethod = ShizukuSettings.StartMethod.WIRELESS
 
-    /**
-     * Whether this attempt is asking for wireless debugging without a network, the
-     * experimental setting. Kept on the worker rather than in [startServer] because the
-     * failure it can produce is reported from that method's `catch`, which cannot see the
-     * locals of the `try` it wraps.
-     */
-    private var forcedWireless = false
-
     private fun notify(state: ShizukuReceiverStarter.WorkerState) =
         ShizukuReceiverStarter.updateNotification(applicationContext, state, requestedMethod)
 
@@ -80,7 +72,6 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
     }
 
     private suspend fun startServer(): Result {
-        forcedWireless = false
         try {
             requestedMethod = inputData.getInt(KEY_START_METHOD, ShizukuSettings.StartMethod.WIRELESS)
 
@@ -97,7 +88,7 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             // wireless instead of failing. Decided here, before any toggle is written, so
             // the USB debugging switch is never flipped for a start that will not use it.
             var usbMethod = startMethod == ShizukuSettings.StartMethod.USB
-            forcedWireless = !usbMethod && experiment
+            var forcedWireless = !usbMethod && experiment
             if (usbMethod && experiment &&
                 EnvironmentUtils.getAdbTcpPort() <= 0 && !EnvironmentUtils.isWifiConnected()
             ) {
@@ -383,25 +374,15 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                         StartFailureKind.PAIRING
 
                 is TimeoutException ->
-                    // Neither of the two usual reasons fits a start that was fighting for
-                    // wireless debugging without a network: the toggle was written (when
-                    // it was allowed to be) and no Wi-Fi is needed by design. What
-                    // actually happened is that the device kept reverting the setting and
-                    // never left the daemon up long enough to be found, which is a race
-                    // the next attempt often wins, so say that instead of asking for Wi-Fi.
-                    when {
-                        forcedWireless ->
-                            applicationContext.getString(R.string.start_failed_no_port_forcing_wireless) to
-                                StartFailureKind.GENERIC
-                        // Without WRITE_SECURE_SETTINGS the toggle above couldn't be switched
-                        // on, so the honest reason is the permission, not the network.
-                        !applicationContext.hasWriteSecureSettings() ->
-                            applicationContext.getString(R.string.start_failed_no_port_no_permission) to
-                                StartFailureKind.GENERIC
-                        else ->
-                            applicationContext.getString(R.string.start_failed_no_port) to
-                                StartFailureKind.GENERIC
-                    }
+                    // Without WRITE_SECURE_SETTINGS the toggle above couldn't be switched
+                    // on, so the honest reason is the permission, not the network.
+                    applicationContext.getString(
+                        if (applicationContext.hasWriteSecureSettings()) {
+                            R.string.start_failed_no_port
+                        } else {
+                            R.string.start_failed_no_port_no_permission
+                        }
+                    ) to StartFailureKind.GENERIC
 
                 is SecurityException ->
                     applicationContext.getString(R.string.start_failed_no_auth) to
@@ -500,7 +481,6 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             immediate: Boolean = false
         ) {
             val usbMethod = startMethod == ShizukuSettings.StartMethod.USB
-            val experiment = ShizukuSettings.getForceWirelessDebugging()
             val cb = Constraints.Builder()
             // Waiting for a network is only worth it when the start has no other way to
             // reach the port: a wireless start needs one to find the TLS port over mDNS,
@@ -525,19 +505,7 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 // Retry about once a minute, doubling as it keeps failing: a boot start
                 // usually just needs to wait for Wi-Fi to associate, and giving up after
                 // one attempt is what left Shizuku down until the next manual start.
-                //
-                // The no-Wi-Fi experiment is the exception, and a measured one: its fight
-                // with the framework can leave the daemon up a minute after the attempt
-                // that was asking for it gave up, so the next attempt then finds the port
-                // within seconds. Waiting a minute, then two, throws that win away, so
-                // that case retries in seconds and the second attempt is the one that
-                // lands. It is what makes reopening the app work when a tap did not.
-                .setBackoffCriteria(
-                    if (experiment)
-                        BackoffPolicy.LINEAR else BackoffPolicy.EXPONENTIAL,
-                    if (experiment) 15L else 1L,
-                    if (experiment) TimeUnit.SECONDS else TimeUnit.MINUTES
-                )
+                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 1, TimeUnit.MINUTES)
                 .build()
 
             WorkManager.getInstance(context).enqueueUniqueWork(
