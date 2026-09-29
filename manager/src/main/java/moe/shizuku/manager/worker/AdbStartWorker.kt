@@ -80,6 +80,7 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             val cr = applicationContext.contentResolver
             val startMethod = requestedMethod
             val usbMethod = startMethod == ShizukuSettings.StartMethod.USB
+            val forcedWireless = !usbMethod && ShizukuSettings.getForceWirelessDebugging()
 
             // Which debugging toggle we use is the entire difference between the two
             // ADB start methods, so each one only ever touches its own:
@@ -102,13 +103,17 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 }
                 // Don't let the authorized connection expire while we connect.
                 applicationContext.writeGlobalLongSetting("adb_allowed_connection_time", 0L)
-            } else if (wirelessAlreadyEnabled) {
+            } else if (wirelessAlreadyEnabled && !forcedWireless) {
                 // Wireless is already active. Writing adb_wifi_enabled=1 again is a
                 // no-op (SettingsProvider does not notify on the same value), so adbd
                 // never reinitialises wireless and mDNS discovery finds nothing. Write
                 // 0 first so the re-enable below is a real 0->1 change, forcing adbd to
                 // restart wireless and emit a fresh mDNS announcement. Skipped entirely
                 // when we may not write: bouncing the toggle is not worth failing for.
+                //
+                // Also skipped with the experiment on, where the framework is reverting
+                // the setting every tenth of a second anyway: there is no need to force a
+                // change, and writing 0 would only help it stop the daemon.
                 if (applicationContext.writeGlobalSetting("adb_wifi_enabled", 0)) {
                     try {
                         delay(200)
@@ -164,7 +169,6 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             // itself as USB, so the classic port is what the USB method and platforms
             // without wireless debugging use.
             val useClassicPort = usbMethod || !EnvironmentUtils.isTlsSupported()
-            val forcedWireless = !usbMethod && ShizukuSettings.getForceWirelessDebugging()
             val port = tcpPort.takeIf { useClassicPort }
                 ?: callbackFlow {
                 val adbMdns = AdbMdns(applicationContext, AdbMdns.TLS_CONNECT) { p ->
@@ -179,8 +183,14 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 fun startDiscoveryWithTimeout() {
                     adbMdns.start()
                     timeoutJob?.cancel()
+                    // The experiment asks for minutes, so the attempt has to live for
+                    // minutes: a 15 second deadline closed it moments after the hotspot
+                    // had come up, which at boot is most of those 15 seconds gone on
+                    // bringing the interface up in the first place.
+                    val deadline =
+                        if (forcedWireless) FORCED_DISCOVERY_TIMEOUT_MS else 15_000L
                     timeoutJob = launch {
-                        delay(15_000)
+                        delay(deadline)
                         close(TimeoutException("Timed out during mDNS port discovery"))
                     }
                 }
@@ -418,6 +428,12 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
 
     companion object {
         const val KEY_START_METHOD = "start_method"
+
+        /**
+         * Longer than the experiment's own asking window, so the asking and the interface
+         * both see it through rather than being cut off with the attempt.
+         */
+        private const val FORCED_DISCOVERY_TIMEOUT_MS = 130_000L
 
         fun enqueue(
             context: Context,

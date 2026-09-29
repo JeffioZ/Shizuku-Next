@@ -42,8 +42,13 @@ object ForcedWirelessDebugging {
     private const val BURST_COUNT = 20
     private const val BURST_INTERVAL_MS = 60L
 
-    /** Then one at a time, to reopen the window if the daemon is stopped again. */
-    private const val INTERVAL_MS = 1_000L
+    /**
+     * Then steadily, and quickly. The framework stops the daemon again within about a
+     * tenth of a second of every write, and the port only becomes findable once adbd has
+     * had long enough to advertise it, so what wins is the draw where its check lands
+     * late. One write a second is a hundred draws a minute; this is ten times that.
+     */
+    private const val INTERVAL_MS = 120L
 
     /**
      * How long a start keeps asking before it carries on without.
@@ -203,10 +208,18 @@ object ForcedWirelessDebugging {
             }
         }
 
-        reason?.let {
-            Log.w(
+        when {
+            reason != null -> Log.w(
                 AppConstants.TAG,
-                "Local-only hotspot refused (attempt ${attempt + 1} of $HOTSPOT_ATTEMPTS): ${reasonName(it)}"
+                "Local-only hotspot refused (attempt ${attempt + 1} of $HOTSPOT_ATTEMPTS): " +
+                    reasonName(reason!!)
+            )
+            // Silence would look the same as a refusal in the log, and the difference
+            // matters: a call that never answers means the Wi-Fi stack was not ready yet.
+            started == null -> Log.w(
+                AppConstants.TAG,
+                "Local-only hotspot did not answer within ${HOTSPOT_TIMEOUT_MS / 1000}s " +
+                    "(attempt ${attempt + 1} of $HOTSPOT_ATTEMPTS)"
             )
         }
         return started
