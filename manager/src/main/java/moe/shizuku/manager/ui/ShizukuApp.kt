@@ -37,6 +37,7 @@ import androidx.compose.material.icons.outlined.AdminPanelSettings
 import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Terminal
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingToolbarDefaults
@@ -75,13 +76,14 @@ import moe.shizuku.manager.ui.screen.IntentsScreen
 import moe.shizuku.manager.ui.screen.ManageScreen
 import moe.shizuku.manager.ui.screen.PermissionsScreen
 import moe.shizuku.manager.ui.screen.SettingsScreen
+import moe.shizuku.manager.ui.screen.ShellScreen
 import moe.shizuku.manager.ui.screen.StealthScreen
 import moe.shizuku.manager.ui.screen.TerminalScreen
 import moe.shizuku.manager.ui.theme.LocalAmoledTheme
 import moe.shizuku.manager.ui.theme.ShizukuTheme
 
 /** A secondary screen shown on top of the tab pager. */
-enum class Detail { STEALTH, TERMINAL, INTENTS, PERMISSIONS }
+enum class Detail { STEALTH, TERMINAL, INTENTS, PERMISSIONS, SHELL }
 
 /**
  * On wide windows (tablets, foldables, desktop mode, mirrored displays) a
@@ -96,6 +98,9 @@ private data class Tab(
     val selectedIcon: ImageVector,
     val unselectedIcon: ImageVector
 )
+
+/** The tab the shell button stands before, counted in tabs: [tabs] is Home, Apps, Manage, Settings. */
+private const val SHELL_BEFORE_TAB = 3
 
 private val tabs = listOf(
     Tab(R.string.tab_home, Icons.Filled.Home, Icons.Outlined.Home),
@@ -140,6 +145,7 @@ fun ShizukuApp() {
                             Detail.TERMINAL -> TerminalScreen(onBack = { detail = null })
                             Detail.INTENTS -> IntentsScreen(onBack = { detail = null })
                             Detail.PERMISSIONS -> PermissionsScreen(onBack = { detail = null })
+                            Detail.SHELL -> ShellScreen(onBack = { detail = null })
                         }
                     }
                 } else {
@@ -147,6 +153,36 @@ fun ShizukuApp() {
                 }
             }
         }
+    }
+}
+
+/**
+ * The bar's one action, drawn exactly like the tabs beside it so the row keeps its rhythm.
+ * It never shows as selected: pressing it opens the shell over the tabs rather than switching
+ * to a page, so there is no state for it to hold.
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun ShellBarButton(onOpen: () -> Unit) {
+    ToggleButton(
+        checked = false,
+        onCheckedChange = { onOpen() },
+        shapes = ToggleButtonShapes(
+            shape = CircleShape,
+            pressedShape = CircleShape,
+            checkedShape = CircleShape
+        ),
+        colors = ToggleButtonDefaults.toggleButtonColors(
+            containerColor = Color.Transparent,
+            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            checkedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+            checkedContentColor = MaterialTheme.colorScheme.onSecondaryContainer
+        )
+    ) {
+        Icon(
+            Icons.Outlined.Terminal,
+            contentDescription = stringResource(R.string.shell_title)
+        )
     }
 }
 
@@ -253,6 +289,14 @@ private fun MainTabs(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     tabs.forEachIndexed { index, tab ->
+                        // The shell is not a tab: it is a place you go and come back from, so
+                        // it opens over the tabs rather than becoming a fifth page, which
+                        // would have to keep a session and its output alive behind the
+                        // others. It sits before Settings, where it is looked for.
+                        if (index == SHELL_BEFORE_TAB) {
+                            ShellBarButton { onOpenDetail(Detail.SHELL) }
+                        }
+
                         val selected = pagerState.currentPage == index
                         ToggleButton(
                             checked = selected,
@@ -289,6 +333,7 @@ private fun MainTabs(
                             }
                         }
                     }
+
                 }
             }
         }

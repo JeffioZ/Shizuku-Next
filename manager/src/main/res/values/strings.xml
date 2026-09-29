@@ -349,6 +349,25 @@
     <string name="wadb_permission_error_notification_title">Permission Error</string>
     <string name="wadb_permission_error_notification_content">Shizuku needs WRITE_SECURE_SETTINGS to turn wireless debugging on. Tap to learn how to grant it.</string>
 
+    <!-- Shell -->
+    <string name="shell_title">Shell</string>
+    <string name="shell_backend_shizuku">Shizuku</string>
+    <string name="shell_backend_root">Root</string>
+    <string name="shell_backend_shizuku_status">Shizuku, uid %1$d</string>
+    <string name="shell_backend_root_status">Root, uid 0</string>
+    <string name="shell_backend_offline">Nothing is running the commands yet</string>
+    <string name="shell_needs_a_backend">Start Shizuku, or pick Root on a rooted device: one of the two runs the commands. Root works with Shizuku stopped.</string>
+    <string name="shell_intro">Runs as the uid Shizuku runs as (2000 over adb, 0 with root), so it reaches whatever that uid can: /sdcard, /system, and app data with root. It opens in /sdcard, one command at a time; with no tty behind it, programs that need a terminal (nano, an ssh prompt) will not run here.</string>
+    <string name="shell_root_granted">su is available: commands run as uid 0.</string>
+    <string name="shell_root_refused">su was refused, staying on the Shizuku backend. Grant this app root in your root manager to use it.</string>
+    <string name="shell_input_hint">Command</string>
+    <string name="shell_run">Run</string>
+    <string name="shell_stop">Stop</string>
+    <string name="shell_clear">Clear</string>
+    <string name="shell_copy">Copy</string>
+    <string name="shell_history_previous">Previous command</string>
+    <string name="shell_history_next">Next command</string>
+
     <!-- Watchdog -->
     <string name="watchdog_running">Watchdog is running</string>
     <string name="watchdog_turn_off">Turn Off</string>
