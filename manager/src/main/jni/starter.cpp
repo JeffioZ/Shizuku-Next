@@ -15,13 +15,23 @@
 #include "misc.h"
 #include "selinux.h"
 #include "cgroup.h"
+
+// Set before logging.h so the tag is this one rather than the default.
+#define LOG_TAG "ShizukuServiceStarter"
 #include "logging.h"
 
 #ifdef DEBUG
 #define JAVA_DEBUGGABLE
 #endif
 
-#define perrorf(...) fprintf(stderr, __VA_ARGS__)
+/*
+ * Every message goes to logcat as well as stderr. The device exploits that start this
+ * binary run it from another app, whose stdout is not ours to read, so without this the
+ * whole start is silent: the manager waits a minute for a binder, reports a timeout, and
+ * nothing says whether this process even ran.
+ */
+#define perrorf(...) do { fprintf(stderr, __VA_ARGS__); LOGE(__VA_ARGS__); } while (0)
+#define info(...) do { printf(__VA_ARGS__); LOGI(__VA_ARGS__); fflush(stdout); } while (0)
 
 #define EXIT_FATAL_SET_CLASSPATH 3
 #define EXIT_FATAL_FORK 4
@@ -150,8 +160,8 @@ static void start_server(const char *path, const char *main_class, const char *p
             read(fds[0], &ready, 1);
             close(fds[0]);
 
-            printf("info: shizuku_server pid is %d\n", pid);
-            printf("info: shizuku_starter exit with 0\n");
+            info("info: shizuku_server pid is %d\n", pid);
+            info("info: shizuku_starter exit with 0\n");
             exit(EXIT_SUCCESS);
         }
     }
@@ -247,8 +257,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    printf("info: starter begin\n");
-    fflush(stdout);
+    info("info: starter begin\n");
 
     // kill old server(s)
     printf("info: checking for existing server processes...\n");
@@ -266,8 +275,13 @@ int main(int argc, char *argv[]) {
             printf("info: killed process %d\n", pid);
             s_killed_count++;
         } else if (errno == EPERM) {
-            perrorf("fatal: can't kill %d (owned by root), please try to stop existing Shizuku from app first.\n", pid);
-            exit(EXIT_FATAL_KILL);
+            // A server this uid cannot kill is usually one another start made, root's
+            // included. Refusing to start because of it leaves the user with nothing at a
+            // point where nothing has been tried yet: the old one may be on its way out,
+            // and if it really is in the way the bind fails and says so. Note that this
+            // is reachable only on a device where the previous server is still running:
+            // "Start (system)" over a root server fails here otherwise, silently.
+            perrorf("warn: can't kill %d (owned by another uid), starting anyway\n", pid);
         } else {
             printf("warn: failed to kill %d\n", pid);
         }
@@ -309,14 +323,13 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FATAL_PM_PATH);
     }
 
-    printf("info: apk path is %s\n", apk_path.c_str());
+    info("info: apk path is %s\n", apk_path.c_str());
     if (access(apk_path.c_str(), R_OK) != 0) {
         perrorf("fatal: can't access manager %s\n", apk_path.c_str());
         exit(EXIT_FATAL_PM_PATH);
     }
 
-    printf("info: starting server...\n");
-    fflush(stdout);
+    info("info: starting server...\n");
     LOGD("start_server");
     start_server(apk_path.c_str(), SERVER_CLASS_PATH, SERVER_NAME);
 }
