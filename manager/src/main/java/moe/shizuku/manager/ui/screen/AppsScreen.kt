@@ -87,7 +87,15 @@ import moe.shizuku.manager.receiver.ShizukuReceiverStarter
 import moe.shizuku.manager.ui.component.SegmentedCard
 import moe.shizuku.manager.utils.ShizukuStateMachine
 
-enum class SortOrder { LAST_ADDED, ALPHABETICAL }
+enum class SortOrder {
+    /** Most recently installed first: when the app first appeared on the device. */
+    RECENTLY_INSTALLED,
+
+    /** Most recently updated first: when the APK last changed. */
+    RECENTLY_UPDATED,
+
+    ALPHABETICAL
+}
 
 /** Which slice of the app list to show. */
 enum class AppFilter {
@@ -114,7 +122,7 @@ fun AppsScreen(bottomPadding: Dp) {
 
     var all by remember { mutableStateOf<List<PackageInfo>>(emptyList()) }
     var query by remember { mutableStateOf("") }
-    var sortOrder by remember { mutableStateOf(SortOrder.LAST_ADDED) }
+    var sortOrder by remember { mutableStateOf(SortOrder.RECENTLY_INSTALLED) }
     var selected by remember { mutableStateOf(setOf<String>()) }
     var version by remember { mutableIntStateOf(0) }
     var sortMenu by remember { mutableStateOf(false) }
@@ -200,13 +208,15 @@ fun AppsScreen(bottomPadding: Dp) {
                 label.contains(q, ignoreCase = true) || it.packageName.contains(q, ignoreCase = true)
             }
         }
-        if (sortOrder == SortOrder.ALPHABETICAL) {
-            filtered.sortedBy {
+        when (sortOrder) {
+            // The two timestamps the package manager keeps: when it was installed, and when
+            // the APK was last replaced. They differ for anything that has been updated.
+            SortOrder.RECENTLY_INSTALLED -> filtered.sortedByDescending { it.firstInstallTime }
+            SortOrder.RECENTLY_UPDATED -> filtered.sortedByDescending { it.lastUpdateTime }
+            SortOrder.ALPHABETICAL -> filtered.sortedBy {
                 runCatching { it.applicationInfo?.loadLabel(pm)?.toString()?.lowercase() }
                     .getOrDefault(it.packageName)
             }
-        } else {
-            filtered
         }
     }
 
@@ -319,7 +329,11 @@ fun AppsScreen(bottomPadding: Dp) {
                     DropdownMenu(expanded = sortMenu, onDismissRequest = { sortMenu = false }) {
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.app_management_sort_last_added)) },
-                            onClick = { sortOrder = SortOrder.LAST_ADDED; sortMenu = false }
+                            onClick = { sortOrder = SortOrder.RECENTLY_INSTALLED; sortMenu = false }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.app_management_sort_updated)) },
+                            onClick = { sortOrder = SortOrder.RECENTLY_UPDATED; sortMenu = false }
                         )
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.app_management_sort_alphabetical)) },
