@@ -190,14 +190,20 @@ class WatchdogService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     private fun buildNotification(): Notification {
-        val channelId = "shizuku_watchdog"
+        // The v2 suffix is the point, not an oversight: a channel's settings are frozen
+        // once it exists, so turning the badge off on the old id would do nothing for
+        // anyone who already has it. The service is always running, so a dot over it says
+        // nothing except that something is permanently there.
+        val channelId = "shizuku_watchdog_v2"
         val channelName = "Watchdog"
 
         val channel = NotificationChannel(
             channelId,
             channelName,
             NotificationManager.IMPORTANCE_LOW
-        )
+        ).apply {
+            setShowBadge(false)
+        }
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         manager.createNotificationChannel(channel)
 
