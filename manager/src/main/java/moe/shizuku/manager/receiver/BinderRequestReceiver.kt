@@ -3,6 +3,8 @@ package moe.shizuku.manager.receiver
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.util.Log
+import moe.shizuku.manager.AppConstants
 import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.shell.ShellBinderRequestHandler
 import moe.shizuku.manager.utils.ShizukuStateMachine
@@ -21,6 +23,16 @@ class BinderRequestReceiver : BroadcastReceiver() {
             ShizukuSettings.getStartOnBoot(context)
         ) {
             ShizukuReceiverStarter.start(context)
+        } else if (!ShizukuStateMachine.isRunning()) {
+            // Nothing happens here otherwise, which is why a background start can look like
+            // the request went nowhere: say which setting stopped it. A deliberate Stop is
+            // the usual one, and it stays in force until a start is asked for from the app.
+            Log.i(
+                AppConstants.TAG,
+                "Background start not attempted: " +
+                    if (ShizukuSettings.getManuallyStopped()) "the service was stopped deliberately"
+                    else "start on boot is off"
+            )
         }
     }
 }

@@ -59,7 +59,17 @@ object ShizukuReceiverStarter {
         // A start request from any entry point clears manual-stop suppression.
         ShizukuSettings.setManuallyStopped(false)
 
-        if ((UserHandleCompat.myUserId() > 0 || ShizukuStateMachine.isRunning()) && !forceStart) return
+        // Ask the binder rather than trusting the last thing this process heard. A server
+        // stopped from somewhere else, or one that died while the manager was not looking,
+        // left the belief behind, and a start was then ignored in silence: a tap that does
+        // nothing at all, until a reboot resets the belief. The refusal is also said out
+        // loud now, because a tap that quietly does nothing is the worst of the two.
+        if ((UserHandleCompat.myUserId() > 0 ||
+                ShizukuStateMachine.update() == ShizukuStateMachine.State.RUNNING) && !forceStart
+        ) {
+            Log.i(AppConstants.TAG, "Start ignored: the service is already running")
+            return
+        }
 
         // Root can be gone since the method was chosen (an OTA, root switched off), and a
         // root start with nothing to escalate with does nothing at all so a start that
