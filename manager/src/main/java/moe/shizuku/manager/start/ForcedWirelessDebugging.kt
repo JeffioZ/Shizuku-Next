@@ -50,6 +50,14 @@ object ForcedWirelessDebugging {
 
     private const val HOTSPOT_TIMEOUT_MS = 12_000L
 
+    /**
+     * A refusal is usually temporary. The one that matters most is a request landing while
+     * the previous reservation is still being torn down, which happens when one attempt
+     * replaces another, so ask again before believing it.
+     */
+    private const val HOTSPOT_ATTEMPTS = 3
+    private const val HOTSPOT_RETRY_DELAY_MS = 1_500L
+
     @Volatile
     private var reservation: WifiManager.LocalOnlyHotspotReservation? = null
 
@@ -134,6 +142,26 @@ object ForcedWirelessDebugging {
             return false
         }
 
+        repeat(HOTSPOT_ATTEMPTS) { attempt ->
+            val started = attemptHotspot(wifi, attempt)
+            if (started != null) {
+                reservation = started
+                log("local-only hotspot is up")
+                return true
+            }
+            if (attempt < HOTSPOT_ATTEMPTS - 1) delay(HOTSPOT_RETRY_DELAY_MS)
+        }
+
+        log("the local-only hotspot did not come up")
+        return false
+    }
+
+    /** One request, with the refusal reason said in words rather than a number. */
+    private suspend fun attemptHotspot(
+        wifi: WifiManager,
+        attempt: Int
+    ): WifiManager.LocalOnlyHotspotReservation? {
+        var reason: Int? = null
         val started = withTimeoutOrNull(HOTSPOT_TIMEOUT_MS) {
             withContext(Dispatchers.Main) {
                 suspendCancellableCoroutine { cont ->
@@ -148,11 +176,8 @@ object ForcedWirelessDebugging {
                                     if (cont.isActive) cont.resume(null)
                                 }
 
-                                override fun onFailed(reason: Int) {
-                                    Log.w(
-                                        AppConstants.TAG,
-                                        "Local-only hotspot refused: $reason"
-                                    )
+                                override fun onFailed(failure: Int) {
+                                    reason = failure
                                     if (cont.isActive) cont.resume(null)
                                 }
                             },
@@ -169,13 +194,22 @@ object ForcedWirelessDebugging {
             }
         }
 
-        if (started == null) {
-            log("the local-only hotspot did not come up")
-            return false
+        reason?.let {
+            Log.w(
+                AppConstants.TAG,
+                "Local-only hotspot refused (attempt ${attempt + 1} of $HOTSPOT_ATTEMPTS): ${reasonName(it)}"
+            )
         }
+        return started
+    }
 
-        reservation = started
-        log("local-only hotspot is up")
-        return true
+    private fun reasonName(reason: Int): String = when (reason) {
+        WifiManager.LocalOnlyHotspotCallback.ERROR_NO_CHANNEL -> "no channel available"
+        WifiManager.LocalOnlyHotspotCallback.ERROR_GENERIC -> "the system refused it"
+        WifiManager.LocalOnlyHotspotCallback.ERROR_INCOMPATIBLE_MODE -> "incompatible mode"
+        WifiManager.LocalOnlyHotspotCallback.ERROR_TETHERING_DISALLOWED ->
+            "tethering is disallowed"
+
+        else -> "unknown reason $reason"
     }
 }
