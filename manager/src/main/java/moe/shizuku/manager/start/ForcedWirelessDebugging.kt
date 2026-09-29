@@ -43,12 +43,13 @@ object ForcedWirelessDebugging {
     private const val BURST_INTERVAL_MS = 60L
 
     /**
-     * Then steadily, and quickly. The framework stops the daemon again within about a
-     * tenth of a second of every write, and the port only becomes findable once adbd has
-     * had long enough to advertise it, so what wins is the draw where its check lands
-     * late. One write a second is a hundred draws a minute; this is ten times that.
+     * Then steadily, at the same rate as the burst. The framework stops the daemon again
+     * within about a tenth of a second of every write, and the port only becomes findable
+     * once adbd has had long enough to advertise it, so what wins is the draw where that
+     * check lands late. The one start this has won so far won during the burst, which is
+     * why the steady part matches it rather than being twice as slow.
      */
-    private const val INTERVAL_MS = 120L
+    private const val INTERVAL_MS = 60L
 
     /**
      * How long a start keeps asking before it carries on without.

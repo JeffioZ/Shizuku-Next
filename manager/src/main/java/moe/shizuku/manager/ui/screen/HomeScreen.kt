@@ -505,7 +505,18 @@ fun HomeScreen(bottomPadding: Dp) {
                             enabled = !running,
                             headlineContent = { Text(stringResource(R.string.home_wireless_adb_title)) },
                             supportingContent = {
-                                Text(stringResource(R.string.home_wireless_adb_summary))
+                                // A start with the experiment on can spend two minutes asking
+                                // before it either starts or gives up, and a card that only
+                                // spins for that long reads as stuck.
+                                Text(
+                                    if (startStatus is StartStatus.Starting &&
+                                        ShizukuSettings.getForceWirelessDebugging()
+                                    ) {
+                                        stringResource(R.string.home_wireless_adb_starting_without_wifi)
+                                    } else {
+                                        stringResource(R.string.home_wireless_adb_summary)
+                                    }
+                                )
                             },
                             trailingContent = {
                                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
@@ -526,7 +537,18 @@ fun HomeScreen(bottomPadding: Dp) {
                             enabled = !running,
                             headlineContent = { Text(stringResource(R.string.home_usb_adb_title)) },
                             supportingContent = {
-                                Text(stringResource(R.string.home_usb_adb_summary).stripHtmlTags())
+                                // A USB start needs the classic port, and with no network and
+                                // no port there is nothing it can do: it says so here rather
+                                // than failing after a tap that looked like it should work.
+                                Text(
+                                    if (!EnvironmentUtils.isWifiConnected() &&
+                                        EnvironmentUtils.getAdbTcpPort() <= 0
+                                    ) {
+                                        stringResource(R.string.home_usb_adb_needs_network)
+                                    } else {
+                                        stringResource(R.string.home_usb_adb_summary).stripHtmlTags()
+                                    }
+                                )
                             },
                             trailingContent = {
                                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
