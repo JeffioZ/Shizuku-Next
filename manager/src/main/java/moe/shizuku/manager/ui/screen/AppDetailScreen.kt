@@ -50,6 +50,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import java.text.DateFormat
@@ -67,9 +68,11 @@ import moe.shizuku.manager.manage.PermissionKind
 import moe.shizuku.manager.manage.StandbyBucket
 import moe.shizuku.manager.ui.component.AppIcon
 import moe.shizuku.manager.ui.component.CenteredMessage
+import moe.shizuku.manager.ui.component.ChipEmphasis
 import moe.shizuku.manager.ui.component.SegmentedCard
 import moe.shizuku.manager.ui.component.SegmentedColumn
 import moe.shizuku.manager.ui.component.SegmentedListItem
+import moe.shizuku.manager.ui.component.StatusChip
 import moe.shizuku.manager.utils.ShizukuStateMachine
 
 /** A destructive action waiting for a yes. */
@@ -207,21 +210,34 @@ fun AppDetailScreen(
                 item {
                     SegmentedColumn {
                         item {
+                            val status = when {
+                                app.uninstalled -> stringResource(R.string.manage_status_removed)
+                                app.suspended -> stringResource(R.string.manage_status_suspended)
+                                !app.enabled -> stringResource(R.string.manage_status_disabled)
+                                app.systemApp -> stringResource(R.string.manage_status_system)
+                                else -> null
+                            }
                             SegmentedListItem(
                                 leadingContent = { AppIcon(app.packageName) },
                                 headlineContent = { Text(app.label) },
+                                // The same shape the list rows use: the package name is the line,
+                                // the state is a chip on the right where it cannot be cut off.
                                 supportingContent = {
-                                    val status = when {
-                                        app.uninstalled -> stringResource(R.string.manage_status_removed)
-                                        app.suspended -> stringResource(R.string.manage_status_suspended)
-                                        !app.enabled -> stringResource(R.string.manage_status_disabled)
-                                        app.systemApp -> stringResource(R.string.manage_status_system)
-                                        else -> null
+                                    Text(app.packageName, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                },
+                                trailingContent = {
+                                    if (status != null) {
+                                        StatusChip(
+                                            status,
+                                            emphasis = when {
+                                                app.uninstalled -> ChipEmphasis.WARN
+                                                app.suspended || !app.enabled -> ChipEmphasis.SOFT
+                                                else -> ChipEmphasis.NONE
+                                            }
+                                        )
                                     }
-                                    Text(
-                                        if (status != null) "${app.packageName} · $status" else app.packageName
-                                    )
-                                }
+                                },
+                                centerTrailing = true
                             )
                         }
                     }

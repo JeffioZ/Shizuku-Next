@@ -46,11 +46,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
@@ -59,7 +61,10 @@ import moe.shizuku.manager.R
 import moe.shizuku.manager.ui.component.AppFilterChip
 import moe.shizuku.manager.ui.component.AppIcon
 import moe.shizuku.manager.ui.component.CenteredMessage
+import moe.shizuku.manager.ui.component.ChipEmphasis
 import moe.shizuku.manager.ui.component.SegmentedCard
+import moe.shizuku.manager.ui.component.SegmentedListItem
+import moe.shizuku.manager.ui.component.StatusChip
 
 /** Which slice of the installed apps to list. */
 enum class ManageFilter {
@@ -308,7 +313,7 @@ fun ManageScreen(bottomPadding: Dp) {
                     }
 
                     SegmentedCard {
-                        ListItem(
+                        SegmentedListItem(
                             modifier = Modifier.clickable { openPackage = pi.packageName },
                             leadingContent = {
                                 // A removed app has no icon to load — the row keeps the
@@ -316,20 +321,37 @@ fun ManageScreen(bottomPadding: Dp) {
                                 if (removed) Box(modifier = Modifier.padding(20.dp)) else AppIcon(pi)
                             },
                             headlineContent = { Text(labelOf(pm, pi)) },
+                            // The package name is the whole line, and it ellipsises rather than
+                            // being cut, because nothing follows it any more.
                             supportingContent = {
-                                Text(
-                                    if (status != null) "${pi.packageName} · $status" else pi.packageName,
-                                    maxLines = 1
-                                )
+                                Text(pi.packageName, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             },
                             trailingContent = {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    if (status != null) {
+                                        StatusChip(
+                                            status,
+                                            emphasis = when {
+                                                removed -> ChipEmphasis.WARN
+                                                disabled || suspended -> ChipEmphasis.SOFT
+                                                else -> ChipEmphasis.NONE
+                                            }
+                                        )
+                                    }
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             },
-                            colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                            // Centred, so the chip and the arrow sit against the row rather than
+                            // level with its first line, and the row's own padding keeps them off
+                            // the card's edge.
+                            centerTrailing = true
                         )
                     }
                 }

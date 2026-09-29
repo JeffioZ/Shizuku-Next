@@ -144,6 +144,54 @@ fun CountBadge(count: Int, selected: Boolean) {
     }
 }
 
+/**
+ * A short label in a small rounded chip, the same shape family as the filter chips and the
+ * count inside them.
+ *
+ * A row's state belongs here rather than at the end of the line under the name: that line is
+ * the package name, which is long, and a suffix bolted onto it is the first thing a narrow
+ * screen cuts off — leaving a stray separator and no state at all.
+ */
+/** How much a chip wants to be noticed. */
+enum class ChipEmphasis {
+    /** A fact about the app: it came with the system. */
+    NONE,
+
+    /** A state worth seeing — disabled, suspended — without shouting it. */
+    SOFT,
+
+    /** Something is wrong: the app is not installed any more. */
+    WARN
+}
+
+@Composable
+fun StatusChip(
+    text: String,
+    modifier: Modifier = Modifier,
+    emphasis: ChipEmphasis = ChipEmphasis.NONE
+) {
+    val container = when (emphasis) {
+        ChipEmphasis.NONE -> MaterialTheme.colorScheme.surfaceContainerHighest
+        ChipEmphasis.SOFT -> MaterialTheme.colorScheme.secondaryContainer
+        ChipEmphasis.WARN -> MaterialTheme.colorScheme.errorContainer
+    }
+    val content = when (emphasis) {
+        ChipEmphasis.NONE -> MaterialTheme.colorScheme.onSurfaceVariant
+        ChipEmphasis.SOFT -> MaterialTheme.colorScheme.onSecondaryContainer
+        ChipEmphasis.WARN -> MaterialTheme.colorScheme.onErrorContainer
+    }
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelSmall,
+        maxLines = 1,
+        color = content,
+        modifier = modifier
+            .clip(MaterialTheme.shapes.small)
+            .background(container)
+            .padding(horizontal = 8.dp, vertical = 3.dp)
+    )
+}
+
 /** Centred content for the states that aren't a list. */
 @Composable
 fun CenteredMessage(content: @Composable ColumnScope.() -> Unit) {
