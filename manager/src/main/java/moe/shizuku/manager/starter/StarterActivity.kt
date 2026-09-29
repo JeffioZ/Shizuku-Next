@@ -1,6 +1,9 @@
 package moe.shizuku.manager.starter
 
 import android.app.Application
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -104,7 +107,8 @@ class StarterActivity : AppBarActivity() {
             viewModel.start(
                 intent.getBooleanExtra(EXTRA_IS_ROOT, false),
                 intent.getBooleanExtra(EXTRA_IS_SYSTEM, false),
-                intent.getIntExtra(EXTRA_PORT, 0)
+                intent.getIntExtra(EXTRA_PORT, 0),
+                intent.getBooleanExtra(EXTRA_SYSTEM_CUSTOM, false)
             )
         }
     }
@@ -113,6 +117,7 @@ class StarterActivity : AppBarActivity() {
 
         const val EXTRA_IS_ROOT = "$EXTRA.IS_ROOT"
         const val EXTRA_IS_SYSTEM = "$EXTRA.IS_SYSTEM"
+        const val EXTRA_SYSTEM_CUSTOM = "$EXTRA.SYSTEM_CUSTOM"
         const val EXTRA_PORT = "$EXTRA.PORT"
     }
 }
@@ -133,7 +138,7 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
 
     private var started = false
 
-    fun start(root: Boolean, isSystem: Boolean, port: Int) {
+    fun start(root: Boolean, isSystem: Boolean, port: Int, systemCustom: Boolean = false) {
         if (started) return
         started = true
 
@@ -151,6 +156,7 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch(handler) {
             when {
                 root -> startRoot()
+                isSystem && systemCustom -> startSystemCustom()
                 isSystem -> startSys()
                 else -> AdbStarter.startAdb(appContext, port, { log(it) })
             }
@@ -192,6 +198,47 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
                 log("Start system failed!", e)
             }
         }
+    }
+
+    /**
+     * The instruction path for the system start: this app has no privilege of its own, so
+     * it says what to run and waits for the service to appear. Whatever can launch a
+     * process as a privileged uid - the user's own exploit, an automation, a root shell -
+     * runs the executable this app ships, and the wait is the same one the other methods
+     * use.
+     */
+    private suspend fun startSystemCustom() {
+        val command = systemStarterCommand()
+
+        log(appContext.getString(R.string.start_system_custom_intro))
+        log(command)
+
+        val copied = withContext(Dispatchers.Main) {
+            val clipboard =
+                appContext.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+                ?: return@withContext false
+            clipboard.setPrimaryClip(ClipData.newPlainText("Shizuku", command))
+            true
+        }
+
+        log(
+            appContext.getString(
+                if (copied) R.string.start_system_custom_copied
+                else R.string.start_system_custom_copy_failed
+            )
+        )
+    }
+
+    /**
+     * The command resolves the installed APK's own lib directory at run time, so it keeps
+     * working after an update moves it, and it names this package rather than a fixed one,
+     * which matters for stealth mode.
+     */
+    private fun systemStarterCommand(): String {
+        val packageName = appContext.packageName
+        return "P=\$(pm path $packageName" +
+            " | sed -E 's|^package:(.*/)[^/]+\\.apk\$|\\1|')" +
+            " && \${P}lib/arm64/libshizuku.so"
     }
 
     private fun log(line: String? = null, error: Throwable? = null) {

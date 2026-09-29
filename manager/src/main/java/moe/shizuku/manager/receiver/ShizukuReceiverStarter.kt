@@ -88,10 +88,18 @@ object ShizukuReceiverStarter {
      * such as boot or the watchdog cannot drive it.
      */
     private fun systemStart(context: Context) {
+        // "Custom command" is the same start with the escalation left to the user: no
+        // device exploit is attempted, and the activity says what to run and waits for the
+        // binder instead. The setting used to be read by nothing at all, so choosing it
+        // changed a preference and nothing else.
+        val custom =
+            ShizukuSettings.getSystemStartMethod() == ShizukuSettings.SYSTEM_START_CUSTOM
+
         val started = runCatching {
             context.startActivity(
                 Intent(context, StarterActivity::class.java)
                     .putExtra(StarterActivity.EXTRA_IS_SYSTEM, true)
+                    .putExtra(StarterActivity.EXTRA_SYSTEM_CUSTOM, custom)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             )
         }.isSuccess
