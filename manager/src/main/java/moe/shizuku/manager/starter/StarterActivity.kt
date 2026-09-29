@@ -1,6 +1,7 @@
 package moe.shizuku.manager.starter
 
 import android.app.Application
+import android.content.ActivityNotFoundException
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -34,6 +35,7 @@ import moe.shizuku.manager.adb.AdbPairingHelper
 import moe.shizuku.manager.adb.AdbStarter
 import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.app.AppBarActivity
+import moe.shizuku.manager.start.StartStatusReporter
 import moe.shizuku.manager.utils.ShizukuStateMachine
 import moe.shizuku.manager.databinding.StarterActivityBinding
 import rikka.lifecycle.Resource
@@ -154,13 +156,16 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
         )
 
         viewModelScope.launch(handler) {
-            when {
-                root -> startRoot()
-                isSystem && systemCustom -> startSystemCustom()
+            // Whether there is anything to wait for: a system start whose exploit target
+            // this device does not ship has already said so, and waiting a minute for a
+            // service nobody asked for only hides that.
+            val waiting = when {
+                root -> { startRoot(); true }
+                isSystem && systemCustom -> { startSystemCustom(); true }
                 isSystem -> startSys()
-                else -> AdbStarter.startAdb(appContext, port, { log(it) })
+                else -> { AdbStarter.startAdb(appContext, port, { log(it) }); true }
             }
-            Starter.waitForBinder({ log(it) })
+            if (waiting) Starter.waitForBinder({ log(it) })
         }
     }
 
@@ -170,10 +175,10 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
      * the vulnerable component, and is opt-in via the "System start method"
      * setting.
      */
-    private suspend fun startSys() {
+    private suspend fun startSys(): Boolean {
         log("Starting with system...\n")
 
-        withContext(Dispatchers.IO) {
+        return withContext(Dispatchers.IO) {
             try {
                 appContext.startActivity(
                     Intent().apply {
@@ -194,8 +199,19 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
                 Thread.sleep(1000)
                 appContext.sendBroadcast(exploit)
                 log("Start system success!\n")
+                true
+            } catch (e: ActivityNotFoundException) {
+                // The exploit only exists where the device ships the component it abuses,
+                // and a phone that no longer does has nothing to start: say which component
+                // is missing and which method does not need it, instead of reporting a
+                // success that never happened and then waiting for it.
+                val message = appContext.getString(R.string.start_failed_system_no_exploit)
+                log(message)
+                withContext(Dispatchers.Main) { StartStatusReporter.failed(message) }
+                false
             } catch (e: Throwable) {
                 log("Start system failed!", e)
+                false
             }
         }
     }
