@@ -62,6 +62,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.heightIn
@@ -72,6 +74,13 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.TextButton
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -82,7 +91,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
@@ -97,6 +109,7 @@ import moe.shizuku.manager.shell.ShellBackend
 import moe.shizuku.manager.shell.LibraryCommand
 import moe.shizuku.manager.shell.ShellBookmarks
 import moe.shizuku.manager.shell.ShellCommands
+import moe.shizuku.manager.shell.ShellOutput
 import moe.shizuku.manager.shell.ShellSuggestion
 import moe.shizuku.manager.shell.ShellSuggestions
 import moe.shizuku.manager.ui.component.AppIcon
@@ -202,6 +215,43 @@ fun ShellScreen(onBack: () -> Unit) {
     var values by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
     var packageFor by remember { mutableStateOf<String?>(null) }
 
+    // Finding one line in a few thousand. The rows are kept and the matches marked rather than
+    // filtered: in a dump, the line above the answer is usually part of the answer.
+    var searching by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
+    var matchAt by remember { mutableIntStateOf(0) }
+    var menuOpen by remember { mutableStateOf(false) }
+    var expanded by remember { mutableStateOf(false) }
+    // Opening the search puts the caret in it, because a search box that has to be tapped
+    // after being opened is a search box with a step missing.
+    val searchFocus = remember { FocusRequester() }
+    LaunchedEffect(searching) { if (searching) runCatching { searchFocus.requestFocus() } }
+
+    // Recomputed when the output grows or the query changes, and never per frame.
+    val printed = remember(lines.size) { lines.map { it.text } }
+    val matches = remember(lines.size, searchQuery) { ShellOutput.matchingLines(printed, searchQuery) }
+
+    // Writing the output out, through the system file picker: no storage permission, and the
+    // file lands where the user chose rather than somewhere only this app can reach.
+    val saveOutput = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("text/plain")
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        val saved = runCatching {
+            context.contentResolver.openOutputStream(uri)?.use { out ->
+                out.write(printed.joinToString("\n").toByteArray())
+            }
+            true
+        }.getOrDefault(false)
+        scope.launch {
+            feedback.showSnackbar(
+                context.getString(
+                    if (saved) R.string.shell_output_saved else R.string.shell_output_save_failed
+                )
+            )
+        }
+    }
+
     // Read once, and shared: the suggestions offer these apps and their permissions, and the
     // picker is the same list in a dialog.
     var installed by remember { mutableStateOf<List<PackageInfo>>(emptyList()) }
@@ -240,6 +290,12 @@ fun ShellScreen(onBack: () -> Unit) {
             runCatching { session.openInPreferredDirectory(::feed) }.getOrDefault(session.cwd)
         }
         cwd = opened
+    }
+
+    // A search that counted the matches without going to them would be a riddle, so each step
+    // through them is a scroll.
+    LaunchedEffect(matchAt, matches) {
+        matches.getOrNull(matchAt)?.let { listState.animateScrollToItem(it) }
     }
 
     LaunchedEffect(Unit) {
@@ -366,55 +422,148 @@ fun ShellScreen(onBack: () -> Unit) {
             // just a log.
             .imePadding()
     ) {
-        TopAppBar(
-            title = {
-                Column {
-                    Text(stringResource(R.string.shell_title))
-                    Text(
-                        text = when {
-                            backend == ShellBackend.ROOT ->
-                                stringResource(R.string.shell_backend_root_status)
-                            uid >= 0 -> stringResource(R.string.shell_backend_shizuku_status, uid)
-                            else -> stringResource(R.string.shell_backend_offline)
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+        if (searching) {
+            // The search takes the bar rather than a row of its own: the title says nothing
+            // while you are looking for a line, and the space is worth more to the query.
+            TopAppBar(
+                title = {
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it; matchAt = 0 },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .focusRequester(searchFocus),
+                        placeholder = { Text(stringResource(R.string.shell_search_hint)) },
+                        singleLine = true,
+                        textStyle = MaterialTheme.typography.bodyMedium
                     )
-                }
-            },
-            windowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
-            navigationIcon = {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                }
-            },
-            actions = {
-                if (field.text.isNotBlank()) {
-                    IconButton(onClick = { naming = NameRequest(command = field.text.trim()) }) {
+                },
+                windowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
+                navigationIcon = {
+                    IconButton(onClick = { searching = false; searchQuery = "" }) {
                         Icon(
-                            Icons.Outlined.BookmarkAdd,
-                            contentDescription = stringResource(R.string.shell_bookmark_save)
+                            Icons.Filled.Close,
+                            contentDescription = stringResource(R.string.shell_search_close)
                         )
                     }
+                },
+                actions = {
+                    if (searchQuery.isNotBlank()) {
+                        Text(
+                            stringResource(
+                                R.string.shell_search_position,
+                                if (matches.isEmpty()) 0 else matchAt + 1,
+                                matches.size
+                            ),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        IconButton(
+                            onClick = { matchAt = (matchAt - 1 + matches.size) % matches.size },
+                            enabled = matches.isNotEmpty()
+                        ) {
+                            Icon(
+                                Icons.Filled.KeyboardArrowUp,
+                                contentDescription = stringResource(R.string.shell_search_previous)
+                            )
+                        }
+                        IconButton(
+                            onClick = { matchAt = (matchAt + 1) % matches.size },
+                            enabled = matches.isNotEmpty()
+                        ) {
+                            Icon(
+                                Icons.Filled.KeyboardArrowDown,
+                                contentDescription = stringResource(R.string.shell_search_next)
+                            )
+                        }
+                    }
                 }
-                if (lines.isNotEmpty()) {
-                    IconButton(onClick = {
-                        clipboard.setText(AnnotatedString(lines.joinToString("\n") { it.text }))
-                    }) {
-                        Icon(
-                            Icons.Filled.ContentCopy,
-                            contentDescription = stringResource(R.string.shell_copy)
+            )
+        } else {
+            TopAppBar(
+                title = {
+                    Column {
+                        Text(stringResource(R.string.shell_title))
+                        Text(
+                            text = when {
+                                backend == ShellBackend.ROOT ->
+                                    stringResource(R.string.shell_backend_root_status)
+                                uid >= 0 -> stringResource(R.string.shell_backend_shizuku_status, uid)
+                                else -> stringResource(R.string.shell_backend_offline)
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    IconButton(onClick = { lines.clear() }) {
-                        Icon(
-                            Icons.Filled.DeleteSweep,
-                            contentDescription = stringResource(R.string.shell_clear)
-                        )
+                },
+                windowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                    }
+                },
+                actions = {
+                    if (field.text.isNotBlank()) {
+                        IconButton(onClick = { naming = NameRequest(command = field.text.trim()) }) {
+                            Icon(
+                                Icons.Outlined.BookmarkAdd,
+                                contentDescription = stringResource(R.string.shell_bookmark_save)
+                            )
+                        }
+                    }
+                    if (lines.isNotEmpty()) {
+                        IconButton(onClick = { searching = true }) {
+                            Icon(
+                                Icons.Filled.Search,
+                                contentDescription = stringResource(R.string.shell_search)
+                            )
+                        }
+                        // The rest are used often enough to keep, and rare enough not to hold a
+                        // place in the bar on a screen where the log wants the room.
+                        IconButton(onClick = { menuOpen = true }) {
+                            Icon(
+                                Icons.Filled.MoreVert,
+                                contentDescription = stringResource(R.string.shell_more)
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = menuOpen,
+                            onDismissRequest = { menuOpen = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.shell_copy)) },
+                                onClick = {
+                                    menuOpen = false
+                                    clipboard.setText(AnnotatedString(printed.joinToString("\n")))
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.shell_save_output)) },
+                                onClick = {
+                                    menuOpen = false
+                                    saveOutput.launch(defaultFileName())
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        stringResource(
+                                            if (expanded) R.string.shell_collapse
+                                            else R.string.shell_expand
+                                        )
+                                    )
+                                },
+                                onClick = { menuOpen = false; expanded = !expanded }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.shell_clear)) },
+                                onClick = { menuOpen = false; lines.clear() }
+                            )
+                        }
                     }
                 }
-            }
-        )
+            )
+        }
 
         Row(
             modifier = Modifier
@@ -485,24 +634,20 @@ fun ShellScreen(onBack: () -> Unit) {
         }
 
         Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-            ) {
-                items(lines) { line ->
-                    Text(
-                        text = line.text,
-                        fontFamily = FontFamily.Monospace,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = when (line.kind) {
-                            ShellLine.Kind.COMMAND -> MaterialTheme.colorScheme.primary
-                            ShellLine.Kind.ERROR -> MaterialTheme.colorScheme.error
-                            ShellLine.Kind.EXIT -> MaterialTheme.colorScheme.error
-                            ShellLine.Kind.INFO -> MaterialTheme.colorScheme.onSurfaceVariant
-                            ShellLine.Kind.OUTPUT -> MaterialTheme.colorScheme.onSurface
-                        }
-                    )
+            // Selectable, so one line — or part of one — can be copied without taking the lot.
+            SelectionContainer {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    itemsIndexed(lines) { index, line ->
+                        OutputLineText(
+                            line = line,
+                            query = if (searching) searchQuery else "",
+                            current = matches.getOrNull(matchAt) == index
+                        )
+                    }
                 }
             }
             // At the bottom of the log rather than the screen: the input row and the keyboard
@@ -518,128 +663,132 @@ fun ShellScreen(onBack: () -> Unit) {
         // suggestions for what is being typed once there is. The saved commands lead the row in
         // both — a row that lost its way into them the moment something was typed would hide
         // the very command that was just saved.
-        Box(modifier = Modifier.fillMaxWidth().height(64.dp)) {
-            val offered = remember(field.text, suggestions) {
-                if (field.text.isBlank()) emptyList()
-                else ShellSuggestions.forInput(field.text, suggestions)
-            }
-            LazyRow(
-                // CenterStart, not CenterVertically: this is a Box, and the row should start at
-                // the left edge while it is centred in the row's height.
-                modifier = Modifier.align(Alignment.CenterStart),
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                item {
-                    AssistChip(
-                        onClick = { sheetOpen = true },
-                        enabled = !running,
-                        label = { Text(stringResource(R.string.shell_bookmarks)) },
-                        leadingIcon = {
-                            Icon(
-                                Icons.Outlined.BookmarkBorder,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    )
+        // The tools give the log the whole screen when it is expanded: an output worth
+        // searching is an output worth reading without a chip row in the way.
+        if (!expanded) {
+            Box(modifier = Modifier.fillMaxWidth().height(64.dp)) {
+                val offered = remember(field.text, suggestions) {
+                    if (field.text.isBlank()) emptyList()
+                    else ShellSuggestions.forInput(field.text, suggestions)
                 }
-                item {
-                    AssistChip(
-                        onClick = { libraryOpen = true },
-                        enabled = !running,
-                        label = { Text(stringResource(R.string.shell_library)) },
-                        leadingIcon = {
-                            Icon(
-                                Icons.Outlined.LibraryBooks,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    )
-                }
-                if (field.text.isBlank()) {
-                    items(QUICK) { quick ->
+                LazyRow(
+                    // CenterStart, not CenterVertically: this is a Box, and the row should start at
+                    // the left edge while it is centred in the row's height.
+                    modifier = Modifier.align(Alignment.CenterStart),
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    item {
                         AssistChip(
-                            onClick = {
-                                if (quick.insertOnly) {
-                                    pickFor = quick
-                                } else {
-                                    submit(quick.command)
-                                }
-                            },
+                            onClick = { sheetOpen = true },
                             enabled = !running,
-                            label = { Text(stringResource(quick.label)) }
-                        )
-                    }
-                } else {
-                    items(offered) { suggestion ->
-                        SuggestionCard(
-                            suggestion = suggestion,
-                            onClick = {
-                                val filled = ShellSuggestions.insertInto(field.text, suggestion.insert)
-                                field = TextFieldValue(filled, TextRange(filled.length))
-                                focus.requestFocus()
+                            label = { Text(stringResource(R.string.shell_bookmarks)) },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Outlined.BookmarkBorder,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
                             }
                         )
                     }
+                    item {
+                        AssistChip(
+                            onClick = { libraryOpen = true },
+                            enabled = !running,
+                            label = { Text(stringResource(R.string.shell_library)) },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Outlined.LibraryBooks,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        )
+                    }
+                    if (field.text.isBlank()) {
+                        items(QUICK) { quick ->
+                            AssistChip(
+                                onClick = {
+                                    if (quick.insertOnly) {
+                                        pickFor = quick
+                                    } else {
+                                        submit(quick.command)
+                                    }
+                                },
+                                enabled = !running,
+                                label = { Text(stringResource(quick.label)) }
+                            )
+                        }
+                    } else {
+                        items(offered) { suggestion ->
+                            SuggestionCard(
+                                suggestion = suggestion,
+                                onClick = {
+                                    val filled = ShellSuggestions.insertInto(field.text, suggestion.insert)
+                                    field = TextFieldValue(filled, TextRange(filled.length))
+                                    focus.requestFocus()
+                                }
+                            )
+                        }
+                    }
                 }
             }
-        }
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 16.dp, end = 8.dp, top = 4.dp, bottom = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            OutlinedTextField(
-                value = field,
-                onValueChange = { field = it },
+            Row(
                 modifier = Modifier
-                    .weight(1f)
-                    .focusRequester(focus),
-                placeholder = { Text(stringResource(R.string.shell_input_hint)) },
-                textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
-                singleLine = true,
-                shape = MaterialTheme.shapes.extraLarge,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                keyboardActions = KeyboardActions(onSend = { submit(field.text) }),
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                    focusedBorderColor = MaterialTheme.colorScheme.primary
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 8.dp, top = 4.dp, bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedTextField(
+                    value = field,
+                    onValueChange = { field = it },
+                    modifier = Modifier
+                        .weight(1f)
+                        .focusRequester(focus),
+                    placeholder = { Text(stringResource(R.string.shell_input_hint)) },
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
+                    singleLine = true,
+                    shape = MaterialTheme.shapes.extraLarge,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                    keyboardActions = KeyboardActions(onSend = { submit(field.text) }),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary
+                    )
                 )
-            )
-            IconButton(onClick = { recall(-1) }, enabled = history.isNotEmpty()) {
-                Icon(
-                    Icons.Filled.KeyboardArrowUp,
-                    contentDescription = stringResource(R.string.shell_history_previous)
-                )
-            }
-            IconButton(onClick = { recall(1) }, enabled = history.isNotEmpty()) {
-                Icon(
-                    Icons.Filled.KeyboardArrowDown,
-                    contentDescription = stringResource(R.string.shell_history_next)
-                )
-            }
-            if (running) {
-                // Only the Shizuku backend can be cut short: a root command runs inside the
-                // root shell's job and there is no handle on the process it ends up in.
-                IconButton(
-                    onClick = { session.stop() },
-                    enabled = backend == ShellBackend.SHIZUKU
-                ) {
+                IconButton(onClick = { recall(-1) }, enabled = history.isNotEmpty()) {
                     Icon(
-                        Icons.Filled.Stop,
-                        contentDescription = stringResource(R.string.shell_stop)
+                        Icons.Filled.KeyboardArrowUp,
+                        contentDescription = stringResource(R.string.shell_history_previous)
                     )
                 }
-            } else {
-                IconButton(onClick = { submit(field.text) }, enabled = field.text.isNotBlank()) {
+                IconButton(onClick = { recall(1) }, enabled = history.isNotEmpty()) {
                     Icon(
-                        Icons.Filled.Send,
-                        contentDescription = stringResource(R.string.shell_run)
+                        Icons.Filled.KeyboardArrowDown,
+                        contentDescription = stringResource(R.string.shell_history_next)
                     )
+                }
+                if (running) {
+                    // Only the Shizuku backend can be cut short: a root command runs inside the
+                    // root shell's job and there is no handle on the process it ends up in.
+                    IconButton(
+                        onClick = { session.stop() },
+                        enabled = backend == ShellBackend.SHIZUKU
+                    ) {
+                        Icon(
+                            Icons.Filled.Stop,
+                            contentDescription = stringResource(R.string.shell_stop)
+                        )
+                    }
+                } else {
+                    IconButton(onClick = { submit(field.text) }, enabled = field.text.isNotBlank()) {
+                        Icon(
+                            Icons.Filled.Send,
+                            contentDescription = stringResource(R.string.shell_run)
+                        )
+                    }
                 }
             }
         }
@@ -848,6 +997,70 @@ fun ShellScreen(onBack: () -> Unit) {
  * what makes it usable — `Greenify` and `com.oasisfeng.greenify` are the same thing only once
  * you have seen both, and `CAMERA` is only the end of a permission nobody types out in full.
  */
+/** A name for a saved output that sorts by when it was taken and says what made it. */
+private fun defaultFileName(): String {
+    val stamp = java.text.SimpleDateFormat("yyyyMMdd-HHmm", java.util.Locale.US)
+        .format(java.util.Date())
+    return "shell-$stamp.txt"
+}
+
+/**
+ * One line of output, with the matches in the current search marked.
+ *
+ * The line holding the match being looked at is marked more strongly than the rest, so the
+ * counter in the bar and the place on screen are the same thing.
+ */
+@Composable
+private fun OutputLineText(line: ShellLine, query: String, current: Boolean) {
+    val colour = when (line.kind) {
+        ShellLine.Kind.COMMAND -> MaterialTheme.colorScheme.primary
+        ShellLine.Kind.ERROR -> MaterialTheme.colorScheme.error
+        ShellLine.Kind.EXIT -> MaterialTheme.colorScheme.error
+        ShellLine.Kind.INFO -> MaterialTheme.colorScheme.onSurfaceVariant
+        ShellLine.Kind.OUTPUT -> MaterialTheme.colorScheme.onSurface
+    }
+
+    if (query.isBlank()) {
+        Text(
+            text = line.text,
+            fontFamily = FontFamily.Monospace,
+            style = MaterialTheme.typography.bodySmall,
+            color = colour
+        )
+        return
+    }
+
+    val mark = if (current) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.primaryContainer
+    }
+    val onMark = if (current) {
+        MaterialTheme.colorScheme.onPrimary
+    } else {
+        MaterialTheme.colorScheme.onPrimaryContainer
+    }
+
+    val marked = buildAnnotatedString {
+        var cursor = 0
+        ShellOutput.matchRangesOf(line.text, query).forEach { range ->
+            if (range.first > cursor) append(line.text.substring(cursor, range.first))
+            withStyle(SpanStyle(background = mark, color = onMark)) {
+                append(line.text.substring(range.first, range.last + 1))
+            }
+            cursor = range.last + 1
+        }
+        if (cursor < line.text.length) append(line.text.substring(cursor))
+    }
+
+    Text(
+        text = marked,
+        fontFamily = FontFamily.Monospace,
+        style = MaterialTheme.typography.bodySmall,
+        color = colour
+    )
+}
+
 @Composable
 private fun SuggestionCard(suggestion: ShellSuggestion, onClick: () -> Unit) {
     Surface(
