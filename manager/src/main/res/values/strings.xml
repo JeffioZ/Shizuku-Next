@@ -362,6 +362,11 @@
     <string name="shell_intro">Runs as the uid Shizuku runs as (2000 over adb, 0 with root), so it reaches whatever that uid can: /sdcard, /system, and app data with root. It opens in /sdcard, one command at a time; with no tty behind it, programs that need a terminal (nano, an ssh prompt) will not run here.</string>
     <string name="shell_root_granted">su is available: commands run as uid 0.</string>
     <string name="shell_root_refused">su was refused, staying on the Shizuku backend. Grant this app root in your root manager to use it.</string>
+    <string name="shell_library">Library</string>
+    <string name="shell_library_hint">Search commands</string>
+    <string name="shell_library_empty">No command matches that.</string>
+    <string name="shell_variables_title">Fill it in</string>
+    <string name="shell_variables_pick_app">Pick an app</string>
     <string name="shell_bookmarks">Saved</string>
     <string name="shell_bookmark_save">Save this command</string>
     <string name="shell_bookmark_saved">Saved</string>

@@ -34,6 +34,7 @@ import androidx.compose.material.icons.outlined.BookmarkAdd
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.LibraryBooks
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -93,7 +94,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import moe.shizuku.manager.R
 import moe.shizuku.manager.shell.ShellBackend
+import moe.shizuku.manager.shell.LibraryCommand
 import moe.shizuku.manager.shell.ShellBookmarks
+import moe.shizuku.manager.shell.ShellCommands
 import moe.shizuku.manager.shell.ShellSuggestion
 import moe.shizuku.manager.shell.ShellSuggestions
 import moe.shizuku.manager.ui.component.AppIcon
@@ -190,6 +193,14 @@ fun ShellScreen(onBack: () -> Unit) {
     // it, so the offer to undo is made where the deletion was: in the sheet's own header, for
     // as long as the undo is useful.
     var undoable by remember { mutableStateOf<ShellBookmarks.Bookmark?>(null) }
+
+    // The library, and the command being filled in from it. A command with placeholders is
+    // asked about before it is put in the input, so what is filled in is a whole command.
+    var libraryOpen by remember { mutableStateOf(false) }
+    var libraryQuery by remember { mutableStateOf("") }
+    var pending by remember { mutableStateOf<LibraryCommand?>(null) }
+    var values by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+    var packageFor by remember { mutableStateOf<String?>(null) }
 
     // Read once, and shared: the suggestions offer these apps and their permissions, and the
     // picker is the same list in a dialog.
@@ -533,6 +544,20 @@ fun ShellScreen(onBack: () -> Unit) {
                         }
                     )
                 }
+                item {
+                    AssistChip(
+                        onClick = { libraryOpen = true },
+                        enabled = !running,
+                        label = { Text(stringResource(R.string.shell_library)) },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Outlined.LibraryBooks,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    )
+                }
                 if (field.text.isBlank()) {
                     items(QUICK) { quick ->
                         AssistChip(
@@ -640,6 +665,50 @@ fun ShellScreen(onBack: () -> Unit) {
                 naming = null
             }
         )
+    }
+
+    if (libraryOpen) {
+        LibrarySheet(
+            query = libraryQuery,
+            onQueryChange = { libraryQuery = it },
+            onDismiss = { libraryOpen = false },
+            onPick = { entry ->
+                libraryOpen = false
+                if (ShellCommands.variablesOf(entry.command).isEmpty()) {
+                    fill(entry.command)
+                } else {
+                    // The sheet goes first so the dialog is not stacked behind it.
+                    pending = entry
+                    values = emptyMap()
+                }
+            }
+        )
+    }
+
+    pending?.let { entry ->
+        VariablesDialog(
+            command = entry.command,
+            values = values,
+            onValueChange = { name, value -> values = values + (name to value) },
+            onPickPackage = { name -> packageFor = name },
+            onDismiss = { pending = null; values = emptyMap() },
+            onConfirm = {
+                fill(ShellCommands.filled(entry.command, values))
+                pending = null
+                values = emptyMap()
+            }
+        )
+    }
+
+    packageFor?.let { name ->
+        PackagePickerDialog(
+            title = stringResource(R.string.shell_variables_pick_app),
+            installed = installed,
+            onDismiss = { packageFor = null }
+        ) { packageName ->
+            values = values + (name to packageName)
+            packageFor = null
+        }
     }
 
     if (sheetOpen) {
