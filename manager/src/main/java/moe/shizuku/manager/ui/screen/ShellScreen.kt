@@ -157,6 +157,12 @@ private val QUICK = listOf(
 )
 
 /**
+ * A `su` with nothing to run, which is the form that needs a terminal: `su -c id` carries
+ * its command and does not.
+ */
+private val BARE_SU = Regex("""^su(?:\s+-\s*)?$""")
+
+/**
  * The shell, in the app rather than in a terminal app.
  *
  * Every command is its own process see [ShellSession] for why a real tty is not on offer
@@ -321,6 +327,13 @@ fun ShellScreen(onBack: () -> Unit) {
         if (command.isEmpty() || running) return
 
         field = TextFieldValue("")
+        // `clear` is this screen's own command, and it runs before the echo so the echo goes
+        // with it: a shell with no terminal would instead paint a screen it does not have and
+        // hand back the escape codes for it.
+        if (command == "clear") {
+            lines.clear()
+            return
+        }
         if (inner != null) {
             feed(ShellLine(context.getString(R.string.shell_adb_prefix_dropped), ShellLine.Kind.INFO))
         }
@@ -347,6 +360,18 @@ fun ShellScreen(onBack: () -> Unit) {
 
         if (session.export(command)) {
             feed(ShellLine("exported ${command.trim().removePrefix("export").trim()}", ShellLine.Kind.INFO))
+            return
+        }
+
+        // Two more that the shell cannot answer for itself: a bare `su` waits at a permission
+        // prompt that nothing here can show, and `exit` would exit a shell that does not
+        // outlive the command anyway.
+        if (command == "exit") {
+            feed(ShellLine(context.getString(R.string.shell_exit_note), ShellLine.Kind.INFO))
+            return
+        }
+        if (BARE_SU.matches(command) && backend != ShellBackend.ROOT) {
+            feed(ShellLine(context.getString(R.string.shell_su_needs_root), ShellLine.Kind.INFO))
             return
         }
 

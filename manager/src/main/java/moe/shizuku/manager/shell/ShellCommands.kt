@@ -72,6 +72,10 @@ object ShellCommands {
         LibraryCommand("pm install-existing --user 0 <package>", "Put a removed system app back.", listOf("package")),
         LibraryCommand("pm dump <package>", "Everything the package manager knows about an app.", listOf("package", "info")),
         LibraryCommand("pm list permissions -d -g", "The dangerous permissions, by group.", listOf("permission", "list")),
+        LibraryCommand("pm install <apk_path>", "Install an APK from a file on the device.", listOf("package", "install")),
+        LibraryCommand("pm reset-permissions -p <package>", "Put an app's permissions back to their defaults.", listOf("package", "permission")),
+        LibraryCommand("pm uninstall-system-updates <package>", "Roll a system app back to the version it shipped with.", listOf("package", "uninstall")),
+        LibraryCommand("pm list features", "The features this device's hardware reports.", listOf("device", "list")),
         LibraryCommand(
             "cmd package compile -m speed -f <package>",
             "Compile an app ahead of time, so it starts faster.",
@@ -153,6 +157,7 @@ object ShellCommands {
         LibraryCommand("df -h", "Free space on every filesystem.", listOf("storage", "info")),
         LibraryCommand("du -sh <path>", "How much space a directory takes.", listOf("storage", "directory")),
         LibraryCommand("ls -l <path>", "List a directory in detail.", listOf("file", "directory")),
+        LibraryCommand("pwd", "Where the session is, which is the directory the next command runs in.", listOf("file", "directory")),
         LibraryCommand("mkdir -p <path>", "Create a directory and its parents.", listOf("file", "directory")),
         LibraryCommand("cp <source> <destination>", "Copy a file or directory.", listOf("file")),
         LibraryCommand("mv <source> <destination>", "Move or rename it.", listOf("file")),
@@ -168,14 +173,18 @@ object ShellCommands {
         LibraryCommand("id", "Which uid the shell is running as.", listOf("info")),
         LibraryCommand("uptime", "How long the device has been up.", listOf("info")),
         LibraryCommand("ps -A", "Every process.", listOf("process", "list")),
+        LibraryCommand("kill <pid>", "Stop one process, by the pid ps -A shows.", listOf("process")),
         LibraryCommand("top -n 1", "One sample of what is using the CPU.", listOf("process", "info")),
         LibraryCommand("dumpsys meminfo", "Memory use, by app.", listOf("memory", "info")),
         LibraryCommand("dumpsys cpuinfo", "CPU use, by app.", listOf("info")),
+        LibraryCommand("service list", "Every system service, ready for the ones with a shell interface.", listOf("info", "list")),
         LibraryCommand("logcat -d -t 200", "The last two hundred log lines.", listOf("log", "info")),
         LibraryCommand("logcat -d -s <tag>", "Log lines from one tag.", listOf("log")),
         LibraryCommand("logcat -c", "Clear the log buffers.", listOf("log")),
         LibraryCommand("pm list users", "Every user on the device.", listOf("user", "list")),
         LibraryCommand("reboot", "Restart the device.", listOf("power")),
+        LibraryCommand("reboot recovery", "Restart into recovery.", listOf("power")),
+        LibraryCommand("reboot bootloader", "Restart into the bootloader.", listOf("power")),
         LibraryCommand("sync", "Flush pending writes to disk.", listOf("file"))
     )
 }
