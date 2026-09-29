@@ -290,6 +290,11 @@
     <string name="check_for_updates">Check for updates</string>
     <string name="update_latest_installed">You already have the latest version</string>
     <string name="update_check_failed">Could not check for updates</string>
+    <string name="update_check_offline">Could not reach GitHub. Check your connection and try again.</string>
+    <string name="update_check_rate_limited">GitHub is rate-limiting update checks. Try again later.</string>
+    <string name="update_check_rate_limited_minutes">GitHub is rate-limiting update checks. Try again in about %1$d min.</string>
+    <string name="update_check_http_error">Could not check for updates (HTTP %1$d)</string>
+    <string name="update_check_no_release">No published release to compare against yet</string>
     <string name="update_downloading">Downloading update...</string>
     <string name="update_download_failed">Could not download update</string>
     <string name="update_success">Update complete</string>
