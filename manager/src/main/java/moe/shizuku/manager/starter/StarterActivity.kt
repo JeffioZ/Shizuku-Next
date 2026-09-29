@@ -119,9 +119,24 @@ class StarterActivity : AppBarActivity() {
             }
             binding.text1.text = output
         }
+
+        viewModel.agentStopped = { agentWasStopped }
     }
 
     private var hasStarted = false
+
+    /**
+     * Whether this activity came back to the front while a system start was waiting. The
+     * payload ends by stopping the agent, and the agent's activity is what covered this one,
+     * so coming back means the payload ran: the one thing that separates "the agent never
+     * acted" from "the starter or the server failed", and it needs no logcat to see.
+     */
+    private var agentWasStopped = false
+
+    override fun onResume() {
+        super.onResume()
+        if (viewModel.exploitSent) agentWasStopped = true
+    }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
@@ -153,6 +168,14 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
     private val _output = MutableLiveData<Resource<StringBuilder>>()
 
     val output = _output as LiveData<Resource<StringBuilder>>
+
+    /** Set once the agent has been told to run the payload. */
+    @Volatile
+    var exploitSent = false
+        private set
+
+    /** Set by the activity: whether the agent vanished while a start was waiting. */
+    var agentStopped: (() -> Boolean)? = null
 
     private val handler = CoroutineExceptionHandler { _, throwable ->
         ShizukuStateMachine.update()
@@ -186,7 +209,21 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
                 isSystem -> startSys()
                 else -> { AdbStarter.startAdb(appContext, port, { log(it) }); true }
             }
-            if (waiting) Starter.waitForBinder({ log(it) })
+            try {
+                if (waiting) Starter.waitForBinder({ log(it) })
+            } catch (e: TimeoutException) {
+                log(
+                    if (agentStopped?.invoke() == true) {
+                        "the agent was stopped while this start was waiting, which is the " +
+                            "payload's last step: the payload ran, so what failed is the " +
+                            "starter or the server it starts\n"
+                    } else {
+                        "the agent is still running, so it did not act on the command: the " +
+                            "payload never ran\n"
+                    }
+                )
+                throw e
+            }
         }
     }
 
@@ -250,6 +287,7 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
                 repeat(FOTA_ATTEMPTS) { attempt ->
                     if (attempt > 0) delay(FOTA_ATTEMPT_INTERVAL_MS)
                     appContext.sendBroadcast(exploit)
+                    exploitSent = true
                     log("sent the agent command (attempt ${attempt + 1} of $FOTA_ATTEMPTS)\n")
                 }
                 true
