@@ -18,6 +18,7 @@ import androidx.lifecycle.viewModelScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.topjohnwu.superuser.CallbackList
 import com.topjohnwu.superuser.Shell
+import java.io.File
 import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.util.concurrent.TimeoutException
@@ -169,6 +170,18 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
 
     val output = _output as LiveData<Resource<StringBuilder>>
 
+    /**
+     * The starter's own account of the attempt, when it managed to leave one. It writes it
+     * into this app's external files directory, which both it and the app can reach, and
+     * that is the only reason a failed system start can be explained without logcat.
+     */
+    private fun starterLog(): String? = runCatching {
+        val file = File(appContext.getExternalFilesDir(null), "starter.log")
+        if (!file.exists()) return@runCatching null
+        val text = file.readText().trim()
+        if (text.isEmpty()) null else text
+    }.getOrNull()
+
     /** Set once the agent has been told to run the payload. */
     @Volatile
     var exploitSent = false
@@ -212,6 +225,7 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 if (waiting) Starter.waitForBinder({ log(it) })
             } catch (e: TimeoutException) {
+                starterLog()?.let { log("the starter left this behind:\n$it\n") }
                 log(
                     if (agentStopped?.invoke() == true) {
                         "the agent was stopped while this start was waiting, which is the " +

@@ -209,11 +209,70 @@ static int switch_cgroup() {
 
 static int s_killed_count = 0;
 
+/**
+ * The manager's package name, from a path inside its own directories: an APK
+ * (/data/app/<id>/base.apk) or the executable this binary is
+ * (/data/app/<id>/lib/arm64/libshizuku.so). The directory is
+ * <package>-<hash>, and a package name cannot contain a dash, so the first one ends it.
+ */
+static std::string package_from_path(const char *path) {
+    std::string value(path);
+    size_t app = value.find("/data/app/");
+    if (app == std::string::npos) return "";
+
+    size_t start = app + strlen("/data/app/");
+    size_t end = value.find('/', start);
+    std::string dir = value.substr(start, end == std::string::npos ? std::string::npos : end - start);
+
+    size_t dash = dir.find('-');
+    return dash == std::string::npos ? dir : dir.substr(0, dash);
+}
+
+/**
+ * Sends this process's output to a file the manager can read afterwards.
+ *
+ * The device exploits run this binary from another app and keep its output, so a start that
+ * fails leaves nothing behind on the manager's side to explain it. The manager's own
+ * external files directory is a place both this process (as root or the system uid, and as
+ * the adb shell) and the app can write and read, and it is where a logcat reader would not
+ * be needed to find out what happened. Best effort: with no writable place, logcat is still
+ * told everything.
+ */
+static void redirect_log_to_manager(const char *manager_path) {
+    std::string package = package_from_path(manager_path);
+    if (package.empty()) return;
+
+    char path[PATH_MAX];
+    snprintf(path, sizeof(path), "/storage/emulated/0/Android/data/%s/files/starter.log",
+             package.c_str());
+
+    FILE *log = fopen(path, "w");
+    if (log == nullptr) {
+        log = fopen("/data/local/tmp/shizuku_starter.log", "w");
+    }
+    if (log == nullptr) return;
+
+    dup2(fileno(log), STDOUT_FILENO);
+    dup2(fileno(log), STDERR_FILENO);
+    setvbuf(stdout, nullptr, _IOLBF, 0);
+}
+
 int main(int argc, char *argv[]) {
     std::string apk_path;
     for (int i = 0; i < argc; ++i) {
         if (strncmp(argv[i], "--apk=", 6) == 0) {
             apk_path = argv[i] + 6;
+        }
+    }
+
+    // Before anything can fail, so that the uid guard below and the apk path above are both
+    // in the file: this is the only output the manager can read back.
+    {
+        char self[PATH_MAX];
+        ssize_t length = readlink("/proc/self/exe", self, sizeof(self) - 1);
+        if (length > 0) {
+            self[length] = '\0';
+            redirect_log_to_manager(self);
         }
     }
 
