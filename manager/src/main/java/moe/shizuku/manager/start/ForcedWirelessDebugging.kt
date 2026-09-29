@@ -45,8 +45,17 @@ object ForcedWirelessDebugging {
     /** Then one at a time, to reopen the window if the daemon is stopped again. */
     private const val INTERVAL_MS = 1_000L
 
-    /** How long a start will keep asking before it carries on without. */
-    private const val WINDOW_MS = 25_000L
+    /**
+     * How long a start keeps asking before it carries on without.
+     *
+     * Minutes rather than seconds, because whether this works at all is the framework's
+     * decision, not ours: its handler stops the daemon again whenever it is not satisfied,
+     * so what wins is catching it in a moment when it leaves it alone. A few seconds of
+     * asking is a lottery ticket; a couple of minutes is a chance. The hotspot stays up for
+     * the whole window for the same reason, since discovery needs an interface to resolve
+     * the port against.
+     */
+    private const val WINDOW_MS = 120_000L
 
     private const val HOTSPOT_TIMEOUT_MS = 12_000L
 
