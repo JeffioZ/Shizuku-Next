@@ -24,6 +24,10 @@ public class ServiceStarter {
 
     private static final String EXTRA_BINDER = "moe.shizuku.privileged.api.intent.extra.BINDER";
 
+    /** How many times to look for the manager's provider before giving up on the start. */
+    private static final int PROVIDER_ATTEMPTS = 5;
+    private static final long PROVIDER_RETRY_DELAY_MS = 200L;
+
     public static final String DEBUG_ARGS;
 
     static {
@@ -106,7 +110,18 @@ public class ServiceStarter {
         IContentProvider provider = null;
 
         try {
-            provider = ActivityManagerApis.getContentProviderExternal(name, userId, null, name);
+            // A null provider usually means the manager has not published it yet rather
+            // than that it is gone: the app is started by the same broadcast that starts
+            // this process, so the two race. Give it a few tries instead of failing a
+            // start that would have worked a moment later (upstream RikkaApps/Shizuku
+            // pull 1220).
+            for (int attempt = 1; attempt <= PROVIDER_ATTEMPTS && provider == null; attempt++) {
+                provider = ActivityManagerApis.getContentProviderExternal(name, userId, null, name);
+                if (provider == null) {
+                    Log.w(TAG, String.format("provider is null %s %d, attempt %d", name, userId, attempt));
+                    Thread.sleep(PROVIDER_RETRY_DELAY_MS);
+                }
+            }
             if (provider == null) {
                 Log.e(TAG, String.format("provider is null %s %d", name, userId));
                 return false;
