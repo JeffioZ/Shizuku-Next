@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -26,6 +27,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -45,14 +47,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.annotation.StringRes
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
@@ -71,6 +78,31 @@ import rikka.shizuku.Shizuku
 private const val MAX_LINES = 2000
 
 private const val MAX_HISTORY = 100
+
+/**
+ * One of the commands the shell offers, which are the ones the manager already runs itself.
+ *
+ * [insertOnly] is the split that matters: something that only reads the device can be run by
+ * a tap, and something that changes it cannot — `pm grant` needs a package and a permission,
+ * and a chip that fired it half-written would be a trap. Those write their command into the
+ * input instead, so what runs is what you can read.
+ */
+private data class QuickCommand(
+    @StringRes val label: Int,
+    val command: String,
+    val insertOnly: Boolean = false
+)
+
+private val QUICK = listOf(
+    QuickCommand(R.string.shell_quick_battery, "dumpsys battery"),
+    QuickCommand(R.string.shell_quick_storage, "df -h /data /sdcard"),
+    QuickCommand(R.string.shell_quick_device, "getprop ro.product.model; getprop ro.build.version.release"),
+    QuickCommand(R.string.shell_quick_apps, "pm list packages -3 | sort"),
+    QuickCommand(R.string.shell_quick_grant, "pm grant ", insertOnly = true),
+    QuickCommand(R.string.shell_quick_revoke, "pm revoke ", insertOnly = true),
+    QuickCommand(R.string.shell_quick_app_ops, "cmd appops set ", insertOnly = true),
+    QuickCommand(R.string.shell_quick_force_stop, "am force-stop ", insertOnly = true)
+)
 
 /**
  * The shell, in the app rather than in a terminal app.
@@ -95,10 +127,19 @@ fun ShellScreen(onBack: () -> Unit) {
     // one, which is why streaming output does not need a recomposition per line.
     val incoming = remember { Channel<ShellLine>(Channel.UNLIMITED) }
 
-    var input by rememberSaveable { mutableStateOf("") }
+    // A TextFieldValue rather than a plain String, for one reason: a chip that fills the
+    // input has to leave the caret at the end of what it wrote. With a String the caret
+    // stayed where it was — at the start of an empty field — so the rest of the command was
+    // typed in front of the template ("com.foo pm grant").
+    var field by rememberSaveable(stateSaver = TextFieldValue.Saver) {
+        mutableStateOf(TextFieldValue(""))
+    }
     var backend by rememberSaveable { mutableStateOf(ShellBackend.SHIZUKU) }
     var running by remember { mutableStateOf(false) }
     var cwd by remember { mutableStateOf(session.cwd) }
+    // A chip that fills the input leaves the cursor in it, so the command can be finished
+    // without reaching for the field again.
+    val focus = remember { FocusRequester() }
     var rootAvailable by remember { mutableStateOf<Boolean?>(null) }
     var uid by remember { mutableIntStateOf(-1) }
     val history = remember { mutableStateListOf<String>() }
@@ -145,7 +186,7 @@ fun ShellScreen(onBack: () -> Unit) {
         val command = raw.trim()
         if (command.isEmpty() || running) return
 
-        input = ""
+        field = TextFieldValue("")
         feed(ShellLine("$cwd $ $command", ShellLine.Kind.COMMAND))
         if (history.isEmpty() || history.last() != command) {
             history.add(command)
@@ -196,7 +237,8 @@ fun ShellScreen(onBack: () -> Unit) {
         if (history.isEmpty()) return
         if (historyIndex == -1) historyIndex = history.size
         historyIndex = (historyIndex + direction).coerceIn(0, history.size)
-        input = if (historyIndex == history.size) "" else history[historyIndex]
+        val recalled = if (historyIndex == history.size) "" else history[historyIndex]
+        field = TextFieldValue(recalled, TextRange(recalled.length))
     }
 
     Column(
@@ -339,6 +381,27 @@ fun ShellScreen(onBack: () -> Unit) {
             }
         }
 
+        LazyRow(
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(QUICK) { quick ->
+                AssistChip(
+                    onClick = {
+                        if (quick.insertOnly) {
+                            field = TextFieldValue(quick.command, TextRange(quick.command.length))
+                            focus.requestFocus()
+                        } else {
+                            submit(quick.command)
+                        }
+                    },
+                    enabled = !running,
+                    label = { Text(stringResource(quick.label)) }
+                )
+            }
+        }
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -346,15 +409,17 @@ fun ShellScreen(onBack: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             OutlinedTextField(
-                value = input,
-                onValueChange = { input = it },
-                modifier = Modifier.weight(1f),
+                value = field,
+                onValueChange = { field = it },
+                modifier = Modifier
+                    .weight(1f)
+                    .focusRequester(focus),
                 placeholder = { Text(stringResource(R.string.shell_input_hint)) },
                 textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
                 singleLine = true,
                 shape = MaterialTheme.shapes.extraLarge,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                keyboardActions = KeyboardActions(onSend = { submit(input) }),
+                keyboardActions = KeyboardActions(onSend = { submit(field.text) }),
                 colors = OutlinedTextFieldDefaults.colors(
                     unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
                     focusedBorderColor = MaterialTheme.colorScheme.primary
@@ -373,8 +438,8 @@ fun ShellScreen(onBack: () -> Unit) {
                 )
             }
             if (running) {
-                // Only the Shizuku backend can be cut short: a root command runs inside a
-                // `su` job and there is no handle on the process it ends up in.
+                // Only the Shizuku backend can be cut short: a root command runs inside the
+                // root shell's job and there is no handle on the process it ends up in.
                 IconButton(
                     onClick = { session.stop() },
                     enabled = backend == ShellBackend.SHIZUKU
@@ -385,7 +450,7 @@ fun ShellScreen(onBack: () -> Unit) {
                     )
                 }
             } else {
-                IconButton(onClick = { submit(input) }, enabled = input.isNotBlank()) {
+                IconButton(onClick = { submit(field.text) }, enabled = field.text.isNotBlank()) {
                     Icon(
                         Icons.Filled.Send,
                         contentDescription = stringResource(R.string.shell_run)
