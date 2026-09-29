@@ -1,6 +1,7 @@
 package moe.shizuku.manager.start
 
 import android.content.Context
+import android.os.Build
 import android.provider.Settings
 import android.util.Log
 import moe.shizuku.manager.AppConstants
@@ -51,11 +52,21 @@ fun restoreDeveloperOptions(context: Context) {
  *
  * The screens this app sends people to for ADB wireless debugging, its own pairing
  * tutorial live under Developer options, so while our setting hides it those actions
- * would open nothing. Defaults to enabled: only a 0 written there (by us or by the user)
- * means hidden.
+ * would open nothing.
+ *
+ * The only hiding this app knows the reason for is its own setting, so that is what is
+ * asked first: with "ADB without Developer options" off, Developer options were not
+ * turned off by us, and a 0 read from the setting is either the user's own choice or the
+ * value Android 17 (SDK 37) redacts for third-party apps. Since Android 17 QPR1 redacts
+ * `development_settings_enabled` the way it redacts `ADB_ENABLED`, believing it was what
+ * made a start that failed for some other reason put "Developer options is off because ADB
+ * without Developer options is enabled" on the home card and offer to turn off a setting
+ * nobody had switched on.
  */
 fun Context.isDeveloperOptionsEnabled(): Boolean =
-    Settings.Global.getInt(contentResolver, DEVELOPMENT_SETTINGS_ENABLED, 1) != 0
+    !ShizukuSettings.getAdbWithoutDeveloperOptions() &&
+        (Settings.Global.getInt(contentResolver, DEVELOPMENT_SETTINGS_ENABLED, 1) != 0 ||
+            Build.VERSION.SDK_INT >= 37)
 
 /**
  * Re-applies the setting after a reboot, when the system has cleared the ADB toggles but
