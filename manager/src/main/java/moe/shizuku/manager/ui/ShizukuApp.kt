@@ -137,7 +137,16 @@ fun ShizukuApp() {
 
                 if (current != null) {
                     BackHandler { detail = null }
-                    CenteredContent {
+                    CenteredContent(
+                        // A detail screen has no tab bar under it, so it is the one that has
+                        // to keep clear of the navigation bar itself. The tab layout adds
+                        // that inset to its own bottom padding; a detail had none, which on
+                        // a device with navigation buttons put the shell's input row under
+                        // them.
+                        modifier = Modifier.windowInsetsPadding(
+                            WindowInsets.navigationBars.only(WindowInsetsSides.Bottom)
+                        )
+                    ) {
                         when (current) {
                             Detail.STEALTH -> StealthScreen(onBack = { detail = null })
                             Detail.TERMINAL -> TerminalScreen(onBack = { detail = null })
@@ -185,9 +194,12 @@ private fun ShellBarButton(onOpen: () -> Unit) {
 }
 
 @Composable
-private fun CenteredContent(content: @Composable () -> Unit) {
+private fun CenteredContent(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.TopCenter
     ) {
         Box(
