@@ -42,6 +42,10 @@
 #define EXIT_FATAL_BINDER_BLOCKED_BY_SELINUX 10
 
 #define SERVER_NAME "shizuku_server"
+
+/** How many times to exec the server before giving up, and how far apart. */
+#define SERVER_ATTEMPTS 16
+#define SERVER_ATTEMPT_INTERVAL_US 16000
 #define SERVER_CLASS_PATH "rikka.shizuku.server.ShizukuService"
 
 #if defined(__arm__)
@@ -118,7 +122,12 @@ v_current = (uintptr_t) v + v_size - sizeof(char *); \
     LOGD("exec app_process");
 
     if (execvp((const char *) argv[0], argv)) {
-        exit(EXIT_FATAL_APP_PROCESS);
+        // Returns instead of exiting, so the caller can try again: the first exec in the
+        // context a device exploit gives this process can fail where the next succeeds, and
+        // both forks that are known to start reliably from an exploit (pascua28, wr3cckl3ss)
+        // retry here while every other fork exits silently and leaves nothing to go on.
+        perrorf("warn: can't exec %s (%d: %s)\n", (const char *) argv[0], errno,
+                strerror(errno));
     }
 }
 
@@ -152,7 +161,14 @@ static void start_server(const char *path, const char *main_class, const char *p
             write(fds[1], &ready, 1);
             close(fds[1]);
 
-            run_server(path, main_class, process_name);
+            // Run to completion on success, because the server replaces this process image;
+            // on failure try again, and if nothing works say so rather than disappearing.
+            for (int attempt = 0; attempt < SERVER_ATTEMPTS; attempt++) {
+                run_server(path, main_class, process_name);
+                usleep(SERVER_ATTEMPT_INTERVAL_US);
+            }
+            perrorf("fatal: can't start the server after %d attempts\n", SERVER_ATTEMPTS);
+            exit(EXIT_FATAL_APP_PROCESS);
         }
         default: {
             close(fds[1]);
