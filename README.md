@@ -162,7 +162,7 @@ Shizuku takes user privacy very seriously.
 
 ## 🌎 Translations
 
-Contribute translations through the [Crowdin project](https://crowdin.com/project/shizuku).
+Contribute translations through the [Crowdin project](https://crowdin.com/project/Shizuku-Next).
 
 ## 🎁 Donations
 
