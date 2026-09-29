@@ -219,8 +219,17 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                         }
                         applicationContext.registerReceiver(unlockReceiver, filter)
                     } else awaitingAuth = true
-                    timeoutJob?.cancel()
-                    adbMdns.stop()
+
+                    // With the experiment on, the attempt keeps its deadline and keeps
+                    // discovering: it is fighting a setting the framework keeps reverting,
+                    // so every revert would otherwise cancel the only thing that ends the
+                    // attempt, and the worker would wait forever instead of retrying. The
+                    // daemon can also be up while the setting reads 0, which is the state
+                    // discovery should stay out for.
+                    if (!forcedWireless) {
+                        timeoutJob?.cancel()
+                        adbMdns.stop()
+                    }
                 }
 
                 val observer = object : ContentObserver(null) {
