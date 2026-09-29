@@ -79,8 +79,32 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
 
             val cr = applicationContext.contentResolver
             val startMethod = requestedMethod
-            val usbMethod = startMethod == ShizukuSettings.StartMethod.USB
-            val forcedWireless = !usbMethod && ShizukuSettings.getForceWirelessDebugging()
+            val experiment = ShizukuSettings.getForceWirelessDebugging()
+            // A USB start's transport is the classic ADB port, and opening one needs a live
+            // connection to borrow. With no port and no network there is nothing to borrow,
+            // so that start could only fail, for a reason the user cannot act on. When the
+            // no-Wi-Fi experiment is on the request was "start it with no network", which
+            // the wireless path can do and a USB start cannot, so this carries on over
+            // wireless instead of failing. Decided here, before any toggle is written, so
+            // the USB debugging switch is never flipped for a start that will not use it.
+            var usbMethod = startMethod == ShizukuSettings.StartMethod.USB
+            var forcedWireless = !usbMethod && experiment
+            if (usbMethod && experiment &&
+                EnvironmentUtils.getAdbTcpPort() <= 0 && !EnvironmentUtils.isWifiConnected()
+            ) {
+                Log.i(
+                    AppConstants.TAG,
+                    "USB start has no ADB port and no network to borrow one over: " +
+                        "continuing over wireless debugging instead (Start without Wi-Fi is on)"
+                )
+                usbMethod = false
+                forcedWireless = true
+                requestedMethod = ShizukuSettings.StartMethod.WIRELESS
+                // The record of how Shizuku was started is read back as a suffix on the
+                // home screen, so it has to follow the transport that was actually used.
+                ShizukuSettings.setRunningStartMethod(ShizukuSettings.StartMethod.WIRELESS)
+                notify(WorkerState.RUNNING)
+            }
 
             // Which debugging toggle we use is the entire difference between the two
             // ADB start methods, so each one only ever touches its own:
@@ -153,13 +177,29 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             // falls back to wireless discovery going through the wireless port is
             // what used to make a "USB" start depend on Wi-Fi and pairing.
             if (usbMethod && tcpPort <= 0) {
-                StartStatusReporter.failed(
-                    applicationContext.getString(R.string.start_failed_usb_no_port),
-                    // The card can open the port for the user.
-                    StartFailureKind.PORT
-                )
-                notify(WorkerState.AWAITING_RETRY)
-                return Result.failure()
+                if (experiment) {
+                    // It tried to borrow the connection to reopen the port and could not,
+                    // which is the same dead end as having no network at all. Fall back
+                    // rather than reporting a failure the user can do nothing about.
+                    Log.i(
+                        AppConstants.TAG,
+                        "USB start could not reopen the classic ADB port: continuing over " +
+                            "wireless debugging instead (Start without Wi-Fi is on)"
+                    )
+                    usbMethod = false
+                    forcedWireless = true
+                    requestedMethod = ShizukuSettings.StartMethod.WIRELESS
+                    ShizukuSettings.setRunningStartMethod(ShizukuSettings.StartMethod.WIRELESS)
+                    notify(WorkerState.CONNECTING)
+                } else {
+                    StartStatusReporter.failed(
+                        applicationContext.getString(R.string.start_failed_usb_no_port),
+                        // The card can open the port for the user.
+                        StartFailureKind.PORT
+                    )
+                    notify(WorkerState.AWAITING_RETRY)
+                    return Result.failure()
+                }
             }
             // From here the USB method always has a classic port to use.
 
