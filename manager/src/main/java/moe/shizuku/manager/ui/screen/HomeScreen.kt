@@ -976,11 +976,21 @@ private fun ExitDialog(titleRes: Int, messageRes: Int) {
     )
 }
 
+/**
+ * The uid the server runs as, as the number first: the number is what decides what it can
+ * reach, and 0, 1000 and 2000 are the ones worth being able to read at a glance.
+ *
+ * Note what 2000 is called here: shell, not adb. It is the shell user whichever wire the
+ * server was started over, and naming it after the transport printed the same word twice on
+ * a card that already has a Transport row.
+ */
+@Composable
 private fun uidLabel(uid: Int): String = when (uid) {
-    0 -> "root"
-    2000 -> "adb"
-    -1 -> "-"
-    else -> "uid $uid"
+    0 -> stringResource(R.string.uid_value_named, uid, stringResource(R.string.start_method_root))
+    1000 -> stringResource(R.string.uid_value_named, uid, stringResource(R.string.start_method_system))
+    2000 -> stringResource(R.string.uid_value_named, uid, stringResource(R.string.uid_shell))
+    -1 -> stringResource(R.string.status_value_none)
+    else -> uid.toString()
 }
 
 /**
