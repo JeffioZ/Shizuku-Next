@@ -208,14 +208,20 @@ int main(int argc, char *argv[]) {
     }
 
     uid_t uid = getuid();
-    if (uid != 0 && uid != 2000) {
-        perrorf("fatal: run Shizuku from non root nor adb user (uid=%d).\n", uid);
+    // 1000 as well: the system uid is what the device exploits that start this server
+    // without root or adb give it, and refusing it here is what made "Start (system)"
+    // report success while the server quietly exited with EXIT_FATAL_UID.
+    if (uid != 0 && uid != 1000 && uid != 2000) {
+        perrorf("fatal: run Shizuku from non root/system/adb user (uid=%d).\n", uid);
         exit(EXIT_FATAL_UID);
     }
 
     se::init();
 
-    if (uid == 0) {
+    // The system uid gets what root gets here: a process left in an app cgroup can be
+    // killed as one, and a system process that cannot see the init mount namespace cannot
+    // reach what it was started to reach.
+    if (uid == 0 || uid == 1000) {
         switch_cgroup();
 
         if (android_get_device_api_level() >= 29) {

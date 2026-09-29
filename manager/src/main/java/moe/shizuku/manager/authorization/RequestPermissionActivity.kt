@@ -41,8 +41,11 @@ class RequestPermissionActivity : AppActivity() {
     }
 
     private fun checkSelfPermission(): Boolean {
+        // A server that is not the adb shell is not limited the way adb is: a root or
+        // system one can grant runtime permissions itself, whatever this check answers.
+        val notAdbShell = runCatching { Shizuku.getUid() }.getOrDefault(2000) != 2000
         val permission = Shizuku.checkRemotePermission("android.permission.GRANT_RUNTIME_PERMISSIONS") == PackageManager.PERMISSION_GRANTED
-        if (permission) return true
+        if (permission || notAdbShell) return true
 
         val icon = getDrawable(R.drawable.ic_system_icon)
         icon?.setTint(theme.resolveColor(android.R.attr.colorAccent))
