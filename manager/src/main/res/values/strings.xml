@@ -573,6 +573,11 @@
     <string name="app_bucket_never_note">Cannot run in the background.</string>
     <string name="app_battery_unrestricted">Ignore battery optimisation</string>
     <string name="app_battery_unrestricted_note">Lets it stay active during Doze, but uses more battery.</string>
+    <string name="app_section_network">Network</string>
+    <string name="app_network_needs_shizuku">Start Shizuku to change what an app may reach.</string>
+    <string name="app_network_unsupported">This device does not offer the firewall this needs.</string>
+    <string name="app_network_block">Block network access</string>
+    <string name="app_network_block_note">The platform drops its traffic.</string>
 
     <string name="app_info_version">Version</string>
     <string name="app_info_uid">UID</string>

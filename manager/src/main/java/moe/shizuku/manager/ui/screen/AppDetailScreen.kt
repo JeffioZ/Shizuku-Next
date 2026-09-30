@@ -497,6 +497,39 @@ fun AppDetailScreen(
                     }
                 }
 
+                // ---- network ----------------------------------------------------------
+                item { SectionHeader(R.string.app_section_network) }
+                if (!running) {
+                    item { NoteCard(R.string.app_network_needs_shizuku) }
+                } else if (app.networkBlocked == null) {
+                    // The chain this uses is Android 11 and up, and its own description calls
+                    // it one for debugging: saying so beats a switch that does nothing.
+                    item { NoteCard(R.string.app_network_unsupported) }
+                } else {
+                    item {
+                        SegmentedColumn {
+                            item {
+                                SegmentedListItem(
+                                    headlineContent = { Text(stringResource(R.string.app_network_block)) },
+                                    supportingContent = { Text(stringResource(R.string.app_network_block_note)) },
+                                    trailingContent = {
+                                        ExpressiveSwitch(
+                                            checked = app.networkBlocked == true,
+                                            enabled = !busy,
+                                            onCheckedChange = { checked ->
+                                                runAction(R.string.app_network_block) {
+                                                    PackageTools.setNetworkBlocked(packageName, checked)
+                                                }
+                                            }
+                                        )
+                                    },
+                                    centerSlots = true
+                                )
+                            }
+                        }
+                    }
+                }
+
                 // ---- info -------------------------------------------------------------
                 item { SectionHeader(R.string.app_section_info) }
                 item {

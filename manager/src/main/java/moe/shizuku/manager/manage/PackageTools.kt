@@ -146,7 +146,13 @@ data class AppDetail(
     val permissions: List<AppPermission>,
     val ops: List<AppOp>,
     val bucket: StandbyBucket?,
-    val batteryUnrestricted: Boolean
+    val batteryUnrestricted: Boolean,
+
+    /**
+     * Whether the platform is dropping this app's traffic. Null when nothing could be asked:
+     * the chain is Android 11 and up, and the answer needs a running server.
+     */
+    val networkBlocked: Boolean?
 )
 
 /**
@@ -229,7 +235,8 @@ object PackageTools {
             permissions = permissionsOf(pm, info),
             ops = if (running) readOps(context, packageName) else emptyList(),
             bucket = if (running) readBucket(context, packageName) else null,
-            batteryUnrestricted = running && isBatteryUnrestricted(context, packageName)
+            batteryUnrestricted = running && isBatteryUnrestricted(context, packageName),
+            networkBlocked = if (running) readNetworkBlocked(packageName) else null
         )
     }
 
@@ -455,6 +462,44 @@ object PackageTools {
         val ran = shellOk("dumpsys deviceidle whitelist $sign$packageName") ||
             shellOk("cmd deviceidle whitelist $sign$packageName")
         return ran && isBatteryUnrestricted(context, packageName) == unrestricted
+    }
+
+    /**
+     * Whether the platform's firewall is dropping this app's traffic.
+     *
+     * Asked rather than remembered: the bit belongs to the platform, another app can set it
+     * (ShizuWall does exactly this for a living), and a switch has to show what is true now
+     * rather than what this app last asked for. The command answers `package:deny` or
+     * `package:allow` on stdout.
+     */
+    fun readNetworkBlocked(packageName: String): Boolean? {
+        val answer = runShellCommand("cmd connectivity get-package-networking-enabled $packageName")
+            ?: return null
+        return when {
+            answer.endsWith(":deny") -> true
+            answer.endsWith(":allow") -> false
+            else -> null
+        }
+    }
+
+    /**
+     * Blocks or allows this app's traffic with the platform's own firewall, no VPN involved.
+     *
+     * The bit lives in a chain that is off by default and does nothing until it is on, so the
+     * chain is switched on first. It is left on afterwards on purpose: switching it off would
+     * allow every app anything else has blocked through it, which is not this switch's
+     * business. Android's own description of the chain calls it one for debugging, which is
+     * why the row says what it is rather than pretending it is a documented feature.
+     */
+    fun setNetworkBlocked(packageName: String, blocked: Boolean): Boolean {
+        val chain = runShellCommand("cmd connectivity get-chain3-enabled")
+        if (chain?.endsWith(":enabled") != true) {
+            shellOk("cmd connectivity set-chain3-enabled true")
+        }
+
+        val value = if (blocked) "false" else "true"
+        val ran = shellOk("cmd connectivity set-package-networking-enabled $value $packageName")
+        return ran && readNetworkBlocked(packageName) == blocked
     }
 
     fun forceStop(context: Context, packageName: String): Boolean =

@@ -344,7 +344,7 @@ the switches the platform itself consults run in background, foreground services
 <details>
 <summary><b>Per-app actions and battery</b></summary>
 
-force stop, suspend (greys an app out and stops it running while keeping its data), disable, clear data, uninstall for this user, restore a removed system app, plus the app standby bucket from Unrestricted down to Never and the battery-optimisation exemption. Buckets only the system can assign are reported rather than offered, so no switch promises a change the platform will not make
+force stop, suspend (greys an app out and stops it running while keeping its data), disable, clear data, uninstall for this user, restore a removed system app, plus the app standby bucket from Unrestricted down to Never, the battery-optimisation exemption, and blocking an app's network altogether. That last one is the platform's own firewall rather than a VPN: the deny bit in Android's firewall chain, turned on by `cmd connectivity set-chain3-enabled` and set per package by `set-package-networking-enabled`, which is what apps that block traffic without a VPN do under the hood. The bit belongs to the platform, so the switch asks for it rather than remembering what it asked for, and it reads back before reporting success; the chain itself is switched on when needed and deliberately left on, because switching it off would let every app that anything else had blocked through it. Buckets only the system can assign are reported rather than offered, so no switch promises a change the platform will not make
 
 </details>
 
