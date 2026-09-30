@@ -57,6 +57,9 @@ on purpose, because the second list is the only part this project is responsible
 
 ### 🍴 From [thedjchi's fork](https://github.com/thedjchi/Shizuku) his work, carried over
 
+<details>
+<summary><b>8 features carried over from that fork</b></summary>
+
 Shizuku Next started from his fork of Shizuku, so these are his features. A couple have been extended here
 since the transport split inside **TCP mode**, for instance and where that is so, the extra behaviour
 also appears under this fork's own list below.
@@ -71,7 +74,12 @@ also appears under this fork's own list below.
 * **MediaTek support:** fixes a critical bug in the original v13.6.0 which prevented Shizuku from working on MediaTek devices
 * And more!
 
+</details>
+
 ### 🦊 Added by Shizuku Next (this fork)
+
+<details>
+<summary><b>41 features added by this fork</b></summary>
 
 The interface work, the start-method handling and the reliability fixes below are ours, built on top of his
 fork, which is built on [RikkaApps' Shizuku](https://github.com/RikkaApps/Shizuku).
@@ -117,6 +125,8 @@ fork, which is built on [RikkaApps' Shizuku](https://github.com/RikkaApps/Shizuk
 * **Stability on some Chinese devices (Xiaomi/OPPO/Lenovo):** background starts no longer force USB debugging on, so Shizuku no longer dies when the USB mode is File Transfer and the screen is off
 * **Starting with no Wi-Fi at all:** the wireless port is found over mDNS, which needs a network interface, so a reboot with nothing to associate with used to leave Shizuku down until a network turned up. Two things cover it now. When discovery finds nothing and TCP mode has kept the classic ADB port open, the start falls back to that port instead of failing a transport that needs no network at all, which is what the mode is for, and the home screen still reports honestly that the classic port carried it. And an experimental setting, off by default, asks for wireless debugging over and over the way the Settings toggle cannot be asked while offline, bringing up a local-only hotspot when asking alone is not enough. Turning it on also turns off waiting for Wi-Fi and auto-disabling wireless debugging, because both of those fight it: the first would hold back the start it exists to make possible, and the second would undo the state it keeps. Both rows say so and stay switched off and unswitchable while the feature is on, rather than letting the two be set against each other, and a stop will not disable wireless debugging even if the setting was left on from before. That setting leans on a platform bug (see thedjchi/Shizuku issue 165): it can stop working after a system update, it works on some devices and not others, and it can leave wireless debugging on where a managed device would normally refuse it. Nothing depends on it, so a start that cannot use it behaves exactly as it did before. It is not tied to the Wireless debugging start method either: a start whose own method cannot work at all (a USB start with no port and no network to borrow one over) hands over to it rather than failing, and reports itself over the transport it actually used, because the method is a preference and "start it with no network" is the request
 * **A port that survives a reboot:** the one thing none of the above fixes is the first start after a reboot, because `service.adb.tcp.port` the port `adb tcpip` opens is cleared by every boot and wireless debugging needs a network and a hotspot before it can be asked for. adbd also reads `persist.adb.tcp.port`, which does survive, so a port written there is simply listening when the device comes back and a start is a connection to 127.0.0.1 with no network, no hotspot and no race. The catch is who may write it: the property belongs to adbd's own security context, so the shell uid is refused it (the log says so in the platform's words: `Failed to set property`, exit 1), while root and the system uid are not. The setting writes it through whichever server is running, reports whether it took, and only stays on when the property reads back as the port you asked for, so it cannot claim something the device refused. It needs a server running as root or the system UID, which on a Samsung means the System UID start, and while it is set the port answers anything that can reach the device on the network
+
+</details>
 
 The fork's own name and icon the fox in [`docs/logo.png`](docs/logo.png) are this project's. Everything
 underneath is the work credited below.
