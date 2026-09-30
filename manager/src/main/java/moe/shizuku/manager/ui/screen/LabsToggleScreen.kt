@@ -70,6 +70,7 @@ import kotlinx.coroutines.withContext
 import moe.shizuku.manager.AppConstants
 import moe.shizuku.manager.R
 import moe.shizuku.manager.manage.Hiding
+import moe.shizuku.manager.manage.HidingGrants
 import moe.shizuku.manager.manage.PackageTools
 import moe.shizuku.manager.manage.Signal
 import moe.shizuku.manager.service.HidingWatchService
@@ -240,6 +241,12 @@ fun LabsToggleScreen(
         // Opening a list is as good a reason as any to make sure the watch is up: it may have
         // stood itself down while Shizuku was away, and a list that does nothing would look
         // like a broken switch.
+        if (feature.signal != null) {
+            // Opening a hiding list is the first time the feature could be used, so the two
+            // grants it needs are asked for here rather than left to a settings page somebody
+            // has to find. Nothing is shown: there is no decision in it.
+            withContext(Dispatchers.IO) { HidingGrants.ensureQuietly() }
+        }
         if (feature.signal != null && Hiding.hasAnyApp() && !Hiding.isPaused()) {
             withContext(Dispatchers.IO) { HidingWatchService.refresh(context) }
         }

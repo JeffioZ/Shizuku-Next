@@ -24,6 +24,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.rounded.AdminPanelSettings
 import androidx.compose.material.icons.rounded.BatterySaver
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.Wifi
@@ -39,6 +41,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,9 +53,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.Lifecycle
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import moe.shizuku.manager.R
 import moe.shizuku.manager.home.isAccessibilityEnabled
+import moe.shizuku.manager.manage.HidingGrants
 import moe.shizuku.manager.start.hasPermission
 import moe.shizuku.manager.start.isPermissionPermanentlyDenied
 import moe.shizuku.manager.start.openAppSettings
@@ -83,6 +88,8 @@ fun PermissionsScreen(onBack: () -> Unit) {
     var localNetwork by remember {
         mutableStateOf(localNetworkPermission()?.let { context.hasPermission(it) } ?: true)
     }
+    var usageAccess by remember { mutableStateOf(HidingGrants.usageAccess()) }
+    var dump by remember { mutableStateOf(HidingGrants.dump()) }
 
     fun refresh() {
         notifications = context.hasPermission(POST_NOTIFICATIONS)
@@ -90,12 +97,17 @@ fun PermissionsScreen(onBack: () -> Unit) {
         batteryIgnored = SettingsHelper.isIgnoringBatteryOptimizations(context)
         accessibility = context.isAccessibilityEnabled()
         localNetwork = localNetworkPermission()?.let { context.hasPermission(it) } ?: true
+        usageAccess = HidingGrants.usageAccess()
+        dump = HidingGrants.dump()
     }
 
     // Which permission the request on screen is for, so the answer can be attributed to it,
     // and which ones this session has learned the system will no longer ask about.
     var askedPermission by remember { mutableStateOf<String?>(null) }
     var stuckPermissions by remember { mutableStateOf(emptySet<String>()) }
+    // The two grants below are shell commands rather than dialogs, so they are run from a
+    // coroutine rather than through the permission launcher.
+    val scope = rememberCoroutineScope()
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -199,6 +211,57 @@ fun PermissionsScreen(onBack: () -> Unit) {
                                 context.getString(R.string.toast_copied_to_clipboard),
                                 Toast.LENGTH_SHORT
                             ).show()
+                        }
+                    }
+                )
+            }
+
+            // The two the hiding lists need, which have no dialog between them: both are
+            // commands, and Shizuku is the one that can run them. The usage access row keeps
+            // Android's own page as the way round a device with no running server, because that
+            // page is what somebody without Shizuku would use anyway. Read app exit reasons has
+            // no such page, so its fallback is the command itself, copied.
+            item {
+                PermissionRow(
+                    icon = Icons.Rounded.Lock,
+                    headline = stringResource(R.string.permissions_usage_access),
+                    reason = stringResource(R.string.permissions_usage_access_summary),
+                    granted = usageAccess,
+                    actionLabel = stringResource(R.string.permissions_action_allow),
+                    onAction = {
+                        scope.launch {
+                            withContext(Dispatchers.IO) { HidingGrants.ensure() }
+                            refresh()
+                            if (!HidingGrants.usageAccess()) {
+                                SettingsPage.UsageAccess.launch(context)
+                            }
+                        }
+                    }
+                )
+            }
+
+            item {
+                PermissionRow(
+                    icon = Icons.Rounded.Info,
+                    headline = stringResource(R.string.permissions_dump),
+                    reason = stringResource(R.string.permissions_dump_summary),
+                    granted = dump,
+                    actionLabel = stringResource(R.string.permissions_action_allow),
+                    onAction = {
+                        scope.launch {
+                            withContext(Dispatchers.IO) { HidingGrants.ensure() }
+                            dump = HidingGrants.dump()
+                            if (!HidingGrants.dump()) {
+                                val command = "adb shell pm grant ${context.packageName} " +
+                                    "android.permission.DUMP"
+                                if (ClipboardUtils.put(context, command)) {
+                                    Toast.makeText(
+                                        context,
+                                        context.getString(R.string.toast_copied_to_clipboard),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            }
                         }
                     }
                 )

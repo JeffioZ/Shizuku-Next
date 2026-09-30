@@ -12,10 +12,29 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import moe.shizuku.manager.ShizukuApplication
 import moe.shizuku.manager.ShizukuSettings
+import moe.shizuku.manager.manage.Hiding
+import moe.shizuku.manager.manage.HidingGrants
 import moe.shizuku.manager.start.grantWriteSecureSettingsIfNeeded
 import rikka.shizuku.Shizuku
 
 private val appContext = ShizukuApplication.appContext
+
+/**
+ * The same one-time handing over, for the two grants the hiding lists need.
+ *
+ * Only while a list is actually in use, which is where this deliberately differs from the
+ * permission granted beside it: that one is needed by the start flow itself, while these two are
+ * only ever read by the hiding watch - and usage access is a real special-access grant, not one
+ * of the harmless ones. Somebody who has never made a hiding list should not be handing it out.
+ *
+ * It exists because the permission above it is granted here, on the server being seen running,
+ * and hiding's two have no better trigger: this is the moment the shell becomes available, and
+ * without a shell there is nothing to ask with.
+ */
+private fun grantHidingAccessIfListsAreInUse() {
+    if (!Hiding.hasAnyApp()) return
+    HidingGrants.ensureQuietly()
+}
 
 object ShizukuStateMachine {
 
@@ -46,6 +65,7 @@ object ShizukuStateMachine {
                 // The server is up, so it can hand us the ADB-only permission the wireless
                 // flow needs the user shouldn't have to reach for a computer for it.
                 grantWriteSecureSettingsIfNeeded()
+                grantHidingAccessIfListsAreInUse()
                 // Remember how the server was launched so later background starts
                 // know whether to use root or wireless debugging (previously done by
                 // the removed HomeViewModel).
@@ -133,7 +153,10 @@ object ShizukuStateMachine {
         set(state)
         // Also covers a server that was already running when this process started, or a
         // permission that was revoked behind our back: there is no transition to hook then.
-        if (state == State.RUNNING) grantWriteSecureSettingsIfNeeded()
+        if (state == State.RUNNING) {
+            grantWriteSecureSettingsIfNeeded()
+            grantHidingAccessIfListsAreInUse()
+        }
         return state
     }
 

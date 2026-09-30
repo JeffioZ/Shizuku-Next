@@ -1,7 +1,10 @@
 package moe.shizuku.manager.manage
 
+import android.app.ActivityManager
+import android.app.ApplicationExitInfo
 import android.app.AppOpsManager
 import android.app.usage.UsageEvents
+import android.os.Build
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.ConnectivityManager
@@ -145,6 +148,7 @@ object Hiding {
     private const val PREF_PREFIX_ORIGINALS = "hiding_originals_"
     private const val PREF_PREFIX_APPS = "hiding_apps_"
     private const val PREF_PAUSED = "hiding_paused"
+    private const val PREF_HIDDEN_SINCE = "hiding_since"
 
     const val ACTION_RESTORE_HIDING = "moe.shizuku.manager.action.RESTORE_HIDING"
     const val ACTION_RESUME_HIDING = "moe.shizuku.manager.action.RESUME_HIDING"
@@ -213,6 +217,39 @@ object Hiding {
     /** The apps this signal is hidden for. */
     fun appsFor(signal: Signal): Set<String> =
         ShizukuSettings.getPreferences().getStringSet(appsPref(signal), emptySet()).orEmpty().toSet()
+
+    /** When the settings were first hidden for the app in front, or 0 when nothing is hidden. */
+    private fun hiddenSince(): Long =
+        ShizukuSettings.getPreferences().getLong(PREF_HIDDEN_SINCE, 0L)
+
+    private fun forgetHiddenSince() {
+        ShizukuSettings.getPreferences().edit().remove(PREF_HIDDEN_SINCE).apply()
+    }
+
+    /**
+     * Whether the user closed [packageName] since [sinceMillis].
+     *
+     * Needs DUMP, which is one of the two grants the hiding screens set up: without it the
+     * platform answers only about this app, and the answer here is quietly empty rather than
+     * wrong.
+     */
+    private fun closedByUserSince(packageName: String, sinceMillis: Long): Boolean {
+        if (sinceMillis == 0L) return false
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return false
+
+        return runCatching {
+            val manager = ShizukuApplication.application
+                .getSystemService(ActivityManager::class.java) ?: return false
+            manager.getHistoricalProcessExitReasons(packageName, 0, EXIT_RECORDS)
+                .any { info ->
+                    info.timestamp >= sinceMillis &&
+                        info.reason == ApplicationExitInfo.REASON_USER_REQUESTED
+                }
+        }.getOrDefault(false)
+    }
+
+    /** Enough records to see past an app that was killed for memory and restarted. */
+    private const val EXIT_RECORDS = 5
 
     /** Whether any signal has an app on its list, which is what the watch is for. */
     fun hasAnyApp(): Boolean = Signal.entries.any { appsFor(it).isNotEmpty() }
@@ -335,6 +372,12 @@ object Hiding {
         val foreground = foregroundPackage()
         var hidingFor: String? = null
 
+        // An app the user closed counts as gone even when the platform still names it the last
+        // app to come to the front: a swipe out of recents does not always leave a pause behind
+        // it, and the watch would go on hiding for an app that is not there. That is what DUMP
+        // is for, and it is the only reason it is asked for.
+        val inFront = foreground?.takeIf { !closedByUserSince(it, hiddenSince()) }
+
         Signal.entries.forEach { signal ->
             val apps = appsFor(signal)
             if (apps.isEmpty()) return@forEach
@@ -346,13 +389,13 @@ object Hiding {
                 return@forEach
             }
 
-            val wanted = foreground != null && foreground in apps
+            val wanted = inFront != null && inFront in apps
             when {
                 wanted -> {
                     if (!isHidden(signal)) hide(signal)
                     // Only a signal that is really hidden names the app, so the notification says
                     // what is true rather than what was asked for.
-                    if (isHidden(signal)) hidingFor = foreground
+                    if (isHidden(signal)) hidingFor = inFront
                 }
 
                 // The values go back; the list stays, because the list is the rule and the
@@ -368,6 +411,7 @@ object Hiding {
             }
         }
 
+        if (hidingFor == null) forgetHiddenSince()
         return hidingFor
     }
 
@@ -437,6 +481,14 @@ object Hiding {
     fun hide(signal: Signal): Boolean {
         if (signal == Signal.VPN) return takeVpnDown()
         if (isHidden(signal)) return true
+
+        // When the hiding started, which is what the exit records are compared against: an app
+        // closed before this was hidden is not news.
+        if (hiddenSince() == 0L) {
+            ShizukuSettings.getPreferences().edit()
+                .putLong(PREF_HIDDEN_SINCE, System.currentTimeMillis())
+                .apply()
+        }
 
         val saved = originals(signal)
         signal.keys.forEach { key ->

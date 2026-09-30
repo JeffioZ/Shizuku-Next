@@ -80,6 +80,15 @@ sealed class SettingsPage(
     object InternetPanel : SettingsPage(Settings.Panel.ACTION_INTERNET_CONNECTIVITY)
     object Accessibility : SettingsPage(Settings.ACTION_ACCESSIBILITY_SETTINGS)
 
+    /**
+     * Android's own list of the apps allowed to ask which app is in front.
+     *
+     * The second way to give the hiding lists that grant, beside asking Shizuku: a device with
+     * no running server still has this page, and it is where somebody who never set Shizuku up
+     * would go anyway.
+     */
+    object UsageAccess : SettingsPage(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+
     protected val defaultFlags =
         Intent.FLAG_ACTIVITY_NEW_TASK or
         Intent.FLAG_ACTIVITY_NO_HISTORY or

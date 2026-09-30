@@ -27,6 +27,7 @@ import moe.shizuku.manager.MainActivity
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.manage.Hiding
+import moe.shizuku.manager.manage.HidingGrants
 import moe.shizuku.manager.manage.Signal
 import moe.shizuku.manager.receiver.HidingRestoreReceiver
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter
@@ -146,6 +147,11 @@ class HidingWatchService : Service() {
         super.onCreate()
         running.set(true)
         channel()
+
+        // Asked for once, quietly, the first time the watch runs. Both are shell commands, so
+        // there is no dialog to show and nothing for the user to decide: a list was switched on,
+        // and without these two it cannot see the foreground without the shell.
+        scope.launch { HidingGrants.ensureQuietly() }
 
         // Posted before the first pass, because a foreground service that has not posted its
         // notification yet is one the platform will kill.

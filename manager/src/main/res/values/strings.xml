@@ -139,6 +139,11 @@
     <string name="hiding_signal_vpn">VPN</string>
     <string name="hiding_vpn_client">VPN client to Hide</string>
 
+    <string name="permissions_usage_access">Usage access</string>
+    <string name="permissions_usage_access_summary">Lets hiding lists see which app is open. Granted by Shizuku or in Android\'s Usage access settings.</string>
+
+    <string name="permissions_dump">Read app exit reasons</string>
+    <string name="permissions_dump_summary">Lets hiding lists tell when an app is closed instead of just running in the background. Granted by Shizuku.</string>
     <string name="home_hiding_active_title">Note:</string>
     <string name="home_hiding_active_note">Shizuku may stop while a hidden app is opened because hiding might turn off the debugging connection. Shizuku starts again when the app is closed.</string>
 
