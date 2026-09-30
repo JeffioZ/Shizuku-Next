@@ -287,11 +287,13 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
             reply.putBoolean(BIND_APPLICATION_PERMISSION_GRANTED, Objects.requireNonNull(clientRecord).allowed);
             reply.putBoolean(BIND_APPLICATION_SHOULD_SHOW_REQUEST_PERMISSION_RATIONALE, false);
         } else {
-            try {
-                Android17Compat.grantRuntimePermission(MANAGER_APPLICATION_ID,
-                        WRITE_SECURE_SETTINGS, UserHandleCompat.getUserId(callingUid));
-            } catch (RemoteException e) {
-                LOGGER.w(e, "grant WRITE_SECURE_SETTINGS");
+            // Granted to itself so a fresh install can switch wireless debugging on without
+            // anyone at a computer. The compat layer says whether the platform was reached at
+            // all: a signature it could not match is not the same thing as a platform that
+            // refused, and either way this must not pass in silence.
+            if (!Android17Compat.grantRuntimePermission(MANAGER_APPLICATION_ID,
+                    WRITE_SECURE_SETTINGS, UserHandleCompat.getUserId(callingUid))) {
+                LOGGER.w("could not grant WRITE_SECURE_SETTINGS to the manager");
             }
         }
         try {
@@ -374,10 +376,16 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                 }
 
                 int deviceId = 0;//Context.DEVICE_ID_DEFAULT
+                // The answer is reported rather than assumed: a permission that was asked for
+                // and never changed has to say so, or the app that asked is told it worked.
                 if (allowed) {
-                    Android17Compat.grantRuntimePermission(packageName, PERMISSION, userId);
+                    if (!Android17Compat.grantRuntimePermission(packageName, PERMISSION, userId)) {
+                        LOGGER.w("could not grant %s to %s", PERMISSION, packageName);
+                    }
                 } else {
-                    Android17Compat.revokeRuntimePermission(packageName, PERMISSION, userId);
+                    if (!Android17Compat.revokeRuntimePermission(packageName, PERMISSION, userId)) {
+                        LOGGER.w("could not revoke %s from %s", PERMISSION, packageName);
+                    }
                 }
             }
         }
