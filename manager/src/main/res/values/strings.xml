@@ -150,9 +150,7 @@
     <string name="start_system_custom_plain">And this one where it may not, which is an absolute path as this app knows it right now:</string>
     <string name="start_system_custom_copied">Command copied to the clipboard.</string>
     <string name="start_system_custom_copy_failed">The command is above, ready to copy by hand.</string>
-    <string name="settings_section_application">Application</string>
     <string name="settings_section_startup">Startup</string>
-    <string name="settings_section_service">Service</string>
     <string name="settings_section_wireless">Wireless debugging</string>
     <string name="settings_section_tools">Tools</string>
     <string name="settings_section_appearance">Appearance</string>

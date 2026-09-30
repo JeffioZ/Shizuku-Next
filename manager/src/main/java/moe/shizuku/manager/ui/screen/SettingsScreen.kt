@@ -225,19 +225,10 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
             verticalArrangement = Arrangement.spacedBy(13.dp)
         ) {
             item {
-                SettingsSectionHeader(R.string.settings_section_application)
+                SettingsSectionHeader(R.string.settings_section_startup)
             }
             item {
-                SegmentedColumn(
-                    modifier = Modifier.fillMaxWidth(),
-                    // The divider starts where the text does rather than at the card's edge,
-                    // so a row break crosses the card and not the icon column, which then
-                    // reads as one line down it.
-                    dividerStartPadding = 56.dp
-                ) {
-                    item {
-                        SettingsCardSection(R.string.settings_section_startup)
-                    }
+                SegmentedColumn(modifier = Modifier.fillMaxWidth()) {
                     item {
                         SegmentedListItem(
                             centerSlots = true,
@@ -256,6 +247,68 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                                         ShizukuSettings.setStartOnBoot(context, checked)
                                         startOnBoot = ShizukuSettings.getStartOnBoot(context)
                                     }
+                                }
+                        )
+                    }
+                    item {
+                        SegmentedListItem(
+                            centerSlots = true,
+                            leadingContent = { SettingsIcon(Icons.Outlined.MonitorHeart) },
+                            headlineContent = { Text(stringResource(R.string.settings_watchdog)) },
+                            supportingContent = { Text(stringResource(R.string.settings_watchdog_summary)) },
+                            switchState = watchdog,
+                            onSwitchChange =
+                                { checked ->
+                                    if (checked && needsBatteryPrompt(context)) {
+                                        batteryPrompt = {
+                                            ShizukuSettings.setWatchdog(context, true)
+                                            watchdog = true
+                                        }
+                                    } else {
+                                        ShizukuSettings.setWatchdog(context, checked)
+                                        watchdog = checked
+                                    }
+                                }
+                        )
+                    }
+                    item {
+                        SegmentedListItem(
+                            centerSlots = true,
+                            leadingContent = { SettingsIcon(Icons.Outlined.Usb) },
+                            headlineContent = { Text(stringResource(R.string.settings_auto_disable_usb_debugging)) },
+                            supportingContent = { Text(stringResource(R.string.settings_auto_disable_usb_debugging_summary)) },
+                            switchState = autoDisableUsb,
+                            onSwitchChange =
+                                {
+                                    ShizukuSettings.getPreferences().edit()
+                                        .putBoolean(ShizukuSettings.Keys.KEY_AUTO_DISABLE_USB_DEBUGGING, it).apply()
+                                    autoDisableUsb = it
+                                }
+                        )
+                    }
+                    item {
+                        SegmentedListItem(
+                            centerSlots = true,
+                            leadingContent = { SettingsIcon(Icons.Outlined.Wifi) },
+                            headlineContent = { Text(stringResource(R.string.settings_auto_disable_wireless_debugging)) },
+                            supportingContent = {
+                                Text(
+                                    stringResource(
+                                        if (forceWireless) R.string.settings_unavailable_while_forcing_wireless
+                                        else R.string.settings_auto_disable_wireless_debugging_summary
+                                    )
+                                )
+                            },
+                            // Turning wireless debugging off when Shizuku stops is the one
+                            // thing the experiment cannot survive, so this row is not offered
+                            // while it is on rather than flipped and then flipped back.
+                            switchState = autoDisableWireless && !forceWireless,
+                            switchEnabled = !forceWireless,
+                            onSwitchChange =
+                                {
+                                    ShizukuSettings.getPreferences().edit()
+                                        .putBoolean(ShizukuSettings.Keys.KEY_AUTO_DISABLE_WIRELESS_DEBUGGING, it).apply()
+                                    autoDisableWireless = it
                                 }
                         )
                     }
@@ -402,76 +455,14 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                             onClick = { systemStartDialog = true }
                         )
                     }
-                    // This card holds more than one kind of thing, so its title says what
-                    // the group is and these say which part of it a row belongs to.
-                    item {
-                        SettingsCardSection(R.string.settings_section_service)
-                    }
-                    item {
-                        SegmentedListItem(
-                            centerSlots = true,
-                            leadingContent = { SettingsIcon(Icons.Outlined.MonitorHeart) },
-                            headlineContent = { Text(stringResource(R.string.settings_watchdog)) },
-                            supportingContent = { Text(stringResource(R.string.settings_watchdog_summary)) },
-                            switchState = watchdog,
-                            onSwitchChange =
-                                { checked ->
-                                    if (checked && needsBatteryPrompt(context)) {
-                                        batteryPrompt = {
-                                            ShizukuSettings.setWatchdog(context, true)
-                                            watchdog = true
-                                        }
-                                    } else {
-                                        ShizukuSettings.setWatchdog(context, checked)
-                                        watchdog = checked
-                                    }
-                                }
-                        )
-                    }
-                    item {
-                        SegmentedListItem(
-                            centerSlots = true,
-                            leadingContent = { SettingsIcon(Icons.Outlined.Usb) },
-                            headlineContent = { Text(stringResource(R.string.settings_auto_disable_usb_debugging)) },
-                            supportingContent = { Text(stringResource(R.string.settings_auto_disable_usb_debugging_summary)) },
-                            switchState = autoDisableUsb,
-                            onSwitchChange =
-                                {
-                                    ShizukuSettings.getPreferences().edit()
-                                        .putBoolean(ShizukuSettings.Keys.KEY_AUTO_DISABLE_USB_DEBUGGING, it).apply()
-                                    autoDisableUsb = it
-                                }
-                        )
-                    }
-                    item {
-                        SegmentedListItem(
-                            centerSlots = true,
-                            leadingContent = { SettingsIcon(Icons.Outlined.Wifi) },
-                            headlineContent = { Text(stringResource(R.string.settings_auto_disable_wireless_debugging)) },
-                            supportingContent = {
-                                Text(
-                                    stringResource(
-                                        if (forceWireless) R.string.settings_unavailable_while_forcing_wireless
-                                        else R.string.settings_auto_disable_wireless_debugging_summary
-                                    )
-                                )
-                            },
-                            // Turning wireless debugging off when Shizuku stops is the one
-                            // thing the experiment cannot survive, so this row is not offered
-                            // while it is on rather than flipped and then flipped back.
-                            switchState = autoDisableWireless && !forceWireless,
-                            switchEnabled = !forceWireless,
-                            onSwitchChange =
-                                {
-                                    ShizukuSettings.getPreferences().edit()
-                                        .putBoolean(ShizukuSettings.Keys.KEY_AUTO_DISABLE_WIRELESS_DEBUGGING, it).apply()
-                                    autoDisableWireless = it
-                                }
-                        )
-                    }
-                    item {
-                        SettingsCardSection(R.string.settings_section_wireless)
-                    }
+                }
+            }
+
+            item {
+                SettingsSectionHeader(R.string.settings_section_wireless)
+            }
+            item {
+                SegmentedColumn(modifier = Modifier.fillMaxWidth()) {
                     item {
                         SegmentedListItem(
                             centerSlots = true,
@@ -571,10 +562,7 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                 SettingsSectionHeader(R.string.settings_section_tools)
             }
             item {
-                SegmentedColumn(
-                    modifier = Modifier.fillMaxWidth(),
-                    dividerStartPadding = 56.dp
-                ) {
+                SegmentedColumn(modifier = Modifier.fillMaxWidth()) {
                     // Battery optimisation moved onto the permissions page: it answers the
                     // same question as the rest of that page (may this app do its job?)
                     item {
@@ -632,10 +620,7 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                 SettingsSectionHeader(R.string.settings_section_appearance)
             }
             item {
-                SegmentedColumn(
-                    modifier = Modifier.fillMaxWidth(),
-                    dividerStartPadding = 56.dp
-                ) {
+                SegmentedColumn(modifier = Modifier.fillMaxWidth()) {
                     item {
                         SegmentedListItem(
                             centerSlots = true,
@@ -714,10 +699,7 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                 SettingsSectionHeader(R.string.settings_section_about)
             }
             item {
-                SegmentedColumn(
-                    modifier = Modifier.fillMaxWidth(),
-                    dividerStartPadding = 56.dp
-                ) {
+                SegmentedColumn(modifier = Modifier.fillMaxWidth()) {
                     item {
                         SegmentedListItem(
                             centerSlots = true,
@@ -1046,25 +1028,6 @@ private fun SettingsSectionHeader(@StringRes titleRes: Int) {
         fontWeight = FontWeight.SemiBold,
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.padding(start = 16.dp, top = 12.dp)
-    )
-}
-
-/**
- * A label inside a settings card.
- *
- * A card that holds one kind of thing is named by the title above it and needs nothing more.
- * A card that holds two or three kinds - how a start happens, what looks after it once it is
- * running, how the connection is set up - uses these instead, so the card stays one object
- * while its parts stay findable.
- */
-@Composable
-private fun SettingsCardSection(@StringRes titleRes: Int) {
-    Text(
-        text = stringResource(titleRes),
-        style = MaterialTheme.typography.labelLarge,
-        fontWeight = FontWeight.SemiBold,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 4.dp)
     )
 }
 

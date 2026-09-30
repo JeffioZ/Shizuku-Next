@@ -26,7 +26,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ui.theme.LocalAmoledTheme
@@ -38,10 +37,6 @@ import moe.shizuku.manager.ui.theme.LocalAmoledTheme
 @Composable
 fun SegmentedColumn(
     modifier: Modifier = Modifier,
-    // The dividers can be held back from the card's edge so they start under the text rather
-    // than under the icon column, which reads as one line down a list of rows that lead with
-    // an icon. Rows without one leave this at zero.
-    dividerStartPadding: Dp = 0.dp,
     content: @Composable SegmentedColumnScope.() -> Unit
 ) {
     // On the pure black theme the card and the page are the same colour, so the card
@@ -66,7 +61,7 @@ fun SegmentedColumn(
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceContainerHigh
     ) {
-        val scope = SegmentedColumnScope(dividerStartPadding)
+        val scope = SegmentedColumnScope()
         Column { scope.content() }
     }
 }
@@ -105,16 +100,13 @@ fun SegmentedCard(
     }
 }
 
-class SegmentedColumnScope(private val dividerStartPadding: Dp = 0.dp) {
+class SegmentedColumnScope {
     private var count = 0
 
     @Composable
     fun item(content: @Composable () -> Unit) {
         if (count > 0) {
-            HorizontalDivider(
-                modifier = Modifier.padding(start = dividerStartPadding),
-                color = MaterialTheme.colorScheme.outlineVariant
-            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         }
         count++
         content()
