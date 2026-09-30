@@ -33,6 +33,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -62,7 +63,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ui.component.AppFilterChip
-import moe.shizuku.manager.ui.component.AppListSkeleton
 import moe.shizuku.manager.ui.component.appLabel
 import moe.shizuku.manager.ui.component.AppIcon
 import moe.shizuku.manager.ui.component.AppStatusChips
@@ -406,7 +406,7 @@ fun ManageScreen(
             // is spent looking at where the content will be. A pull is not this case: the
             // rows already there stay, which is why the skeleton asks for an empty list too.
             if (loading && shown.isEmpty()) {
-                AppListSkeleton()
+                CenteredMessage { LoadingIndicator() }
             }
 
             if (!loading && shown.isEmpty()) {

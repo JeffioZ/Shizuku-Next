@@ -38,6 +38,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.SnackbarDuration
@@ -78,7 +79,6 @@ import moe.shizuku.manager.receiver.ShizukuReceiverStarter
 import moe.shizuku.manager.ui.component.AppFilterChip
 import moe.shizuku.manager.ui.component.AppIcon
 import moe.shizuku.manager.ui.component.AppStatusChips
-import moe.shizuku.manager.ui.component.AppListSkeleton
 import moe.shizuku.manager.ui.component.CenteredMessage
 import moe.shizuku.manager.ui.component.ChipEmphasis
 import moe.shizuku.manager.ui.component.SegmentedCard
@@ -588,7 +588,7 @@ fun AppsScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = fals
         // spent looking at where the content will be. A pull is not this case: the rows
         // already there stay, which is why the skeleton asks for an empty list as well.
         if (loading && shown.isEmpty()) {
-            AppListSkeleton()
+            CenteredMessage { LoadingIndicator() }
         }
 
         // Say why the page is empty: no server to ask, nothing matching the search, or

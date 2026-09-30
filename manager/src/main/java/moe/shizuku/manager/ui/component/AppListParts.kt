@@ -3,16 +3,9 @@ package moe.shizuku.manager.ui.component
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.progressSemantics
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,15 +14,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -42,7 +31,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -286,83 +274,6 @@ fun CenteredMessage(content: @Composable ColumnScope.() -> Unit) {
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, content = content)
     }
-}
-
-/**
- * Placeholder rows for a list that has not been read yet.
- *
- * A spinner says "wait" and leaves the page blank; these stand in for the rows themselves, so
- * the list keeps its shape and the wait is spent looking at where the content will be. They
- * are built from the same card and the same row the real entries use, so the two agree about
- * how tall a row is, how big an icon is and where the second line sits: guessing at those is
- * how a placeholder ends up jumping the moment the content arrives.
- *
- * One pulse for the whole screen rather than a sweep, and a narrow band of it, because the
- * job is to say the page is waiting without becoming the thing you look at.
- */
-@Composable
-fun AppListSkeleton(
-    modifier: Modifier = Modifier,
-    rows: Int = 8
-) {
-    val transition = rememberInfiniteTransition(label = "skeleton")
-    val pulse by transition.animateFloat(
-        initialValue = 0.08f,
-        targetValue = 0.16f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 900, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "skeletonPulse"
-    )
-    // onSurface at a low alpha rather than a surface role: on the pure-black theme every
-    // surface role is black, so a placeholder drawn in one would be invisible.
-    val fill = MaterialTheme.colorScheme.onSurface.copy(alpha = pulse)
-
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(start = 16.dp, top = 4.dp, end = 16.dp)
-            // Decoration standing in for content that is not here yet, and the rows carry no
-            // text of their own, so the block is announced once as an indeterminate wait.
-            .progressSemantics(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        repeat(rows) {
-            SegmentedCard {
-                ListItem(
-                    leadingContent = {
-                        Placeholder(fill, Modifier.size(40.dp), MaterialTheme.shapes.medium)
-                    },
-                    headlineContent = {
-                        Placeholder(
-                            fill,
-                            Modifier.fillMaxWidth(0.45f).height(16.dp),
-                            MaterialTheme.shapes.small
-                        )
-                    },
-                    supportingContent = {
-                        Placeholder(
-                            fill,
-                            Modifier.fillMaxWidth(0.65f).height(12.dp),
-                            MaterialTheme.shapes.small
-                        )
-                    },
-                    // The switch the Apps rows carry, at the size it is: a pill reads as
-                    // "a control goes here" without claiming to be one particular control.
-                    trailingContent = {
-                        Placeholder(fill, Modifier.width(52.dp).height(32.dp), CircleShape)
-                    },
-                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun Placeholder(fill: Color, modifier: Modifier, shape: Shape) {
-    Box(modifier = modifier.clip(shape).background(fill))
 }
 
 @Composable

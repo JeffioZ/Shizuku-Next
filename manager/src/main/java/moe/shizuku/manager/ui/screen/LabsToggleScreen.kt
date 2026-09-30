@@ -38,6 +38,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -76,7 +77,6 @@ import moe.shizuku.manager.manage.Signal
 import moe.shizuku.manager.service.HidingWatchService
 import moe.shizuku.manager.ui.component.AppFilterChip
 import moe.shizuku.manager.ui.component.AppIcon
-import moe.shizuku.manager.ui.component.AppListSkeleton
 import moe.shizuku.manager.ui.component.AppStatusChips
 import moe.shizuku.manager.ui.component.CenteredMessage
 import moe.shizuku.manager.ui.component.ExpressiveSwitch
@@ -688,7 +688,7 @@ fun LabsToggleScreen(
 
             if (loading || shown.isEmpty()) {
                 if (loading) {
-                    AppListSkeleton()
+                    CenteredMessage { LoadingIndicator() }
                 } else {
                     CenteredMessage {
                         when {
