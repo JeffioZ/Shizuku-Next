@@ -13,6 +13,7 @@ translations come from Crowdin.
 | --- | --- |
 | A push to `master` that changes `values/strings.xml` | `upload sources` — Crowdin learns what there is to translate |
 | Nightly at 03:17, or *Run workflow* | `download translations` into a pull request on the `l10n` branch |
+| *Run workflow* with **seed translations** ticked | uploads the repository's own files as translations, for a language Crowdin does not have yet |
 | That pull request | merged automatically, squashed, if it only touches `values-*/strings.xml` and they pass the checks below |
 
 The check and the merge happen **in the same run** as the download, not in a workflow of their
@@ -210,12 +211,27 @@ in exchange for access to their machine translation.
 The ten languages it unblocked are shipped - see "The ten the licence brought in" above - which
 leaves one piece of housekeeping:
 
-**`zh-CN` and `zh-TW` are not target languages in Crowdin at all.** The app ships
-`values-zh-rCN` and `values-zh-rTW`, and those two folders cannot be updated by any sync until the
-languages exist in the project. Adding one and leaving it empty does not work either: an
-untranslated language exports a file with no strings in it, and the check refuses that, because
-for a folder that already exists it would be a wipe. So the order is to add the language, upload
-the repository's own Chinese files into it once, and let the sync take over from there.
+**`zh-CN` and `zh-TW` were not target languages at all**, while the app ships `values-zh-rCN` and
+`values-zh-rTW` - two folders nothing could ever update. They are in the project now, and seeded
+from the only copy of those translations that existed, which was this repository.
+
+That took three steps, in this order:
+
+1. **Add the languages** - `PATCH /projects/935085` with
+   `[{"op":"replace","path":"/targetLanguageIds","value":[...]}]`, the project's list plus the two.
+2. **Seed them from the repository** - a workflow run with `seed_translations` ticked, which is the
+   ordinary upload step with `upload_translations` turned on: the CLI reads back the files its
+   `translation` pattern names, so `values-zh-rCN/strings.xml` becomes zh-CN's translations and
+   `values-zh-rTW/strings.xml` becomes zh-TW's. 119 strings each.
+3. **Let the sync take over** - the next download updated both folders and merged itself, because
+   the folders already existed and the files were real translations.
+
+The order matters, and so does the timing: adding a language and leaving it empty does not work,
+because an untranslated language exports a file with no strings in it and the check refuses that -
+for a folder that already exists, an empty file would be a wipe. And a seeding run uploads the
+repository's copy of *every* language, not just the new one, so it belongs right after a sync:
+run it when Crowdin has moved on and it would push this repository's older text back over a
+translator's work.
 
 If the licence had not been granted, the fallback was the arithmetic in the section above: 17
 languages at 3,411 words each is 57,987 and 18 is 61,398, so eight of the 23 would have had to go.
