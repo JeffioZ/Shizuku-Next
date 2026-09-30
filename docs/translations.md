@@ -121,21 +121,86 @@ from a file in the tree.
 
 ## Why the language list is short
 
-Crowdin's free plan counts **hosted words as the source words multiplied by the number of target
-languages**, so an unused language is not free — it re-hosts every string the app has. This project
-had 314 target languages against a source of about 3,430 words, which is roughly **1,077,000 hosted
-words**, and every source update multiplied by all of them. That reached the free plan's limit; the
-project now holds **33 languages** (about 113,000 hosted words), the ones with translations, which
-is what the limit was exceeded by.
+Crowdin charges **hosted words, which are the source words multiplied by the number of target
+languages**, so an unused language is not free: it re-hosts every string the app has. This project
+once had **314** target languages against a source of about 3,411 words - roughly **1,071,000 hosted
+words** - and every source update multiplied by all of them. The language list was cut to the ones
+with translators behind them, which is where the 33 of today came from.
 
-So adding a language is a real cost: roughly **3,400 hosted words each**, one language's worth of
-the whole app. Add the ones with translators behind them, and remove a language rather than leave
-it sitting at 0% (its translations are kept in this repository either way, so nothing is lost by
-removing an empty one — and re-adding it takes a moment).
+So adding a language costs about **3,411 hosted words**, one language's worth of the whole app.
+Add the ones with translators behind them, and drop a language rather than leave it at 0%: its
+translations are held in this repository either way, so nothing ships differently either way.
 
-If the account is still over its limit, the dashboard's usage figure is the authority: the number
-of languages multiplied by 3,430 gets you there, and 15 languages would be about 51,000 hosted
-words.
+That ceiling is still the thing deciding how many languages this app can carry. See the next
+section for where the account actually stands, and for the free license that removes the ceiling
+altogether.
+
+## Where the account actually stands
+
+Measured against the project as it is now:
+
+| | Languages | Hosted words |
+| --- | --- | --- |
+| The source | - | 517 strings, **3,411 words** |
+| The project | **33** | **112,563** |
+| Without the ten that cannot be exported | 23 | 78,453 |
+| What the free allowance fits | **17** | 57,987 |
+
+The free plan's published allowance is **60,000 hosted words**, counted across every project on
+the account, so the project is roughly at twice it and even the 23 the app uses would not fit.
+Nothing is frozen at this size - uploads, downloads and merges all run - and the figure Crowdin's
+pricing page no longer prints, so the dashboard's usage meter is the authority. There is no API
+for it; the account's billing page is the only place to read it.
+
+## The Open Source license
+
+The way off that ceiling is Crowdin's free license for open-source projects: unlimited projects,
+strings and members, which makes the language list a decision about the app rather than about a
+bill. It is not something the API can apply for - the form is on the website, it wants the project
+lead logged in, and it is read by a person:
+
+- form: <https://crowdin.com/product/for-open-source>
+
+Their criteria, and where this project stands:
+
+| Criterion | Here |
+| --- | --- |
+| A translation project in Crowdin | yes, `935085` |
+| An OSI-approved license | Apache-2.0 (see `LICENSE`) |
+| Source publicly available | yes |
+| No commercial product around it | yes |
+| You are the project lead | yes |
+| Working on it for at least three months | the continuation of a project that is older than that; the repository itself was created 2026-09-26, so say where it came from rather than leave the date to be guessed at |
+| An active community | 30 contributors, PRs from outside |
+| News kept up to date | the README, updated with each change |
+| Regular releases | tagged releases, most recent on the day this was written |
+
+Submitting the form also agrees to two things worth knowing before it is sent: joining Crowdin's
+beta group, and contributing this project's translations to Crowdin's global translation memory
+in exchange for access to their machine translation.
+
+### Once it is granted
+
+1. The hosted-words ceiling stops constraining anything, so nothing has to be trimmed. Re-check
+the usage meter once, to see the new figure.
+2. Map the ten languages that are currently excluded, so the translations those translators have
+already written can ship at last - `de-BE: de`, `fr-LU: fr`, `es-419: es`, `it-CH: it`,
+`nl-SR: nl`, `sv-FI: sv`, `tr-CY: tr`, `ar-EG: ar`, `el-CY: el`, `sr-Cyrl-ME: sr` in
+[`crowdin.yml`](../crowdin.yml), and remove them from `excluded_target_languages`.
+3. Merge each of those first pull requests **by hand**. The check refuses a translation whose
+folder the repository has not got, which is deliberate: it is what stops a language appearing in
+the app by accident, and the trade is that adding one is a decision someone makes.
+4. Add `zh-CN` and `zh-TW` as target languages. The app ships `values-zh-rCN` and
+`values-zh-rTW`, and Crowdin holds neither, so those two folders cannot be updated by any sync
+until they exist there.
+
+### If it is not granted
+
+The ceiling stays, and the arithmetic is unforgiving: 17 languages at 3,411 words each is 57,987,
+and 18 is 61,398. So the choice is which eight of the 23 to drop. Weigh them by what they
+actually carry - Russian is 468 strings and Japanese 382, while the tail sits around 115 - and
+remember that dropping a language discards the translations held in Crowdin, which is why the ten
+excluded ones have been left in place rather than removed.
 
 ## Checking progress without the web interface
 
