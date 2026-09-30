@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+
 package moe.shizuku.manager.ui.screen
 
 import android.content.Context
@@ -22,7 +24,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -137,7 +139,9 @@ fun StealthScreen(onBack: () -> Unit) {
         )
 
         if (busy) {
-            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            // The wavy bar is Material 3's expressive indeterminate progress: it reads
+            // as "something is running" at a glance without a track to fill.
+            LinearWavyProgressIndicator(modifier = Modifier.fillMaxWidth())
         }
 
         LazyColumn(

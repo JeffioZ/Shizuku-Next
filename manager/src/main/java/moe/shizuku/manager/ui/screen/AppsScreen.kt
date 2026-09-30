@@ -26,7 +26,8 @@ import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -107,7 +108,7 @@ enum class AppFilter {
     HIDDEN
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AppsScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = false) {
     val context = LocalContext.current
@@ -539,7 +540,7 @@ fun AppsScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = fals
         if (loading || shown.isEmpty()) {
             CenteredMessage {
                 when {
-                    loading -> CircularProgressIndicator()
+                    loading -> LoadingIndicator()
 
                     !running -> {
                         Text(
