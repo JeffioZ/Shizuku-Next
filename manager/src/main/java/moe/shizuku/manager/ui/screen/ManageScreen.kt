@@ -25,7 +25,8 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Sort
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -102,7 +103,7 @@ enum class ManageFilter {
  * works with Shizuku stopped; only the rows that change something need the server, and
  * they say so instead of failing.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ManageScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = false) {
     val context = LocalContext.current
@@ -401,7 +402,7 @@ fun ManageScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = fa
             if (loading || shown.isEmpty()) {
                 CenteredMessage {
                     when {
-                        loading -> CircularProgressIndicator()
+                        loading -> LoadingIndicator()
 
                         query.isNotBlank() -> Text(
                             text = stringResource(R.string.apps_no_match),

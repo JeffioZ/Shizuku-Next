@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+
 package moe.shizuku.manager.ui.screen
 
 import android.app.Activity
@@ -39,7 +41,7 @@ import androidx.compose.material.icons.rounded.Wifi
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
@@ -952,9 +954,10 @@ private fun ServerActionButtons(
             onClick = onStart
         ) {
             if (starting) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(18.dp),
-                    strokeWidth = 2.dp,
+                // The morphing loader rather than a ring: it is the shape Material 3
+                // gives an action that is running, and it is legible at button size.
+                LoadingIndicator(
+                    modifier = Modifier.size(22.dp),
                     // The button is disabled while starting, so pick a colour that
                     // still reads against the disabled container.
                     color = MaterialTheme.colorScheme.primary
