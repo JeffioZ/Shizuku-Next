@@ -11,6 +11,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.database.ContentObserver
 import android.net.Uri
+import android.content.pm.ServiceInfo
 import android.os.Build
 import android.provider.Settings
 import android.util.Log
@@ -248,10 +249,25 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                             null,
                             requestedMethod
                         )
-                        val foregroundInfo = ForegroundInfo(
-                            ShizukuReceiverStarter.NOTIFICATION_ID,
-                            notification
-                        )
+                        // The type has to be handed over here, not only declared in the
+                        // manifest: WorkManager passes on what this carries, so the two
+                        // argument form asks for a foreground service with no type at all,
+                        // which Android 14 refuses outright and takes the process down with
+                        // it. That combination is the locked-device start, and therefore
+                        // every start a reboot makes, which is where the crashes came from:
+                        // the manifest was right and the call was not.
+                        val foregroundInfo = if (Build.VERSION.SDK_INT >= 34) {
+                            ForegroundInfo(
+                                ShizukuReceiverStarter.NOTIFICATION_ID,
+                                notification,
+                                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+                            )
+                        } else {
+                            ForegroundInfo(
+                                ShizukuReceiverStarter.NOTIFICATION_ID,
+                                notification
+                            )
+                        }
                         setForegroundAsync(foregroundInfo)
                         notify(WorkerState.WAITING_FOR_UNLOCK)
 
