@@ -431,10 +431,19 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
      * use.
      */
     private suspend fun startSystemCustom() {
+        // Two forms of the same thing, because which one works depends on the shell the
+        // command is run in: the run-time lookup needs permission to ask the package
+        // manager, and the absolute path is the one that works without it. The lookup is
+        // the one copied, since it survives an update that moves the install.
         val command = systemStarterCommand()
+        val plain = plainStarterCommand()
 
         log(appContext.getString(R.string.start_system_custom_intro))
+        log(appContext.getString(R.string.start_system_custom_lookup))
         log(command)
+        log("")
+        log(appContext.getString(R.string.start_system_custom_plain))
+        log(plain)
 
         val copied = withContext(Dispatchers.Main) {
             val clipboard =
@@ -457,6 +466,15 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
      * working after an update moves it, and it names this package rather than a fixed one,
      * which matters for stealth mode.
      */
+    /**
+     * The same executable, named outright.
+     *
+     * The lookup above asks the package manager where this app is, which a shell that may
+     * not query packages is refused. This is the path as this app knows it, right now.
+     */
+    private fun plainStarterCommand(): String =
+        appContext.applicationInfo.nativeLibraryDir + "/libshizuku.so"
+
     private fun systemStarterCommand(): String {
         val packageName = appContext.packageName
 
