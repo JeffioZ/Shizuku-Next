@@ -132,16 +132,19 @@ exist. It was merged by hand, and that is the step every new language takes.
 
 ## Which languages ship
 
-The folders that ship are the ones with real content — currently 24 languages, from Japanese at
-129 translated strings down to Brazilian Portuguese at 117. The rest were removed, which also
-shrinks the app: `resources.arsc` fell from 3.7 MB to 1.1 MB, taking the release APK from 7.2 MB to
-4.6 MB.
+The folders that ship are the ones with real content — **35 languages** now, from Russian at 468
+strings and Japanese at 382 down to the tail at about 115, the ten the licence brought in sitting
+at about 118 each. The ~200 that were nothing but English were removed, which also shrank the app:
+`resources.arsc` fell from 3.7 MB to 1.1 MB, taking the release APK from 7.2 MB to 4.6 MB. The ten
+added since cost about 178 kB of source XML between them, against the thousands of lines of English
+copies the first sync deleted.
 
-There is nothing to maintain by hand for a language to appear: add nothing while it is untranslated
-(Crowdin will not export it), and its folder arrives with the next sync once it has translations.
-Deleting a folder removes the language from the system's app-language list, because the list is
-generated from the folders (`generateLocaleConfig = true` in `manager/build.gradle`) rather than
-from a file in the tree.
+A language appears by someone deciding it should: its folder has to exist in the repository before
+the check that guards the translation pull requests will let a file for it through, which is
+recorded above. Once it does, there is nothing to maintain by hand — its folder arrives with the
+next sync as soon as it has translations. Deleting a folder removes the language from the system's
+app-language list, because the list is generated from the folders (`generateLocaleConfig = true` in
+`manager/build.gradle`) rather than from a file in the tree.
 
 ## Why the language list is short
 
