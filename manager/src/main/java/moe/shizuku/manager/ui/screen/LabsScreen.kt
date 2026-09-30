@@ -88,6 +88,22 @@ fun LabsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                     onClick = { onOpenDetail(Detail.SHELL) }
                 )
             }
+
+            item {
+                LabTile(
+                    icon = AppToggleFeature.FIREWALL.icon,
+                    label = stringResource(AppToggleFeature.FIREWALL.titleRes),
+                    onClick = { onOpenDetail(Detail.FIREWALL) }
+                )
+            }
+
+            item {
+                LabTile(
+                    icon = AppToggleFeature.AUTOSTART.icon,
+                    label = stringResource(AppToggleFeature.AUTOSTART.titleRes),
+                    onClick = { onOpenDetail(Detail.AUTOSTART) }
+                )
+            }
         }
     }
 }

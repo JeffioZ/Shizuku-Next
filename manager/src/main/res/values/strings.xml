@@ -100,6 +100,13 @@
     <string name="tab_apps">Apps</string>
     <string name="tab_shell">Shell</string>
     <string name="tab_labs">Labs</string>
+    <string name="tab_firewall">Firewall</string>
+    <string name="tab_autostart">Autostart</string>
+    <string name="labs_filter_allowed">Allowed</string>
+    <string name="labs_filter_blocked">Blocked</string>
+    <string name="labs_blocked_count">%1$d blocked</string>
+    <string name="labs_blocked_empty">Nothing is blocked.</string>
+    <string name="labs_firewall_note">This list is the record this app keeps of what it blocked. The platform can only be asked about one package at a time, which is why an app detail page is where its network state is read back.</string>
     <string name="tab_settings">Settings</string>
     <string name="home_status_transport_label">Transport</string>
     <string name="home_status_started_with">Current</string>

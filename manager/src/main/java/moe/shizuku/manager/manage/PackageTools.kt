@@ -10,6 +10,7 @@ import android.util.Log
 import androidx.annotation.StringRes
 import java.security.MessageDigest
 import moe.shizuku.manager.R
+import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.utils.ShizukuStateMachine
 import moe.shizuku.manager.utils.ShizukuSystemApis
 import moe.shizuku.manager.utils.UserHandleCompat
@@ -187,6 +188,9 @@ private val OPS = listOf(
  */
 
 object PackageTools {
+
+    /** Where the firewall list's own record of what it blocked is kept. */
+    private const val PREF_FIREWALL_BLOCKED = "firewall_blocked_packages"
 
     private val pm get() = moe.shizuku.manager.ShizukuApplication.application.packageManager
 
@@ -456,6 +460,14 @@ object PackageTools {
         return readOp(packageName, op) == mode
     }
 
+    /** Sets [op] for one app to allowed or denied, and reports whether it took. */
+    fun setOpBlocked(
+        context: Context,
+        packageName: String,
+        op: String,
+        blocked: Boolean
+    ): Boolean = setOp(context, packageName, op, if (blocked) OpMode.DENY else OpMode.ALLOW)
+
     fun setBucket(context: Context, packageName: String, bucket: StandbyBucket): Boolean {
         shellOk("am set-standby-bucket $packageName ${bucket.id}")
         return readBucket(context, packageName) == bucket
@@ -497,7 +509,7 @@ object PackageTools {
      * business. Android's own description of the chain calls it one for debugging, which is
      * why the row says what it is rather than pretending it is a documented feature.
      */
-    fun setNetworkBlocked(packageName: String, blocked: Boolean): Boolean {
+    fun setNetworkBlocked(context: Context, packageName: String, blocked: Boolean): Boolean {
         val chain = runShellCommand("cmd connectivity get-chain3-enabled")
         if (chain?.endsWith(":enabled") != true) {
             shellOk("cmd connectivity set-chain3-enabled true")
@@ -505,7 +517,56 @@ object PackageTools {
 
         val value = if (blocked) "false" else "true"
         val ran = shellOk("cmd connectivity set-package-networking-enabled $value $packageName")
-        return ran && readNetworkBlocked(packageName) == blocked
+        val applied = ran && readNetworkBlocked(packageName) == blocked
+        // Recorded only once the platform agreed, because this is what the Firewall list shows
+        // and a list that says a package is blocked when it is not is worse than no list.
+        if (applied) rememberFirewallBlocked(context, packageName, blocked)
+        return applied
+    }
+
+    // ---- one state, for every app --------------------------------------------------
+
+    /**
+     * The packages with [op] denied, in one command.
+     *
+     * Asked for the whole mode at once rather than one app at a time, because `cmd appops
+     * query-op` prints a package name per line: one shell round trip answers for six hundred
+     * apps instead of six hundred of them.
+     */
+    fun readOpDenied(op: String): Set<String> =
+        runShellCommand("cmd appops query-op $op deny")
+            ?.lineSequence()
+            ?.map { it.trim() }
+            ?.filter { it.isNotEmpty() }
+            ?.toSet()
+            ?: emptySet()
+
+    /**
+     * The packages this app has blocked with the platform's firewall, as far as it knows.
+     *
+     * The platform can answer for one package at a time and there is no way to ask it for the
+     * list - the command needs a package name, and six hundred shell round trips is not a
+     * screen anybody would wait for - so the set is remembered here, written whenever this app
+     * blocks or unblocks something. The app's own page asks the platform directly, because one
+     * answer is cheap, and that page is where the truth is read: another app can block a
+     * package through the same chain, and this list will not know it.
+     */
+    fun readFirewallBlocked(context: Context): Set<String> =
+        ShizukuSettings.getPreferences()
+            .getStringSet(PREF_FIREWALL_BLOCKED, emptySet())
+            .orEmpty()
+            .toSet()
+
+    private fun rememberFirewallBlocked(
+        context: Context,
+        packageName: String,
+        blocked: Boolean
+    ) {
+        val known = readFirewallBlocked(context).toMutableSet()
+        if (blocked) known.add(packageName) else known.remove(packageName)
+        ShizukuSettings.getPreferences().edit()
+            .putStringSet(PREF_FIREWALL_BLOCKED, known)
+            .apply()
     }
 
     fun forceStop(context: Context, packageName: String): Boolean =

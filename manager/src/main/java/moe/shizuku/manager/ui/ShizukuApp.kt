@@ -84,8 +84,10 @@ import kotlinx.coroutines.launch
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ui.screen.AppsScreen
 import moe.shizuku.manager.ui.screen.HomeScreen
+import moe.shizuku.manager.ui.screen.AppToggleFeature
 import moe.shizuku.manager.ui.screen.IntentsScreen
 import moe.shizuku.manager.ui.screen.LabsScreen
+import moe.shizuku.manager.ui.screen.LabsToggleScreen
 import moe.shizuku.manager.ui.screen.ManageScreen
 import moe.shizuku.manager.ui.screen.PermissionsScreen
 import moe.shizuku.manager.ui.screen.SettingsScreen
@@ -103,7 +105,7 @@ import moe.shizuku.manager.ui.theme.ShizukuTheme
  * the bar spent its whole width on five icons while the two screens behind two of them were
  * mostly empty when you arrived.
  */
-enum class Detail { APP_OPS, SHELL, STEALTH, TERMINAL, INTENTS, PERMISSIONS }
+enum class Detail { APP_OPS, SHELL, FIREWALL, AUTOSTART, STEALTH, TERMINAL, INTENTS, PERMISSIONS }
 
 /**
  * On wide windows (tablets, foldables, desktop mode, mirrored displays) a
@@ -180,6 +182,18 @@ fun ShizukuApp() {
                             )
 
                             Detail.SHELL -> ShellScreen(bottomPadding = 0.dp, onBack = { detail = null })
+                            Detail.FIREWALL -> LabsToggleScreen(
+                                feature = AppToggleFeature.FIREWALL,
+                                bottomPadding = 0.dp,
+                                onBack = { detail = null }
+                            )
+
+                            Detail.AUTOSTART -> LabsToggleScreen(
+                                feature = AppToggleFeature.AUTOSTART,
+                                bottomPadding = 0.dp,
+                                onBack = { detail = null }
+                            )
+
                             Detail.STEALTH -> StealthScreen(onBack = { detail = null })
                             Detail.TERMINAL -> TerminalScreen(onBack = { detail = null })
                             Detail.INTENTS -> IntentsScreen(onBack = { detail = null })

@@ -518,7 +518,7 @@ fun AppDetailScreen(
                                             enabled = !busy,
                                             onCheckedChange = { checked ->
                                                 runAction(R.string.app_network_block) {
-                                                    PackageTools.setNetworkBlocked(packageName, checked)
+                                                    PackageTools.setNetworkBlocked(context, packageName, checked)
                                                 }
                                             }
                                         )
