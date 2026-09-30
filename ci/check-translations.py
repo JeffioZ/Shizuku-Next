@@ -12,18 +12,26 @@ being one rule.
 `translated-ref` is the revision holding the translations to check (the branch the pull
 request came from), and `source-ref` the revision holding the English strings.
 
-A file is refused when it is not a locale file, is not valid XML, holds no strings at all,
-or is 90% or more the English text - the last one being how a language that was never
-translated gets exported looking translated. Keys the source no longer has are reported
-and do not block: every locale carries a few from strings renamed upstream, Android
-ignores a translation with nothing to attach it to, and the next export drops them.
+A file is refused when it is not a locale file, would create a locale folder the
+repository does not have, is not valid XML, holds no strings at all, or is 90% or more the
+English text - the last one being how a language that was never translated gets exported
+looking translated. Keys the source no longer has are reported and do not block: every
+locale carries a few from strings renamed upstream, Android ignores a translation with
+nothing to attach it to, and the next export drops them.
+
+The folder rule is the one that earns its keep. Which languages ship is decided here, in
+the repository, and Crowdin's own list of target languages is not the same list: it holds
+regional locales (`ja`, `fi`, `ru-BY`) whose names do not map to ours, and an export of
+those once arrived as 193 new folders for languages with no translations at all.
 """
 import re
 import subprocess
 import sys
 import xml.etree.ElementTree as ElementTree
 
-LOCALE_PATH = re.compile(r"^manager/src/main/res/values(-[A-Za-z0-9+]+)?/strings\.xml$")
+# One or more qualifiers, so `values-ja`, `values-pt-rBR` and `values-sr-rCyrl-rME` all
+# count as locale folders. Whether we want the folder is a separate question, below.
+LOCALE_PATH = re.compile(r"^manager/src/main/res/values(-[A-Za-z0-9+]+)+/strings\.xml$")
 
 # Above what a real translation looks like here (Japanese is 74% identical to the source
 # because it still carries the English text of everything untranslated) and below the
@@ -60,6 +68,21 @@ def main():
         for path in paths
         if not LOCALE_PATH.match(path)
     ]
+
+    # Deciding what ships is not this script's job, but adding a language to the app by
+    # accident is not the export's either, so a folder has to be one the repository already
+    # carries before a translation for it is merged.
+    for path in paths:
+        if not LOCALE_PATH.match(path):
+            continue
+        folder = path.rsplit("/", 1)[0]
+        if subprocess.run(
+            ["git", "cat-file", "-e", f"{source_ref}:{folder}"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        ).returncode != 0:
+            problems.append(f"{path}: would create a locale folder the repository has not got")
+
     if problems:
         print("\n".join(problems))
         return 1
