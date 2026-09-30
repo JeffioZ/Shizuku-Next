@@ -1,8 +1,11 @@
 package moe.shizuku.manager.ui.screen
 
+import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.util.Log
 import androidx.annotation.StringRes
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
@@ -92,7 +96,11 @@ enum class AppToggleFeature(
         get() = "RUN_ANY_IN_BACKGROUND"
 }
 
-/** Which slice of the list to show. */
+/**
+ * Whether the app is blocked. Its two named states are the only two there are, so the row holds
+ * exactly those two and neither being chosen means both: unlike the kind of app, which has a
+ * list to choose from, this has nothing else to offer.
+ */
 private enum class ToggleFilter { ALL, ALLOWED, BLOCKED }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -110,6 +118,9 @@ fun LabsToggleScreen(
     var loading by remember { mutableStateOf(true) }
     var query by remember { mutableStateOf("") }
     var filter by remember { mutableStateOf(ToggleFilter.ALL) }
+    // The other question the list answers, and the one the app-ops list already asked: what
+    // kind of app it is, so a system package can be told from something you installed.
+    var kind by remember { mutableStateOf(ManageFilter.ALL) }
     var version by remember { mutableIntStateOf(0) }
     var running by remember { mutableStateOf(ShizukuStateMachine.isRunning()) }
     val scope = rememberCoroutineScope()
@@ -151,17 +162,62 @@ fun LabsToggleScreen(
         }
     }
 
-    val shown = remember(apps, blocked, query, filter) {
-        val byFilter = when (filter) {
-            ToggleFilter.ALL -> apps
-            ToggleFilter.BLOCKED -> apps.filter { it.packageName in blocked }
-            ToggleFilter.ALLOWED -> apps.filter { it.packageName !in blocked }
+    // What "hidden" means here as well: installed, and never in the app drawer. Asked of the
+    // package manager once per app, off the main thread, which is why it is worked out once per
+    // read rather than per keystroke.
+    val systemPackages = remember(apps) {
+        apps.filter { (it.applicationInfo?.flags ?: 0) and ApplicationInfo.FLAG_SYSTEM != 0 }
+            .map { it.packageName }.toSet()
+    }
+    val userPackages = remember(apps, systemPackages) {
+        apps.filter { it.applicationInfo != null && it.packageName !in systemPackages }
+            .map { it.packageName }.toSet()
+    }
+    val disabledPackages = remember(apps) {
+        apps.filter {
+            val ai = it.applicationInfo ?: return@filter false
+            !ai.enabled || (ai.flags and ApplicationInfo.FLAG_SUSPENDED) != 0
+        }.map { it.packageName }.toSet()
+    }
+    var launcherless by remember { mutableStateOf<Set<String>>(emptySet()) }
+    LaunchedEffect(apps) {
+        launcherless = if (apps.isEmpty()) {
+            emptySet()
+        } else {
+            withContext(Dispatchers.IO) {
+                apps.filterNot { pi ->
+                    runCatching {
+                        pm.getLaunchIntentForPackage(pi.packageName) != null ||
+                            pm.queryIntentActivities(
+                                Intent(Intent.ACTION_MAIN)
+                                    .addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER)
+                                    .setPackage(pi.packageName),
+                                0
+                            ).isNotEmpty()
+                    }.getOrDefault(true)
+                }.map { it.packageName }.toSet()
+            }
+        }
+    }
+
+    val shown = remember(apps, blocked, launcherless, systemPackages, userPackages, disabledPackages, query, filter, kind) {
+        val byKind = when (kind) {
+            ManageFilter.ALL -> apps
+            ManageFilter.USER -> apps.filter { it.packageName in userPackages }
+            ManageFilter.SYSTEM -> apps.filter { it.packageName in systemPackages }
+            ManageFilter.DISABLED -> apps.filter { it.packageName in disabledPackages }
+            ManageFilter.HIDDEN -> apps.filter { it.packageName in launcherless }
+        }
+        val byState = when (filter) {
+            ToggleFilter.ALL -> byKind
+            ToggleFilter.BLOCKED -> byKind.filter { it.packageName in blocked }
+            ToggleFilter.ALLOWED -> byKind.filter { it.packageName !in blocked }
         }
         val trimmed = query.trim()
         val searched = if (trimmed.isBlank()) {
-            byFilter
+            byState
         } else {
-            byFilter.filter {
+            byState.filter {
                 appLabel(pm, it).contains(trimmed, ignoreCase = true) ||
                     it.packageName.contains(trimmed, ignoreCase = true)
             }
@@ -191,32 +247,71 @@ fun LabsToggleScreen(
             }
         )
 
+        // Two rows, because they answer two questions and one row cannot say which is which:
+        // what kind of app this is, and whether it is blocked. Five kind labels do not fit on a
+        // phone, so that row scrolls like the app-ops list's does; the state row is two chips
+        // and fits, and leaves room for the next kind to be added without moving anything.
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            ManageFilter.entries.forEach { option ->
+                val count = when (option) {
+                    ManageFilter.ALL -> apps.size
+                    ManageFilter.USER -> userPackages.size
+                    ManageFilter.SYSTEM -> systemPackages.size
+                    ManageFilter.DISABLED -> disabledPackages.size
+                    ManageFilter.HIDDEN -> launcherless.size
+                }
+                AppFilterChip(
+                    label = stringResource(
+                        when (option) {
+                            ManageFilter.ALL -> R.string.manage_filter_all
+                            ManageFilter.USER -> R.string.manage_filter_user
+                            ManageFilter.SYSTEM -> R.string.manage_filter_system
+                            ManageFilter.DISABLED -> R.string.manage_filter_disabled
+                            ManageFilter.HIDDEN -> R.string.manage_filter_hidden
+                        }
+                    ),
+                    count = count,
+                    selected = kind == option,
+                    // Hugging its label rather than filling a slot: a row that scrolls sizes
+                    // each chip to its own text.
+                    fill = false,
+                    onClick = { kind = option }
+                )
+            }
+        }
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            ToggleFilter.entries.forEach { option ->
-                val count = when (option) {
-                    ToggleFilter.ALL -> apps.size
-                    ToggleFilter.BLOCKED -> apps.count { it.packageName in blocked }
-                    ToggleFilter.ALLOWED -> apps.count { it.packageName !in blocked }
+            AppFilterChip(
+                modifier = Modifier.weight(1f),
+                label = stringResource(R.string.labs_filter_allowed),
+                count = apps.count { it.packageName !in blocked },
+                selected = filter == ToggleFilter.ALLOWED,
+                // Tapping the chosen one again lets go of it: with no filter the list shows
+                // both, which is what opening the screen should do.
+                onClick = {
+                    filter = if (filter == ToggleFilter.ALLOWED) ToggleFilter.ALL else ToggleFilter.ALLOWED
                 }
-                AppFilterChip(
-                    modifier = Modifier.weight(1f),
-                    label = stringResource(
-                        when (option) {
-                            ToggleFilter.ALL -> R.string.apps_filter_all
-                            ToggleFilter.ALLOWED -> R.string.labs_filter_allowed
-                            ToggleFilter.BLOCKED -> R.string.labs_filter_blocked
-                        }
-                    ),
-                    count = count,
-                    selected = filter == option,
-                    onClick = { filter = option }
-                )
-            }
+            )
+            AppFilterChip(
+                modifier = Modifier.weight(1f),
+                label = stringResource(R.string.labs_filter_blocked),
+                count = apps.count { it.packageName in blocked },
+                selected = filter == ToggleFilter.BLOCKED,
+                onClick = {
+                    filter = if (filter == ToggleFilter.BLOCKED) ToggleFilter.ALL else ToggleFilter.BLOCKED
+                }
+            )
         }
 
         OutlinedTextField(
@@ -321,6 +416,12 @@ fun LabsToggleScreen(
 
                             filter == ToggleFilter.BLOCKED -> Text(
                                 text = stringResource(R.string.labs_blocked_empty),
+                                style = MaterialTheme.typography.bodyMedium,
+                                textAlign = TextAlign.Center
+                            )
+
+                            kind != ManageFilter.ALL -> Text(
+                                text = stringResource(R.string.apps_filter_empty),
                                 style = MaterialTheme.typography.bodyMedium,
                                 textAlign = TextAlign.Center
                             )
