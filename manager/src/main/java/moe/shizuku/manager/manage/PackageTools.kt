@@ -163,6 +163,12 @@ data class AppDetail(
  */
 private val OPS = listOf(
     Triple("RUN_IN_BACKGROUND", R.string.app_op_background, R.string.app_op_background_note),
+    // The blunter half of the same question, and the one autostart managers reach for: it
+    // denies background execution whether or not the app is on screen, which takes its boot
+    // receivers with it. They are separate ops because the platform treats them that way, and
+    // the pairing is worth keeping visible: denying one is a decision about how an app may run,
+    // not a setting that quietly does the same thing twice.
+    Triple("RUN_ANY_IN_BACKGROUND", R.string.app_op_any_background, R.string.app_op_any_background_note),
     Triple("START_FOREGROUND", R.string.app_op_foreground, R.string.app_op_foreground_note),
     Triple("WAKE_LOCK", R.string.app_op_wake_lock, R.string.app_op_wake_lock_note),
     Triple("POST_NOTIFICATION", R.string.app_op_notifications, R.string.app_op_notifications_note),

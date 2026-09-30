@@ -522,6 +522,8 @@
     <string name="app_ops_needs_shizuku">Start Shizuku to read and change app ops.</string>
     <string name="app_op_background">Run in background</string>
     <string name="app_op_background_note">Deny stops it from running in the background.</string>
+    <string name="app_op_any_background">Autostart at Boot</string>
+    <string name="app_op_any_background_note">Stop apps from launching themselves at boot or via background broadcasts.</string>
     <string name="app_op_foreground">Foreground services</string>
     <string name="app_op_foreground_note">Deny stops its foreground services.</string>
     <string name="app_op_wake_lock">Keep awake</string>
