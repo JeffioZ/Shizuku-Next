@@ -459,9 +459,17 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
      */
     private fun systemStarterCommand(): String {
         val packageName = appContext.packageName
-        return "P=\$(pm path $packageName" +
-            " | sed -E 's|^package:(.*/)[^/]+\\.apk\$|\\1|')" +
-            " && \${P}lib/arm64/libshizuku.so"
+
+        // The ABI directory this install actually uses, not arm64 by name: the app ships
+        // four, and a 32-bit device looks in lib/arm.
+        val abi = appContext.applicationInfo.nativeLibraryDir.substringAfterLast('/')
+
+        // grep base.apk first, because pm path prints one line per split: on an install
+        // delivered as an App Bundle that is several lines, and sed would return every one
+        // of those paths joined together, which the shell then reads as one nonsense path.
+        return "STARTER=\$(pm path $packageName | grep base.apk" +
+            " | sed -E 's|^package:(.*/)[^/]+\\.apk\$|\\1lib/$abi/libshizuku.so|')" +
+            " && \$STARTER"
     }
 
     /** Set as soon as the payload's shell reports anything at all. */
