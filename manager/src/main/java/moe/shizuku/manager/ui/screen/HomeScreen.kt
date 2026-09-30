@@ -535,19 +535,13 @@ fun HomeScreen(bottomPadding: Dp) {
                         icon = Icons.Rounded.Usb,
                         title = stringResource(R.string.home_usb_adb_title),
                         // A USB start needs the classic port, and with no network and no port
-                        // there is nothing it can do. With the experiment on that is no longer
-                        // a failure: the start carries on over wireless, so the card says so
-                        // instead of warning.
+                        // there is nothing it can do. It says so here rather than sliding over
+                        // to wireless: starting without a network is a method of its own, and
+                        // the card that does it is the one above this.
                         body = if (!EnvironmentUtils.isWifiConnected() &&
                             EnvironmentUtils.getAdbTcpPort() <= 0
                         ) {
-                            stringResource(
-                                if (ShizukuSettings.getForceWirelessDebugging()) {
-                                    R.string.home_usb_adb_falls_back_to_wireless
-                                } else {
-                                    R.string.home_usb_adb_needs_network
-                                }
-                            )
+                            stringResource(R.string.home_usb_adb_needs_network)
                         } else {
                             stringResource(R.string.home_usb_adb_summary).stripHtmlTags()
                         },
