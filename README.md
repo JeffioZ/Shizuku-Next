@@ -466,10 +466,14 @@ Shizuku takes user privacy very seriously.
 Contribute translations through the [Crowdin project](https://crowdin.com/project/Shizuku-Next-Next).
 
 Only strings that have actually been translated are shipped, so the language list follows Crowdin
-rather than promising languages that would read as English: 24 languages are translated today,
-and a new one appears with the next sync once it has translations. How that works, which languages
-ship and how to read progress from the API without using the web interface is in
-[docs/translations.md](docs/translations.md).
+rather than promising languages that would read as English: **35 languages are translated today**,
+from Russian and Japanese, which carry hundreds of strings each, to the ten that arrived with the
+project's open-source licence - Arabic, German, Greek, Spanish, French, Italian, Dutch, Serbian,
+Swedish and Turkish - which carry about 118 each and not one of them the English text. A new
+language appears with the next sync once it has translations, and shipping one is a decision
+somebody makes, because the check that guards each translation pull request refuses any file whose
+folder the app has not already got. How that works, which languages ship and how to read progress
+from the API without using the web interface is in [docs/translations.md](docs/translations.md).
 
 ## 🎁 Donations
 

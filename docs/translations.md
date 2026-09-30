@@ -106,6 +106,30 @@ not got, so an unmapped language cannot slip in by accident.
 merge its first pull request by hand - the check only accepts folders that already exist, which is
 the point of it.
 
+## The ten the licence brought in
+
+German, French, Spanish, Italian, Dutch, Swedish, Turkish, Arabic, Greek and Serbian were excluded
+for one reason only - hosted words - and the Open Source licence removed that reason. They are
+mapped in [`crowdin.yml`](../crowdin.yml) like the rest now, and they turned out to be the best
+translations in the project: about 118 strings each, **none of them the English text**, against
+roughly three quarters of the files in the languages that were already here. The app went from 25
+languages to **35**.
+
+Two things were needed that are worth knowing about:
+
+1. **The exclusion list is stored on the file in Crowdin, not just in the config.** Removing it
+   from `crowdin.yml` changed nothing, because the CLI had set it on the file when it uploaded
+   with it, and an upload does not clear it either. It is cleared through the API, which takes a
+   **JSON Patch document** for this - `PATCH /projects/<id>/files/<id>` with
+   `[{"op":"replace","path":"/excludedTargetLanguages","value":[]}]`. A plain object is refused
+   with `jsonPatchInvalid`, the same trap the project settings have.
+2. **An empty `excluded_target_languages: []` in the config is rejected as invalid YAML** by the
+   CLI, so the key is left out rather than stated as empty.
+
+The first pull request that carried them was refused automatically, which is the guard working:
+adding a language to the app is a decision, and the check only accepts folders that already
+exist. It was merged by hand, and that is the step every new language takes.
+
 ## Which languages ship
 
 The folders that ship are the ones with real content — currently 24 languages, from Japanese at
@@ -131,9 +155,8 @@ So adding a language costs about **3,411 hosted words**, one language's worth of
 Add the ones with translators behind them, and drop a language rather than leave it at 0%: its
 translations are held in this repository either way, so nothing ships differently either way.
 
-That ceiling is still the thing deciding how many languages this app can carry. See the next
-section for where the account actually stands, and for the free license that removes the ceiling
-altogether.
+That ceiling decided how many languages this app could carry until the Open Source licence was
+granted, which is what the sections below record.
 
 ## Where the account actually stands
 
@@ -147,10 +170,10 @@ Measured against the project as it is now:
 | What the free allowance fits | **17** | 57,987 |
 
 The free plan's published allowance is **60,000 hosted words**, counted across every project on
-the account, so the project is roughly at twice it and even the 23 the app uses would not fit.
-Nothing is frozen at this size - uploads, downloads and merges all run - and the figure Crowdin's
-pricing page no longer prints, so the dashboard's usage meter is the authority. There is no API
-for it; the account's billing page is the only place to read it.
+the account, and the project was roughly at twice it. That is what the figures above describe; it
+stopped being a constraint on **30 September 2026**, when the Open Source licence was granted - the
+numbers are kept because the charge was never the interesting part. What is now decided by the
+language list is only what the app carries.
 
 ## The Open Source license
 
@@ -179,28 +202,20 @@ Submitting the form also agrees to two things worth knowing before it is sent: j
 beta group, and contributing this project's translations to Crowdin's global translation memory
 in exchange for access to their machine translation.
 
-### Once it is granted
+### What the licence was used for
 
-1. The hosted-words ceiling stops constraining anything, so nothing has to be trimmed. Re-check
-the usage meter once, to see the new figure.
-2. Map the ten languages that are currently excluded, so the translations those translators have
-already written can ship at last - `de-BE: de`, `fr-LU: fr`, `es-419: es`, `it-CH: it`,
-`nl-SR: nl`, `sv-FI: sv`, `tr-CY: tr`, `ar-EG: ar`, `el-CY: el`, `sr-Cyrl-ME: sr` in
-[`crowdin.yml`](../crowdin.yml), and remove them from `excluded_target_languages`.
-3. Merge each of those first pull requests **by hand**. The check refuses a translation whose
-folder the repository has not got, which is deliberate: it is what stops a language appearing in
-the app by accident, and the trade is that adding one is a decision someone makes.
-4. Add `zh-CN` and `zh-TW` as target languages. The app ships `values-zh-rCN` and
-`values-zh-rTW`, and Crowdin holds neither, so those two folders cannot be updated by any sync
-until they exist there.
+The ten languages it unblocked are shipped - see "The ten the licence brought in" above - which
+leaves one piece of housekeeping:
 
-### If it is not granted
+**`zh-CN` and `zh-TW` are not target languages in Crowdin at all.** The app ships
+`values-zh-rCN` and `values-zh-rTW`, and those two folders cannot be updated by any sync until the
+languages exist in the project. Adding one and leaving it empty does not work either: an
+untranslated language exports a file with no strings in it, and the check refuses that, because
+for a folder that already exists it would be a wipe. So the order is to add the language, upload
+the repository's own Chinese files into it once, and let the sync take over from there.
 
-The ceiling stays, and the arithmetic is unforgiving: 17 languages at 3,411 words each is 57,987,
-and 18 is 61,398. So the choice is which eight of the 23 to drop. Weigh them by what they
-actually carry - Russian is 468 strings and Japanese 382, while the tail sits around 115 - and
-remember that dropping a language discards the translations held in Crowdin, which is why the ten
-excluded ones have been left in place rather than removed.
+If the licence had not been granted, the fallback was the arithmetic in the section above: 17
+languages at 3,411 words each is 57,987 and 18 is 61,398, so eight of the 23 would have had to go.
 
 ## Checking progress without the web interface
 
