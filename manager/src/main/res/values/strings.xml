@@ -131,6 +131,7 @@
     <string name="action_open_wireless_debugging">Wireless debugging</string>
     <string name="start_failed_unsupported">This device cannot start it in the background</string>
     <string name="start_failed_wifi_required">Connect to a Wi-Fi network the system turns wireless debugging off without one. Or start from a computer using the ADB command below.</string>
+    <string name="start_failed_binder_went_away">The service was started and then stopped again, so nothing can use it yet. That happens when the server is taken down with the app the start went through, which is what the payload does after it has started it. Try the start again.</string>
     <string name="start_failed_no_port">No wireless debugging port was found. Make sure wireless debugging is enabled and Wi-Fi is connected.</string>
     <string name="start_failed_no_port_no_permission">No wireless debugging port was found, and Shizuku can\'t turn wireless debugging on without WRITE_SECURE_SETTINGS: <b>adb shell pm grant moe.shizuku.privileged.api android.permission.WRITE_SECURE_SETTINGS</b>. Or start Shizuku over USB debugging once it grants itself afterwards.</string>
     <string name="start_failed_no_auth">Wireless debugging is not allowed on this network. Pair the device again.</string>
