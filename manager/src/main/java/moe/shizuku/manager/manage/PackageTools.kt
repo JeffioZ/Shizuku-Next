@@ -159,8 +159,15 @@ data class AppDetail(
 /**
  * The app ops worth exposing, in the order they are shown.
  *
- * Deliberately short: the platform has hundreds and most of them are noise or dangerous to
- * touch. These are the ones that answer "why is this app doing that in the background".
+ * Chosen rather than complete: the platform has hundreds and most of them are noise, or are
+ * the same switch as a runtime permission that the permissions section above already offers.
+ * These are the ones with an effect somebody can describe in a sentence and expect, and every
+ * one of them was measured changing through adb before it was listed.
+ *
+ * The camera and the microphone are here for a reason worth stating, since the permission
+ * section already covers both: revoking a permission is visible to the app and makes it ask
+ * again, while denying the *op* underneath leaves the permission granted and makes the data
+ * come back empty. That is the switch for an app that will not take no for an answer.
  */
 private val OPS = listOf(
     Triple("RUN_IN_BACKGROUND", R.string.app_op_background, R.string.app_op_background_note),
@@ -175,7 +182,14 @@ private val OPS = listOf(
     Triple("POST_NOTIFICATION", R.string.app_op_notifications, R.string.app_op_notifications_note),
     Triple("READ_CLIPBOARD", R.string.app_op_clipboard, R.string.app_op_clipboard_note),
     Triple("SYSTEM_ALERT_WINDOW", R.string.app_op_overlay, R.string.app_op_overlay_note),
-    Triple("REQUEST_INSTALL_PACKAGES", R.string.app_op_install, R.string.app_op_install_note)
+    Triple("REQUEST_INSTALL_PACKAGES", R.string.app_op_install, R.string.app_op_install_note),
+    Triple("TOAST_WINDOW", R.string.app_op_toast, R.string.app_op_toast_note),
+    Triple("PROJECT_MEDIA", R.string.app_op_project_media, R.string.app_op_project_media_note),
+    Triple("RECORD_AUDIO", R.string.app_op_record_audio, R.string.app_op_record_audio_note),
+    Triple("CAMERA", R.string.app_op_camera, R.string.app_op_camera_note),
+    Triple("VIBRATE", R.string.app_op_vibrate, R.string.app_op_vibrate_note),
+    Triple("MOCK_LOCATION", R.string.app_op_mock_location, R.string.app_op_mock_location_note),
+    Triple("PICTURE_IN_PICTURE", R.string.app_op_pip, R.string.app_op_pip_note)
 )
 
 /*
