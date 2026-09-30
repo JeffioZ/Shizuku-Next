@@ -34,6 +34,24 @@ Deleting a folder removes the language from the system's app-language list, beca
 generated from the folders (`generateLocaleConfig = true` in `manager/build.gradle`) rather than
 from a file in the tree.
 
+## Why the language list is short
+
+Crowdin's free plan counts **hosted words as the source words multiplied by the number of target
+languages**, so an unused language is not free — it re-hosts every string the app has. This project
+had 314 target languages against a source of about 3,430 words, which is roughly **1,077,000 hosted
+words**, and every source update multiplied by all of them. That reached the free plan's limit; the
+project now holds **33 languages** (about 113,000 hosted words), the ones with translations, which
+is what the limit was exceeded by.
+
+So adding a language is a real cost: roughly **3,400 hosted words each**, one language's worth of
+the whole app. Add the ones with translators behind them, and remove a language rather than leave
+it sitting at 0% (its translations are kept in this repository either way, so nothing is lost by
+removing an empty one — and re-adding it takes a moment).
+
+If the account is still over its limit, the dashboard's usage figure is the authority: the number
+of languages multiplied by 3,430 gets you there, and 15 languages would be about 51,000 hosted
+words.
+
 ## Checking progress without the web interface
 
 With a Crowdin personal access token in `CROWDIN_TOKEN` (Account → API tokens; the one for this
@@ -53,7 +71,8 @@ for row in sorted(rows, key=lambda r: -r["translationProgress"])[:20]:
 EOF
 ```
 
-At the time of writing 33 of 314 languages had any translated string at all — much of the project's
+At the time of writing every one of the project's 33 languages had a translated string, and the
+other 281 were the empty ones that were removed — much of the project's
 language list is regional duplicates (`de-BE`, `fr-LU`, `nl-SR`) from when the project was set up,
 and Hindi, Arabic, German, French, Russian and Spanish are among the ones with nothing, so their
 folders are gone rather than shipping as English.
