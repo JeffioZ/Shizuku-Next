@@ -53,6 +53,7 @@ import moe.shizuku.manager.start.writeGlobalSetting
 import moe.shizuku.manager.starter.Starter
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.ShizukuStateMachine
+import moe.shizuku.manager.utils.Diag
 
 class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
@@ -68,7 +69,7 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
         // not a start that fails - it is a start that undoes the hide and then fails. Deferred
         // instead: the watch asks for a start itself once nothing is hidden.
         if (HidingWatchService.holding()) {
-            Log.i(AppConstants.TAG, "Start deferred: hiding is holding the debugging toggle off")
+            Diag.info(AppConstants.TAG, "Start deferred: hiding is holding the debugging toggle off")
             return Result.success()
         }
 
@@ -313,7 +314,7 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                     notify(WorkerState.FORCING_WIRELESS)
                     nudgeJob = launch {
                         ForcedWirelessDebugging.nudge(applicationContext) { message ->
-                            Log.i(AppConstants.TAG, "Forced wireless debugging: $message")
+                            Diag.info(AppConstants.TAG, "Forced wireless debugging: $message")
                         }
                     }
                 }
@@ -334,7 +335,7 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                     // refusing it here would throw the mode away exactly when it is
                     // needed: a reboot with no Wi-Fi to associate with.
                     val fallback = StartTransport.classicPortFallback(tcpPort) ?: throw e
-                    Log.i(
+                    Diag.info(
                         AppConstants.TAG,
                         "Wireless discovery found nothing; starting over the classic ADB port $fallback"
                     )
@@ -371,7 +372,7 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                     readBack = EnvironmentUtils.getAdbTcpPort()
                 }
 
-                Log.i(
+                Diag.info(
                     AppConstants.TAG,
                     if (readBack == wanted) {
                         "TCP mode: the classic ADB port $wanted is listening"

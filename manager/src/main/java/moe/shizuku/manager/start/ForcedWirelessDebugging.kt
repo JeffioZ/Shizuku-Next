@@ -15,6 +15,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import moe.shizuku.manager.AppConstants
+import moe.shizuku.manager.utils.Diag
 
 /**
  * Keeping wireless debugging on where the system would rather turn it off.
@@ -118,7 +119,7 @@ object ForcedWirelessDebugging {
             delay(INTERVAL_MS)
         }
 
-        Log.i(
+        Diag.info(
             AppConstants.TAG,
             "Forced wireless debugging: asked $attempts times, " +
                 "hotspot ${if (reservation == null) "not running" else "running"}"
@@ -128,7 +129,7 @@ object ForcedWirelessDebugging {
     /** Stops the hotspot. Safe to call when there is none. */
     fun releaseHotspot() {
         runCatching { reservation?.close() }
-            .onFailure { Log.w(AppConstants.TAG, "Could not close the local-only hotspot", it) }
+            .onFailure { Diag.warn(AppConstants.TAG, "Could not close the local-only hotspot", it) }
         reservation = null
     }
 
@@ -137,7 +138,7 @@ object ForcedWirelessDebugging {
     /** Whether the write was allowed at all. Without it there is nothing to keep asking. */
     private fun ask(cr: ContentResolver): Boolean =
         runCatching { Settings.Global.putInt(cr, KEY_WIFI_ENABLED, 1) }
-            .onFailure { Log.w(AppConstants.TAG, "Could not ask for wireless debugging", it) }
+            .onFailure { Diag.warn(AppConstants.TAG, "Could not ask for wireless debugging", it) }
             .isSuccess
 
     /**
@@ -202,7 +203,7 @@ object ForcedWirelessDebugging {
                         // SecurityException when the Wi-Fi permission is not granted, and
                         // anything else the platform throws at this: the start carries on
                         // without the interface.
-                        Log.w(AppConstants.TAG, "Could not start a local-only hotspot", e)
+                        Diag.warn(AppConstants.TAG, "Could not start a local-only hotspot", e)
                         if (cont.isActive) cont.resume(null)
                     }
                 }
@@ -210,14 +211,14 @@ object ForcedWirelessDebugging {
         }
 
         when {
-            reason != null -> Log.w(
+            reason != null -> Diag.warn(
                 AppConstants.TAG,
                 "Local-only hotspot refused (attempt ${attempt + 1} of $HOTSPOT_ATTEMPTS): " +
                     reasonName(reason!!)
             )
             // Silence would look the same as a refusal in the log, and the difference
             // matters: a call that never answers means the Wi-Fi stack was not ready yet.
-            started == null -> Log.w(
+            started == null -> Diag.warn(
                 AppConstants.TAG,
                 "Local-only hotspot did not answer within ${HOTSPOT_TIMEOUT_MS / 1000}s " +
                     "(attempt ${attempt + 1} of $HOTSPOT_ATTEMPTS)"

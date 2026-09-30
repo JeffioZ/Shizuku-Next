@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AdminPanelSettings
+import androidx.compose.material.icons.outlined.ReceiptLong
 import androidx.compose.material.icons.outlined.Terminal
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -139,7 +140,8 @@ fun LabsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
             AppToggleFeature.HIDE_VPN.titleRes,
             AppToggleFeature.HIDE_VPN.icon,
             Detail.HIDE_VPN
-        )
+        ),
+        LabEntry(R.string.tab_log, Icons.Outlined.ReceiptLong, Detail.LOG)
     )
 
     // By name, not by the order these features arrived in. The grid is a list, and a list is read

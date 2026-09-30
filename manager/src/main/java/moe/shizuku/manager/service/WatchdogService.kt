@@ -36,6 +36,7 @@ import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.SettingsPage
 import moe.shizuku.manager.utils.ShizukuStateMachine
 import java.util.concurrent.atomic.AtomicBoolean
+import moe.shizuku.manager.utils.Diag
 
 class WatchdogService : Service() {
 
@@ -67,13 +68,13 @@ class WatchdogService : Service() {
                 // like Shizuku falling over, twice.
                 when {
                     WatchdogGuard.consumeExpectedDeath() ->
-                        Log.d(TAG, "Server went down as expected, nothing to report")
+                        Diag.debug(TAG, "Server went down as expected, nothing to report")
 
                     ShizukuSettings.getManuallyStopped() ->
-                        Log.d(TAG, "Server was stopped on purpose, nothing to report")
+                        Diag.debug(TAG, "Server was stopped on purpose, nothing to report")
 
                     else -> {
-                        Log.w(TAG, "Server died: reporting it and starting it again")
+                        Diag.warn(TAG, "Server died: reporting it and starting it again")
                         showCrashNotification()
                         awaitingRecovery = true
                         attemptRestart()
@@ -107,7 +108,7 @@ class WatchdogService : Service() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action != Intent.ACTION_USER_PRESENT) return
             if (pendingRestart) {
-                Log.d(TAG, "Screen unlocked with pending restart retrying now")
+                Diag.debug(TAG, "Screen unlocked with pending restart retrying now")
                 attemptRestart()
             } else {
                 // Self-heal on unlock: catches deaths whose CRASHED transition was
@@ -148,7 +149,7 @@ class WatchdogService : Service() {
                 else -> Unit
             }
             if (ShizukuStateMachine.update() != ShizukuStateMachine.State.RUNNING) {
-                Log.d(TAG, "Server not running while watchdog active attempting restart")
+                Diag.debug(TAG, "Server not running while watchdog active attempting restart")
                 attemptRestart()
             }
         }
@@ -186,7 +187,7 @@ class WatchdogService : Service() {
 
     private fun attemptRestart() {
         if (WatchdogGuard.isExpectingDeath() || ShizukuSettings.getManuallyStopped()) {
-            Log.d(TAG, "Restart attempt skipped: one is expected, or the stop was deliberate")
+            Diag.debug(TAG, "Restart attempt skipped: one is expected, or the stop was deliberate")
             return
         }
 
@@ -195,7 +196,7 @@ class WatchdogService : Service() {
         // which is the opposite of what the list is for. Waited out rather than tried: the watch
         // asks for a start itself the moment nothing is hidden any more.
         if (HidingWatchService.holding()) {
-            Log.d(TAG, "Restart attempt skipped: hiding is holding the debugging toggle off")
+            Diag.debug(TAG, "Restart attempt skipped: hiding is holding the debugging toggle off")
             pendingRestart = true
             return
         }
@@ -204,11 +205,11 @@ class WatchdogService : Service() {
         // restart that keeps failing must not turn into a start every few seconds.
         val now = SystemClock.elapsedRealtime()
         if (now - lastRestartAt < RESTART_COOLDOWN_MS) {
-            Log.d(TAG, "Restart attempt skipped: one was made moments ago")
+            Diag.debug(TAG, "Restart attempt skipped: one was made moments ago")
             return
         }
         if (!restartInFlight.compareAndSet(false, true)) {
-            Log.d(TAG, "Restart attempt skipped: one is already in flight")
+            Diag.debug(TAG, "Restart attempt skipped: one is already in flight")
             return
         }
         lastRestartAt = now
@@ -236,7 +237,7 @@ class WatchdogService : Service() {
                     ShizukuReceiverStarter.start(applicationContext, forceStart = true)
                 }
             } catch (e: Exception) {
-                Log.w(TAG, "Direct restart failed, falling back", e)
+                Diag.warn(TAG, "Direct restart failed, falling back", e)
                 pendingRestart = true
                 ShizukuReceiverStarter.start(applicationContext, forceStart = true)
             } finally {
@@ -251,7 +252,7 @@ class WatchdogService : Service() {
             if (ShizukuStateMachine.isRunning()) {
                 pendingRestart = false
             } else if (!ShizukuSettings.getManuallyStopped()) {
-                Log.w(TAG, "Restart did not bring the server back, leaving the retry armed")
+                Diag.warn(TAG, "Restart did not bring the server back, leaving the retry armed")
                 pendingRestart = true
             }
         }
@@ -264,7 +265,7 @@ class WatchdogService : Service() {
         // The state it starts in is worth a line: a watchdog that came up after the server
         // was already gone is the case it cannot see a transition for, and that is what the
         // unlock probe is for.
-        Log.i(TAG, "Watchdog started, server is ${ShizukuStateMachine.get()}")
+        Diag.info(TAG, "Watchdog started, server is ${ShizukuStateMachine.get()}")
         ShizukuStateMachine.addListener(stateListener)
         registerReceiver(screenOnReceiver, IntentFilter(Intent.ACTION_USER_PRESENT))
         startRecoveryLoop()
@@ -480,7 +481,7 @@ class WatchdogService : Service() {
             try {
                 context.startForegroundService(Intent(context, WatchdogService::class.java))
             } catch (e: Exception) {
-                Log.e("ShizukuApplication", "Failed to start WatchdogService: ${e.message}" )
+                Diag.error("ShizukuApplication", "Failed to start WatchdogService: ${e.message}" )
             }
         }
 

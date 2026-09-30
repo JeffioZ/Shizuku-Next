@@ -11,6 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import rikka.shizuku.Shizuku
+import moe.shizuku.manager.utils.Diag
 
 /**
  * The two permissions hiding needs beyond the one this app already holds, given once by Shizuku.
@@ -74,7 +75,7 @@ object HidingGrants {
 
         val done = all()
         if (!done) {
-            Log.w(TAG, "the hiding grants are not in place: usage=${usageAccess()} dump=${dump()}")
+            Diag.warn(TAG, "the hiding grants are not in place: usage=${usageAccess()} dump=${dump()}")
         }
         return done
     }

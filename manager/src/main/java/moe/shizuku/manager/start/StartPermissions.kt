@@ -20,6 +20,7 @@ import moe.shizuku.manager.ShizukuApplication
 import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.runShellCommand
+import moe.shizuku.manager.utils.Diag
 
 /** The global setting Android keeps wireless debugging in. */
 private const val ADB_WIFI_ENABLED = "adb_wifi_enabled"
@@ -79,7 +80,7 @@ fun Context.openAppSettings() {
                 Uri.fromParts("package", packageName, null)
             ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         )
-    }.onFailure { Log.w(AppConstants.TAG, "Could not open app settings", it) }
+    }.onFailure { Diag.warn(AppConstants.TAG, "Could not open app settings", it) }
 }
 
 /** WRITE_SECURE_SETTINGS can only be granted over ADB, so it is checked before use. */
@@ -113,7 +114,7 @@ fun Context.writeGlobalSetting(key: String, value: Int): Boolean = runCatching {
     Settings.Global.putInt(contentResolver, key, value)
     true
 }.getOrElse {
-    Log.w(AppConstants.TAG, "Could not write the $key setting (WRITE_SECURE_SETTINGS missing?)")
+    Diag.warn(AppConstants.TAG, "Could not write the $key setting (WRITE_SECURE_SETTINGS missing?)")
     false
 }
 
@@ -121,7 +122,7 @@ fun Context.writeGlobalLongSetting(key: String, value: Long): Boolean = runCatch
     Settings.Global.putLong(contentResolver, key, value)
     true
 }.getOrElse {
-    Log.w(AppConstants.TAG, "Could not write the $key setting (WRITE_SECURE_SETTINGS missing?)")
+    Diag.warn(AppConstants.TAG, "Could not write the $key setting (WRITE_SECURE_SETTINGS missing?)")
     false
 }
 
@@ -148,9 +149,9 @@ fun grantWriteSecureSettingsIfNeeded() {
             "pm grant ${context.packageName} android.permission.WRITE_SECURE_SETTINGS"
         )
         if (context.hasWriteSecureSettings()) {
-            Log.i(AppConstants.TAG, "Granted WRITE_SECURE_SETTINGS through the running server")
+            Diag.info(AppConstants.TAG, "Granted WRITE_SECURE_SETTINGS through the running server")
         } else {
-            Log.w(
+            Diag.warn(
                 AppConstants.TAG,
                 "Could not grant WRITE_SECURE_SETTINGS through the server" +
                     (output?.let { ": $it" } ?: "")

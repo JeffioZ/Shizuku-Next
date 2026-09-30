@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.callbackFlow
 import moe.shizuku.manager.ShizukuApplication
 import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.manage.Hiding
+import moe.shizuku.manager.utils.Diag
 import moe.shizuku.manager.manage.HidingGrants
 import moe.shizuku.manager.start.grantWriteSecureSettingsIfNeeded
 import rikka.shizuku.Shizuku
@@ -58,6 +59,9 @@ object ShizukuStateMachine {
         val oldState = state.getAndUpdate(transform)
         val newState = transform(oldState)
         if(oldState != newState) {
+            // Every transition, into the log the phone can read: "why did Shizuku stop" is
+            // usually answered by the sequence of these rather than by any one line.
+            Diag.info("ShizukuStateMachine", "${oldState.name} -> ${newState.name}")
             // A confirmed running server lifts manual-stop suppression, so a
             // later crash is auto-restarted by the watchdog.
             if (newState == State.RUNNING) {

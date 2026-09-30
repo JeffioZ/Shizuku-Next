@@ -87,6 +87,7 @@ import moe.shizuku.manager.ui.screen.HomeScreen
 import moe.shizuku.manager.ui.screen.AppToggleFeature
 import moe.shizuku.manager.ui.screen.IntentsScreen
 import moe.shizuku.manager.ui.screen.LabsScreen
+import moe.shizuku.manager.ui.screen.LogScreen
 import moe.shizuku.manager.ui.screen.LabsToggleScreen
 import moe.shizuku.manager.ui.screen.ManageScreen
 import moe.shizuku.manager.ui.screen.PermissionsScreen
@@ -119,6 +120,7 @@ enum class Detail(
     HIDE_ACCESSIBILITY(AppToggleFeature.HIDE_ACCESSIBILITY),
     HIDE_PRIVATE_DNS(AppToggleFeature.HIDE_PRIVATE_DNS),
     HIDE_VPN(AppToggleFeature.HIDE_VPN),
+    LOG,
     STEALTH,
     TERMINAL,
     INTENTS,
@@ -207,6 +209,11 @@ fun ShizukuApp() {
                             Detail.HIDE_WIRELESS_DEBUGGING,
                             Detail.HIDE_ACCESSIBILITY,
                             Detail.HIDE_PRIVATE_DNS,
+                            Detail.LOG -> LogScreen(
+                                bottomPadding = 0.dp,
+                                onBack = { detail = null }
+                            )
+
                             Detail.HIDE_VPN -> LabsToggleScreen(
                                 // These six are the same screen with a different question, so
                                 // the list comes with the screen rather than beside it.

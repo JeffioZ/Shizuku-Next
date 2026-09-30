@@ -142,6 +142,19 @@
     <string name="hiding_signal_vpn">VPN</string>
     <string name="hiding_vpn_client">VPN client to Hide</string>
 
+    <string name="tab_log">Log</string>
+    <string name="log_count">%1$d lines, last 24 hours</string>
+    <string name="log_search_hint">Search the log</string>
+    <string name="log_empty">Nothing has been logged in the last 24 hours.</string>
+    <string name="log_filter_all">All</string>
+    <string name="log_filter_problems">Problems</string>
+    <string name="log_refresh">Pull the newest from logcat</string>
+    <string name="log_save">Save</string>
+    <string name="log_clear">Clear</string>
+    <string name="log_cleared">Log cleared</string>
+    <string name="log_saved">Saved as %1$s, in the app folder on shared storage</string>
+    <string name="log_nothing_to_save">Nothing to save.</string>
+    <string name="log_pulled">%1$d lines pulled from logcat</string>
     <string name="permissions_usage_access">Usage access</string>
     <string name="permissions_usage_access_summary">Lets hiding lists see which app is open. Granted by Shizuku or in Android\'s Usage access settings.</string>
 

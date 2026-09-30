@@ -29,6 +29,7 @@ import moe.shizuku.manager.utils.SettingsPage
 import moe.shizuku.manager.utils.ShizukuStateMachine
 import moe.shizuku.manager.utils.UserHandleCompat
 import moe.shizuku.manager.worker.AdbStartWorker
+import moe.shizuku.manager.utils.Diag
 
 object ShizukuReceiverStarter {
 
@@ -68,7 +69,7 @@ object ShizukuReceiverStarter {
         val wasRunning = UserHandleCompat.myUserId() > 0 ||
             ShizukuStateMachine.update() == ShizukuStateMachine.State.RUNNING
         if (wasRunning && !forceStart) {
-            Log.i(AppConstants.TAG, "Start ignored: the service is already running")
+            Diag.info(AppConstants.TAG, "Start ignored: the service is already running")
             return
         }
         // A forced start replaces whatever is there, so the binder death on the way is ours,
@@ -82,7 +83,7 @@ object ShizukuReceiverStarter {
         // through unclaimed. The mark carries a deadline, so the worst a forced start with
         // nothing to replace can do is ignore one genuine death inside the next half minute.
         if (forceStart) {
-            Log.i(AppConstants.TAG, "Forced start: the server's death is expected")
+            Diag.info(AppConstants.TAG, "Forced start: the server's death is expected")
             WatchdogGuard.expectDeath()
         }
 
@@ -140,7 +141,7 @@ object ShizukuReceiverStarter {
             && EnvironmentUtils.getAdbTcpPort() <= 0
         ) {
             StartStatusReporter.failed(context.getString(R.string.start_failed_unsupported))
-            Log.w(AppConstants.TAG, "Background start not supported")
+            Diag.warn(AppConstants.TAG, "Background start not supported")
             return
         }
 
@@ -269,7 +270,7 @@ object ShizukuReceiverStarter {
             // [start] has already dropped root when the device doesn't have it, so reaching
             // here means it was revoked in between. Say so instead of returning silently:
             // the card would otherwise sit on "starting" for a start that never happened.
-            Log.w(AppConstants.TAG, "Root was revoked before the start could use it")
+            Diag.warn(AppConstants.TAG, "Root was revoked before the start could use it")
             Shell.getCachedShell()?.close()
             StartStatusReporter.failed(context.getString(R.string.start_failed_root_unavailable))
             ShizukuStateMachine.update()
@@ -280,7 +281,7 @@ object ShizukuReceiverStarter {
             ShizukuStateMachine.set(ShizukuStateMachine.State.STARTING)
             Shell.cmd(Starter.internalCommand).exec()
         } catch (e: Exception) {
-            Log.e(AppConstants.TAG, "Failed to start Shizuku with root", e)
+            Diag.error(AppConstants.TAG, "Failed to start Shizuku with root", e)
             ShizukuStateMachine.update()
         }
     }

@@ -28,6 +28,7 @@ import moe.shizuku.manager.start.writeGlobalSetting
 import moe.shizuku.manager.starter.Starter
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.ShizukuStateMachine
+import moe.shizuku.manager.utils.Diag
 
 private const val TAG = "AdbStarter"
 
@@ -101,7 +102,7 @@ object AdbStarter {
                     // adbd restarts on the new port; wait until it actually listens so
                     // the connect below targets a live socket (instead of the stale one).
                     if (!waitForPortAvailable("127.0.0.1", activePort)) {
-                        Log.w(TAG, "Timed out waiting for ADB to listen on TCP port $activePort")
+                        Diag.warn(TAG, "Timed out waiting for ADB to listen on TCP port $activePort")
                     }
                 }
             }
@@ -192,7 +193,7 @@ object AdbStarter {
         if (!EnvironmentUtils.isWifiConnected() &&
             !ShizukuSettings.getForceWirelessDebugging()
         ) {
-            Log.i(TAG, "Not opening the ADB port: no Wi-Fi connection to borrow")
+            Diag.info(TAG, "Not opening the ADB port: no Wi-Fi connection to borrow")
             return@withContext false
         }
 
@@ -200,7 +201,7 @@ object AdbStarter {
         // abort the attempt wireless debugging may already be on.
         context.writeGlobalSetting("adb_wifi_enabled", 1)
         val wirelessPort = findWirelessPort(context) ?: run {
-            Log.w(TAG, "Not opening the ADB port: no wireless debugging port was found")
+            Diag.warn(TAG, "Not opening the ADB port: no wireless debugging port was found")
             return@withContext false
         }
 
@@ -217,12 +218,12 @@ object AdbStarter {
         } catch (e: AdbPairingRequiredException) {
             throw e
         } catch (e: Exception) {
-            Log.w(TAG, "Could not open the ADB port over the wireless connection", e)
+            Diag.warn(TAG, "Could not open the ADB port over the wireless connection", e)
             return@withContext false
         }
 
         val available = waitForPortAvailable("127.0.0.1", port)
-        Log.i(TAG, "ADB port $port open: $available")
+        Diag.info(TAG, "ADB port $port open: $available")
         available
     }
 
@@ -269,7 +270,7 @@ object AdbStarter {
                 // Expected whenever the device doesn't trust our key, and the UI turns it
                 // into the pairing flow so log one line, not a stack trace, which reads
                 // like a crash of its own.
-                Log.w(
+                Diag.warn(
                     TAG,
                     "TLS handshake rejected, pairing required " +
                         e.message?.replace('\n', ' ')

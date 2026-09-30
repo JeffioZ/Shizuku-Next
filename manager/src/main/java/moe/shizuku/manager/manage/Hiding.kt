@@ -21,6 +21,7 @@ import moe.shizuku.manager.ShizukuApplication
 import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.utils.runShellCommand
 import rikka.shizuku.Shizuku
+import moe.shizuku.manager.utils.Diag
 
 /**
  * One setting a restrictive app reads, and the value it is unhappy with.
@@ -542,7 +543,7 @@ object Hiding {
         var applied = true
         signal.keys.forEach { key ->
             if (!writeKey(key, key.hidden)) {
-                Log.w(TAG, "hiding ${signal.name} would not take: ${key.id}")
+                Diag.warn(TAG, "hiding ${signal.name} would not take: ${key.id}")
                 applied = false
             }
         }
@@ -568,13 +569,13 @@ object Hiding {
             if (!trustworthy(key, value)) {
                 // Nothing is written: putting the lie back is not a restore, and the value the
                 // setting really had was never recorded, so there is nothing to put back.
-                Log.w(TAG, "not restoring ${key.id}: the remembered value is the hidden one")
+                Diag.warn(TAG, "not restoring ${key.id}: the remembered value is the hidden one")
                 return@forEach
             }
 
             val put = if (value == null) deleteKey(key) else writeKey(key, value)
             if (!put) {
-                Log.w(TAG, "restoring ${key.id} would not take")
+                Diag.warn(TAG, "restoring ${key.id} would not take")
                 applied = false
                 saved[key.id] = value
             }
@@ -660,7 +661,7 @@ object Hiding {
         // behind the tunnel, and stopping one while starting another would leave the device
         // without the VPN it had and with one it did not ask for.
 
-        Log.w(TAG, "a VPN is up and ${candidates.size} clients could hold it: $candidates")
+        Diag.warn(TAG, "a VPN is up and ${candidates.size} clients could hold it: $candidates")
         return null
     }
 
@@ -700,7 +701,7 @@ object Hiding {
 
         val client = vpnClientPackage()
         if (client == null) {
-            Log.w(TAG, "a VPN is up and the client behind it was not identified")
+            Diag.warn(TAG, "a VPN is up and the client behind it was not identified")
             return false
         }
 
@@ -731,7 +732,7 @@ object Hiding {
 
         val command = VPN_START[client]
             ?: "monkey -p $client -c android.intent.category.LAUNCHER 1"
-        Log.i(TAG, "asking $client for the tunnel back")
+        Diag.info(TAG, "asking $client for the tunnel back")
         runShellCommand(command)
         forgetVpnClient()
         return true
@@ -776,11 +777,11 @@ object Hiding {
         var applied = true
         signal.keys.forEach { key ->
             val visible = key.visible ?: run {
-                Log.w(TAG, "${key.id} is hidden and nothing was recorded for it")
+                Diag.warn(TAG, "${key.id} is hidden and nothing was recorded for it")
                 return@forEach
             }
             if (!writeKey(key, visible)) {
-                Log.w(TAG, "bringing ${key.id} back would not take")
+                Diag.warn(TAG, "bringing ${key.id} back would not take")
                 applied = false
             }
         }

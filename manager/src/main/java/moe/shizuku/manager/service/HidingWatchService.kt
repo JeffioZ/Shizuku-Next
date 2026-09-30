@@ -31,6 +31,7 @@ import moe.shizuku.manager.manage.HidingGrants
 import moe.shizuku.manager.manage.Signal
 import moe.shizuku.manager.receiver.HidingRestoreReceiver
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter
+import moe.shizuku.manager.utils.Diag
 
 /**
  * The watch: while an app on one of the hiding lists is in front, the settings it objects to are
@@ -89,7 +90,7 @@ class HidingWatchService : Service() {
             }
 
             runCatching { context.startForegroundService(intent) }
-                .onFailure { Log.w(TAG, "could not start the hiding watch", it) }
+                .onFailure { Diag.warn(TAG, "could not start the hiding watch", it) }
         }
 
         fun stop(context: Context) {
@@ -222,7 +223,7 @@ class HidingWatchService : Service() {
 
             paused = false
             val hidingFor = runCatching { Hiding.reconcile() }
-                .onFailure { Log.w(TAG, "the hiding pass failed", it) }
+                .onFailure { Diag.warn(TAG, "the hiding pass failed", it) }
                 .getOrNull()
             holding.set(hidingFor)
             notify(notification(hidingFor, paused = false))
@@ -250,7 +251,7 @@ class HidingWatchService : Service() {
         }
         if (state == lastLoggedState) return
         lastLoggedState = state
-        Log.i(TAG, "hiding for ${hidingFor ?: "nothing"} | $state")
+        Diag.info(TAG, "hiding for ${hidingFor ?: "nothing"} | $state")
     }
 
     /**
@@ -277,9 +278,9 @@ class HidingWatchService : Service() {
         if (now - lastStartAttempt < START_RETRY_MS) return
         lastStartAttempt = now
 
-        Log.i(TAG, "nothing is hidden and the server is down: asking for a start")
+        Diag.info(TAG, "nothing is hidden and the server is down: asking for a start")
         runCatching { ShizukuReceiverStarter.start(applicationContext, forceStart = true) }
-            .onFailure { Log.w(TAG, "asking for a start failed", it) }
+            .onFailure { Diag.warn(TAG, "asking for a start failed", it) }
     }
 
     private fun notify(notification: Notification) {
