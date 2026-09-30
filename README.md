@@ -465,6 +465,12 @@ Shizuku takes user privacy very seriously.
 
 Contribute translations through the [Crowdin project](https://crowdin.com/project/Shizuku-Next-Next).
 
+Only strings that have actually been translated are shipped, so the language list follows Crowdin
+rather than promising languages that would read as English: 24 languages are translated today,
+and a new one appears with the next sync once it has translations. How that works, which languages
+ship and how to read progress from the API without using the web interface is in
+[docs/translations.md](docs/translations.md).
+
 ## 🎁 Donations
 
 This fork and all of its features are free, and there will never be ads. It has no donation setup of its own.
