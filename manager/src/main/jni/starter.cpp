@@ -316,6 +316,19 @@ static void open_manager_log(const char *manager_path) {
 
     s_manager_log = fopen(path, "w");
     if (s_manager_log == nullptr) {
+        // The app's media directory as well, because the two fail for different reasons: the
+        // files directory is the natural place to put this, but another app's Android/data is
+        // exactly what the storage layer and SELinux are built to deny, and a system start
+        // arrives here from another app's process. Android/media/<package> exists to be
+        // reachable from outside the app, so it is the one that survives that.
+        char media[PATH_MAX];
+        snprintf(media, sizeof(media), "/storage/emulated/0/Android/media/%s",
+                 package.c_str());
+        mkdir(media, 0775);
+        strncat(media, "/starter.log", sizeof(media) - strlen(media) - 1);
+        s_manager_log = fopen(media, "w");
+    }
+    if (s_manager_log == nullptr) {
         // Writabe for root and for the adb shell, not for the system uid: /data/local/tmp is
         // group shell, and "other" may only traverse it. Kept because the root and adb paths
         // can use it, and because it is readable over adb when the app's own directory is not.

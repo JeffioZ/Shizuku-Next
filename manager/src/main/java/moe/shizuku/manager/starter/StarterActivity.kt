@@ -171,16 +171,33 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
     val output = _output as LiveData<Resource<StringBuilder>>
 
     /**
-     * The starter's own account of the attempt, when it managed to leave one. It writes it
-     * into this app's external files directory, which both it and the app can reach, and
-     * that is the only reason a failed system start can be explained without logcat.
+     * Where a start's own account of itself can be written.
+     *
+     * Two places, because they fail for different reasons. The external files directory is
+     * the natural one, but another app's `Android/data` is exactly what the storage layer
+     * and SELinux deny, and a system start writes this from another app's process;
+     * `Android/media/<package>` exists to be reachable from outside the app, so it is the
+     * one that survives that. Both are this app's own directories, so it can read either.
      */
-    private fun starterLog(): String? = runCatching {
-        val file = File(appContext.getExternalFilesDir(null), "starter.log")
-        if (!file.exists()) return@runCatching null
-        val text = file.readText().trim()
-        if (text.isEmpty()) null else text
-    }.getOrNull()
+    private fun starterLogFiles(): List<File> = listOfNotNull(
+        appContext.getExternalFilesDir(null),
+        appContext.getExternalMediaDirs()?.firstOrNull()
+    ).map { File(it, "starter.log") }
+
+    /**
+     * The starter's own account of the attempt, and the file it was read from. That account
+     * is the only reason a failed system start can be explained without logcat, so when
+     * there is none the caller says where it looked rather than nothing happening.
+     */
+    private fun starterLog(): Pair<File, String>? {
+        for (file in starterLogFiles()) {
+            val text = runCatching {
+                if (file.exists()) file.readText().trim() else null
+            }.getOrNull()
+            if (!text.isNullOrEmpty()) return file to text
+        }
+        return null
+    }
 
     /** Set once the agent has been told to run the payload. */
     @Volatile
@@ -225,7 +242,20 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 if (waiting) Starter.waitForBinder({ log(it) })
             } catch (e: TimeoutException) {
-                starterLog()?.let { log("the starter left this behind:\n$it\n") }
+                val starter = starterLog()
+                if (starter != null) {
+                    log(
+                        "the starter left this behind, in ${starter.first.absolutePath}:\n" +
+                            "${starter.second}\n"
+                    )
+                } else {
+                    log(
+                        "the starter left no log at all, so it never got as far as writing " +
+                            "one: nothing in " +
+                            starterLogFiles().joinToString(" or ") { it.absolutePath } +
+                            "\n"
+                    )
+                }
                 log(
                     if (agentStopped?.invoke() == true) {
                         "the agent was stopped while this start was waiting, which is the " +
