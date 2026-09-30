@@ -280,32 +280,62 @@ static void log_cgroup(const char *when) {
     fclose(file);
 }
 
-static int switch_cgroup() {
+/**
+ * Moves this process out of the cgroup of the app it was started from, in every hierarchy.
+ *
+ * Every one of them, not the first that accepts the write. They are separate hierarchies with
+ * separate accounting, and the one that refuses is not the one that matters: a system start
+ * cannot write /acct on every device but could write it here, so it stopped there, while the
+ * unified hierarchy still had this process in uid_1000/pid_<the agent's pid>. That is the
+ * group the framework tears down when a package is stopped, and the payload's last step stops
+ * the agent it borrowed, which is a server that hands over the binder and is then killed.
+ *
+ * The uid_0 groups are the ones that look like a root process, which is what a system server
+ * has to resemble to outlive the app it came from.
+ */
+/** One hierarchy, reported either way: silence about a refusal is what hid this before. */
+static int move_into_cgroup(const char *path, int pid) {
+    if (!cgroup::switch_cgroup(path, pid)) {
+        info("info: switch cgroup, could not move this process into %s\n", path);
+        return 0;
+    }
+
+    info("info: switch cgroup, moved this process into %s\n", path);
+    return 1;
+}
+
+static int switch_cgroup(bool system_uid) {
     int pid = getpid();
-    // Through info/perrorf, not printf: these lines are how a system start can be told apart
-    // from one that never moved, and printf would keep them out of the log the manager reads.
-    if (cgroup::switch_cgroup("/acct", pid)) {
-        info("info: switch cgroup succeeded, cgroup in /acct\n");
-        return 0;
+    int moved = 0;
+
+    moved += move_into_cgroup("/acct", pid);
+    moved += move_into_cgroup("/sys/fs/cgroup", pid);
+    moved += move_into_cgroup("/dev/cg2_bpf", pid);
+
+    // Only for the system uid. These are the groups a root process sits in, which is what a
+    // system server has to resemble to outlive the app it came from; moving an adb or root
+    // server into them would change accounting it has no reason to change.
+    if (system_uid) {
+        moved += move_into_cgroup("/acct/uid_0", pid);
+        moved += move_into_cgroup("/sys/fs/cgroup/uid_0", pid);
     }
-    if (cgroup::switch_cgroup("/dev/cg2_bpf", pid)) {
-        info("info: switch cgroup succeeded, cgroup in /dev/cg2_bpf\n");
-        return 0;
-    }
-    if (cgroup::switch_cgroup("/sys/fs/cgroup", pid)) {
-        info("info: switch cgroup succeeded, cgroup in /sys/fs/cgroup\n");
-        return 0;
-    }
+
     char buf[PROP_VALUE_MAX + 1];
     if (__system_property_get("ro.config.per_app_memcg", buf) > 0 &&
         strncmp(buf, "false", 5) != 0) {
-        if (cgroup::switch_cgroup("/dev/memcg/apps", pid)) {
-            info("info: switch cgroup succeeded, cgroup in /dev/memcg/apps\n");
-            return 0;
+        moved += move_into_cgroup("/dev/memcg/apps", pid);
+        if (system_uid) {
+            moved += move_into_cgroup("/dev/memcg/apps/uid_0", pid);
         }
     }
-    perrorf("warn: can't switch cgroup: every path refused\n");
-    return -1;
+
+    if (moved == 0) {
+        perrorf("warn: can't switch cgroup: every path refused\n");
+        return -1;
+    }
+
+    info("info: switch cgroup, moved this process in %d hierarchies\n", moved);
+    return 0;
 }
 
 static int s_killed_count = 0;
@@ -452,7 +482,7 @@ int main(int argc, char *argv[]) {
     // reach what it was started to reach.
     if (uid == 0 || uid == 1000) {
         log_cgroup("before switch");
-        switch_cgroup();
+        switch_cgroup(uid == 1000);
         log_cgroup("after switch");
 
         if (android_get_device_api_level() >= 29) {
