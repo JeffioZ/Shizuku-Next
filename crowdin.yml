@@ -54,6 +54,12 @@ files:
         tr-CY: tr
         uk: uk
         vi: vi
+        # These two were not target languages at all until the app's Chinese folders were
+        # seeded into them: Crowdin's own Android codes for them happen to be zh-rCN and
+        # zh-rTW, the names this app uses, but naming them here keeps every language in one
+        # list rather than leaving two to be found by chance.
+        zh-CN: zh-rCN
+        zh-TW: zh-rTW
 
     # Stated rather than left out: the exclusion list lives on the file in Crowdin as well as
     # in this config, and there is no API to clear it there - only an upload does. An empty

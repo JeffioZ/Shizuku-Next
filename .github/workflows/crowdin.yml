@@ -20,29 +20,41 @@ on:
     # Nightly. Nothing here is urgent, and every language costs hosted words on the free plan.
     - cron: '17 3 * * *'
   workflow_dispatch:
+    inputs:
+      seed_translations:
+        description: >-
+          Also upload this repository's own translation files to Crowdin. For a language the
+          project does not have yet, whose folder this app already carries.
+        type: boolean
+        default: false
 
 jobs:
   upload:
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || inputs.seed_translations
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@v6
-      - name: Send the new source strings
+      - name: Send the source strings
         uses: crowdin/github-action@v3
         with:
           config: crowdin.yml
           project_id: 935085
           token: ${{ secrets.CROWDIN_PERSONAL_TOKEN }}
           upload_sources: true
-          # The repository is not where translations are written, so nothing is uploaded back.
-          upload_translations: false
+          # The repository is not where translations are written, so this is off for an
+          # ordinary run. It is turned on by hand for a language the project does not have
+          # yet, where the app's own folder is the only copy of that language anywhere: the
+          # files named by the translation pattern are read back in as its translations.
+          upload_translations: ${{ inputs.seed_translations }}
           download_translations: false
           create_pull_request: false
 
   download:
-    if: github.event_name != 'push'
+    # Not on a seeding run: that run exists to push a language up, and pulling straight back
+    # down in the same breath would only race the import it just asked for.
+    if: github.event_name != 'push' && !inputs.seed_translations
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -82,7 +94,7 @@ jobs:
     # GITHUB_TOKEN, so a pull request opened by the step above can never trigger one. It sat
     # open forever while a separate workflow waited for an event that was never coming.
     needs: download
-    if: github.event_name != 'push'
+    if: github.event_name != 'push' && !inputs.seed_translations
     runs-on: ubuntu-latest
     permissions:
       contents: write
