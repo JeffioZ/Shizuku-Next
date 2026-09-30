@@ -101,8 +101,6 @@
     <string name="tab_shell">Shell</string>
     <string name="tab_labs">Labs</string>
     <string name="tab_settings">Settings</string>
-    <string name="labs_app_ops_summary">What every installed app is allowed to do: its permissions, the app ops the platform consults, its battery policy and whether it may reach the network.</string>
-    <string name="labs_shell_summary">Run commands as the uid Shizuku runs as, with a history, saved commands and a library of them.</string>
     <string name="home_status_transport_label">Transport</string>
     <string name="home_status_started_with">Current</string>
     <string name="home_status_started_default">Default</string>
@@ -487,7 +485,7 @@
     <string name="wadb_notification_attempt_now">Retry</string>
 
     <!-- Manage tab -->
-    <string name="tab_manage">Manage App Ops</string>
+    <string name="tab_manage">App ops</string>
     <string name="manage_search_hint">Search apps</string>
     <string name="manage_filter_all">All</string>
     <string name="manage_filter_user">User</string>
