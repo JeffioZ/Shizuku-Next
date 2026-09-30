@@ -5,57 +5,55 @@ files:
   - source: manager/src/main/res/values/strings.xml
     translation: manager/src/main/res/values-%android_code%/%original_file_name%
 
-    # Crowdin's target languages are regional locales - Japanese is `ja` and its Android code
-    # is `ja-rJP`, Russian is `ru-BY`, Indonesian's Android code is the legacy `in-rID` - so
-    # Android's own placeholder writes values-ja-rJP, values-ru-rBY and values-in-rID, folders
-    # this app does not carry. This maps each of them onto the folder name it should have.
-    # The format is Crowdin's language code: the code the placeholder should produce.
+    # This is where the app's languages are decided, for all 33 of the project's target
+    # languages. Crowdin's targets are regional locales - Japanese is `ja` with the Android
+    # code `ja-rJP`, Russian is `ru-BY`, Indonesian's code is the legacy `in-rID`, German is
+    # `de-BE` - so Android's own placeholder would write values-ja-rJP and values-de-rBY.
+    # Each is named here instead, which is what makes the export land in the folder this app
+    # ships. The format is Crowdin's language code: the code the placeholder should produce.
     #
-    # Only the languages the app already ships are mapped. Adding a language to the app is
-    # meant to be deliberate, so the check that guards this branch refuses any file whose
-    # folder does not already exist, and an unmapped language here would be refused with it.
+    # Adding a language is two edits here and a pull request merged by hand, because the check
+    # that guards this branch refuses any file whose folder does not exist yet: a language
+    # should appear in the app because someone decided it should, never because an export
+    # brought it along.
     languages_mapping:
       android_code:
         af: af
+        ar-EG: ar
         az: az
         cs: cs
+        de-BE: de
+        el-CY: el
+        es-419: es
         fa-AF: fa
         fi: fi
         fil: fil
+        fr-LU: fr
         hu: hu
         hy-AM: hy
         id: id
+        it-CH: it
         ja: ja
         ka: ka
         ko: ko
         ms-BN: ms
-        no: no
+        nl-SR: nl
+        # Quoted because a bare `no` is the boolean false to some YAML parsers. Crowdin's own
+        # reads it as the language it is - values-no has been written correctly for as long as
+        # this mapping has existed - but nothing gains from leaving that to be checked.
+        "no": "no"
         pl: pl
         pt-BR: pt-rBR
         ro: ro
         ru-BY: ru
         sl: sl
+        sr-Cyrl-ME: sr
+        sv-FI: sv
         ta: ta
         th: th
+        tr-CY: tr
         uk: uk
         vi: vi
-
-    # The other ten of the project's languages have no folder in this repository and are not
-    # carried by the app: German, French, Spanish, Italian, Dutch, Swedish, Turkish, Arabic,
-    # Greek and Serbian, all of them the regional locale rather than the plain language.
-    # Translations for them stay in Crowdin and are simply not exported. Mapping one of these
-    # above instead is what it takes to start shipping it.
-    excluded_target_languages:
-      - ar-EG
-      - de-BE
-      - el-CY
-      - es-419
-      - fr-LU
-      - it-CH
-      - nl-SR
-      - sr-Cyrl-ME
-      - sv-FI
-      - tr-CY
 
     translate_attributes: 0
     content_segmentation: 0
