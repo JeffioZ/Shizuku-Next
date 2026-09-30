@@ -51,6 +51,7 @@ import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.material3.ToggleButtonShapes
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -66,6 +67,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ui.screen.AppsScreen
@@ -225,6 +227,19 @@ private fun MainTabs(
     onOpenDetail: (Detail) -> Unit
 ) {
     val scope = rememberCoroutineScope()
+
+    // Whether the app has settled enough to read the lists nobody is looking at yet. Both app
+    // lists are expensive to read - six hundred packages each - and a pager composes the page
+    // being dragged in, so reading on composition spent swipes on them. Reading when the tab
+    // is landed on fixed the swipe and made the first visit wait instead, which is what this
+    // takes back: shortly after launch, while nobody is touching anything, the two lists read
+    // themselves, so the swipe is still cheap and the tab is already full when it is opened.
+    var warmUp by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        delay(1500)
+        warmUp = true
+    }
+
     val scrollBehavior = FloatingToolbarDefaults.exitAlwaysScrollBehavior(
         exitDirection = FloatingToolbarExitDirection.Bottom
     )
@@ -244,7 +259,14 @@ private fun MainTabs(
         CenteredContent {
             HorizontalPager(
                 state = pagerState,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                // Every page stays composed. The pager otherwise builds a page only as it is
+                // dragged in, which is what the app lists were reading on; keeping them all
+                // alive is what lets the warm-up below reach them before anyone opens them,
+                // and it is also what keeps a tab's contents across a visit - the android
+                // tab bar's own pages are cheap to hold, and only the rows on screen are
+                // ever built.
+                beyondViewportPageCount = tabs.size
             ) { page ->
                 // Each page is told whether it is the one on screen, because the pager
                 // composes the page being dragged in as well. The two that read every
@@ -256,8 +278,16 @@ private fun MainTabs(
                 val active = page == pagerState.settledPage
                 when (page) {
                     0 -> HomeScreen(bottomPadding = bottomPadding)
-                    1 -> AppsScreen(bottomPadding = bottomPadding, active = active)
-                    2 -> ManageScreen(bottomPadding = bottomPadding, active = active)
+                    1 -> AppsScreen(
+                        bottomPadding = bottomPadding,
+                        active = active,
+                        warmUp = warmUp
+                    )
+                    2 -> ManageScreen(
+                        bottomPadding = bottomPadding,
+                        active = active,
+                        warmUp = warmUp
+                    )
                     3 -> ShellScreen(bottomPadding = bottomPadding)
                     4 -> SettingsScreen(bottomPadding = bottomPadding, onOpenDetail = onOpenDetail)
                 }

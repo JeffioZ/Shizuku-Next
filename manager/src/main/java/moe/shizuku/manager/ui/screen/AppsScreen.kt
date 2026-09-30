@@ -108,7 +108,7 @@ enum class AppFilter {
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun AppsScreen(bottomPadding: Dp, active: Boolean = true) {
+fun AppsScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = false) {
     val context = LocalContext.current
     val pm = context.packageManager
 
@@ -136,11 +136,13 @@ fun AppsScreen(bottomPadding: Dp, active: Boolean = true) {
         onDispose { ShizukuStateMachine.removeListener(listener) }
     }
 
-    // Waits until this is the tab on screen: the pager composes the page being dragged in,
-    // and asking the server about every package for a tab that is being swiped past is what
-    // the swipe spends its frames on.
-    LaunchedEffect(running, active) {
-        if (!active) return@LaunchedEffect
+    // Read once per version: either when this is the tab on screen, or once the app has
+    // settled after launch, so that the swipe towards it stays cheap and the first visit does
+    // not wait for the server to be asked about every package.
+    var loadedFor by remember { mutableStateOf<Pair<Boolean, Int>?>(null) }
+    LaunchedEffect(running, active, warmUp) {
+        if (!active && !warmUp) return@LaunchedEffect
+        if (loadedFor == (running to version)) return@LaunchedEffect
 
         loading = true
         Log.d(AppConstants.TAG, "Apps: reading the authorised apps")
@@ -149,6 +151,7 @@ fun AppsScreen(bottomPadding: Dp, active: Boolean = true) {
                 AuthorizationManager.getPackages(exclude = listOf(context.packageName))
             }.getOrDefault(emptyList())
         }
+        loadedFor = running to version
         loading = false
     }
 
@@ -158,12 +161,14 @@ fun AppsScreen(bottomPadding: Dp, active: Boolean = true) {
     // counts honest.
     var grantedNames by remember { mutableStateOf(emptySet<String>()) }
     var launcherless by remember { mutableStateOf(emptySet<String>()) }
-    LaunchedEffect(all, version, active) {
-        if (!active || all.isEmpty()) {
+    var derivedFor by remember { mutableStateOf<Pair<Boolean, Int>?>(null) }
+    LaunchedEffect(all, version, active, warmUp) {
+        if ((!active && !warmUp) || all.isEmpty()) {
             grantedNames = emptySet()
             launcherless = emptySet()
             return@LaunchedEffect
         }
+        if (derivedFor == (running to version)) return@LaunchedEffect
         val (granted, withoutLauncher) = withContext(Dispatchers.IO) {
             val granted = all.filter {
                 val uid = it.applicationInfo?.uid ?: return@filter false

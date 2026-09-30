@@ -103,7 +103,7 @@ enum class ManageFilter {
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ManageScreen(bottomPadding: Dp, active: Boolean = true) {
+fun ManageScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = false) {
     val context = LocalContext.current
     val pm = context.packageManager
 
@@ -120,11 +120,19 @@ fun ManageScreen(bottomPadding: Dp, active: Boolean = true) {
     // a different filter afterwards).
     var version by remember { mutableIntStateOf(0) }
 
+    // Which version the list has been read for, so that the warm-up below and landing on the
+    // tab cannot both read it: the second one is what would put the reading back on a swipe's
+    // bill for nothing.
+    var loadedFor by remember { mutableIntStateOf(-1) }
+
     // Reading every installed package, and then asking about each one, is the most expensive
-    // thing any tab does. It waits until this is the tab on screen: the pager composes the
-    // neighbour being dragged in, so starting here would spend that on a swipe past.
-    LaunchedEffect(version, active) {
-        if (!active) return@LaunchedEffect
+    // thing any tab does. It waits until this is the tab on screen, or until the app has
+    // settled after launch: the pager composes the neighbour being dragged in, so starting
+    // this on composition would spend it on a swipe past, and waiting for the tab alone would
+    // make the first visit wait instead.
+    LaunchedEffect(version, active, warmUp) {
+        if (!active && !warmUp) return@LaunchedEffect
+        if (loadedFor == version) return@LaunchedEffect
 
         loading = true
         Log.d(AppConstants.TAG, "Manage: reading the installed packages")
@@ -133,6 +141,7 @@ fun ManageScreen(bottomPadding: Dp, active: Boolean = true) {
             runCatching { pm.getInstalledPackages(PackageManager.MATCH_UNINSTALLED_PACKAGES) }
                 .getOrDefault(emptyList())
         }
+        loadedFor = version
         loading = false
     }
 
@@ -159,11 +168,13 @@ fun ManageScreen(bottomPadding: Dp, active: Boolean = true) {
     // Worked out off the main thread, and once per loaded list: it is a package manager
     // question per app, and the chip needs its size before anyone picks it.
     var launcherless by remember { mutableStateOf(emptySet<String>()) }
-    LaunchedEffect(apps, active) {
-        if (!active || apps.isEmpty()) {
+    var derivedFor by remember { mutableIntStateOf(-1) }
+    LaunchedEffect(apps, version, active, warmUp) {
+        if ((!active && !warmUp) || apps.isEmpty()) {
             launcherless = emptySet()
             return@LaunchedEffect
         }
+        if (derivedFor == version) return@LaunchedEffect
         launcherless = withContext(Dispatchers.IO) {
             apps.filterNot { pi ->
                 runCatching {
@@ -177,6 +188,7 @@ fun ManageScreen(bottomPadding: Dp, active: Boolean = true) {
                 }.getOrDefault(true)
             }.map { it.packageName }.toSet()
         }
+        derivedFor = version
     }
 
     val shown = remember(
