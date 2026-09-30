@@ -3,10 +3,47 @@
 The app's strings live in [`manager/src/main/res/values/strings.xml`](../manager/src/main/res/values/strings.xml), and
 translations come from Crowdin.
 
-- Project: **Shizuku-Next** (id `935085`), source language `en`
-- The project is linked to this repository, so a sync opens a pull request from its `crowdin`
-  branch with the translated `values-<language>/strings.xml` files. Merging that request is the
-  whole update; nothing has to be run locally.
+- Project: **Shizuku-Next** (id `935085`), source language `en`, mapped by [`crowdin.yml`](../crowdin.yml)
+- Two GitHub Actions do the syncing (`.github/workflows/crowdin.yml` and
+  `translations-merge.yml`); nothing has to be run locally
+
+## What runs when
+
+| When | What |
+| --- | --- |
+| A push to `master` that changes `values/strings.xml` | `upload sources` — Crowdin learns what there is to translate |
+| Nightly at 03:17, or *Run workflow* | `download translations` into a pull request on the `l10n` branch |
+| That pull request | merged automatically, squashed, if it only touches `values-*/strings.xml` and they pass the checks below |
+
+So the loop is: change a string → push → Crowdin has it → a translator writes it →
+the next nightly opens a pull request → it merges itself. The two things that remain a
+person's are the push and the translating.
+
+The merge is automatic because a translation cannot break anything the way code can, but the
+pull request is checked first, and it is left open when:
+
+- it changes any file other than `manager/src/main/res/values-*/strings.xml`
+- a file is not valid XML, or holds no strings at all
+- a file is **90% or more the English text**, which means it was exported without
+  *skip untranslated strings* and is not a translation
+
+Keys that the source no longer has are reported and do not block: every locale carries a few
+from strings renamed upstream, Android ignores a translation with nothing to attach it to,
+and the next export drops them.
+
+## The two secrets it needs
+
+Both go in *Settings → Secrets and variables → Actions* on the repository, never in the tree:
+
+- `CROWDIN_PERSONAL_TOKEN` — a Crowdin personal access token with *Source files & strings*
+  and *Translations* at Read and Write. Rotate it if it has ever been pasted anywhere else.
+- `CROWDIN_PROJECT_ID` — not needed: the id is in the workflow, which is not a secret.
+
+The Crowdin project is also *linked* to this repository through its own GitHub integration,
+set up before these workflows existed. That integration uploads sources and pushes its own
+translation commits to a `crowdin` branch, which nothing merges. The action uses `l10n`
+precisely so the two cannot write the same branch; once these workflows are working, turning
+the integration's translation *download* off leaves one path instead of two.
 
 ## Only translated strings are exported
 
@@ -17,9 +54,15 @@ repository (`values-hi/strings.xml` was one: 6 of its 491 strings differed from 
 six were out of date), and it is why choosing Hindi in the system's per-language picker changed
 nothing — there was nothing behind it.
 
-So **a locale folder in this repository means real translations**. If your language has no folder,
-or is missing from the system's app-language list, it has not been translated yet rather than
-being broken.
+So **a locale folder in this repository means someone has translated into that language**. It
+does not mean the whole file is translated: measured now, `values-ja` holds 131 real Japanese
+strings and 359 that are still the English text, because those files were written by an export
+that ran before the setting was turned on. The text they hold is what the app would fall back
+to anyway, so no one sees anything wrong; the next export writes only the translated strings and
+each file shrinks to what it should always have been.
+
+If your language has no folder, or is missing from the system's app-language list, it has not
+been translated yet rather than being broken.
 
 ## Which languages ship
 

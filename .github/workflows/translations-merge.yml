@@ -1,0 +1,122 @@
+name: Merge translations
+
+# The part of the translation flow that used to be a person noticing a pull request and
+# merging it. Only the branch this repository's sync opens, only into the branch it targets,
+# and only when every file it changes is a translated strings.xml: a pull request that
+# contains anything else is left alone for a human.
+#
+# Merging a translation is safe in a way that merging code is not, because nothing else in the
+# app reads it, but a locale folder is still a claim that the language is translated, so the
+# two things that could make that claim false are checked first: the file has to be XML, and
+# every key in it has to exist in the source strings.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [master]
+
+jobs:
+  merge:
+    if: github.head_ref == 'l10n'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # The base branch is read from history below, so the clone cannot be shallow.
+          fetch-depth: 0
+
+      - name: Check that it is only translations
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh pr diff ${{ github.event.pull_request.number }} --name-only | sed '/^$/d' > changed.txt
+          echo "changed:" && cat changed.txt
+          if grep -vE '^manager/src/main/res/values(-[A-Za-z0-9-]+)?/strings\.xml$' changed.txt; then
+            echo "::error::this pull request changes something other than translations"
+            exit 1
+          fi
+
+      - name: Check that the translations hold together
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          python3 - <<'PY'
+          import subprocess
+          import sys
+          import xml.etree.ElementTree as ElementTree
+
+          # A file is refused for one of three reasons: it is not XML, it holds no strings at
+          # all, or it is English wearing a language's name. That last one is the mistake this
+          # repository spent an afternoon undoing - with Crowdin's skip-untranslated-strings
+          # off it writes the source text into untranslated languages, and ~200 folders that
+          # were nothing but English shipped for months. A translation with some strings equal
+          # to the source is normal (`adb` is `adb`); a file that is mostly the source is not a
+          # translation, and a human gets to decide.
+          #
+          # Keys the source no longer has are reported and not refused. Every locale carries a
+          # few of those from strings renamed upstream, and they cost nothing: Android ignores
+          # a translation with no source string to attach to, and the next export drops them.
+          # Above what a real translation looks like today (Japanese is 74% identical to the
+          # source because it still carries the English text of everything untranslated) and
+          # below the ~100% a file that was never translated at all comes out at.
+          SAME_AS_SOURCE = 0.9
+          SMALLEST_FILE = 20
+
+          def read(rev, path):
+              root = ElementTree.fromstring(
+                  subprocess.check_output(["git", "show", f"{rev}:{path}"])
+              )
+              return {
+                  element.get("name"): (element.text or "")
+                  for element in root.findall("string")
+              }
+
+          source_path = "manager/src/main/res/values/strings.xml"
+          source = read("origin/" + BASE_REF, source_path)
+          print(f"source has {len(source)} strings")
+
+          problems = []
+          with open("changed.txt", encoding="utf-8") as changed:
+              for path in (line.strip() for line in changed):
+                  if not path:
+                      continue
+                  try:
+                      translated = read("HEAD", path)
+                  except ElementTree.ParseError as error:
+                      problems.append(f"{path}: not valid XML ({error})")
+                      continue
+
+                  if not translated:
+                      problems.append(f"{path}: no strings in it")
+                      continue
+
+                  shared = [k for k in translated if k in source]
+                  same = sum(1 for k in shared if translated[k] == source[k])
+                  ratio = same / len(shared) if shared else 0
+                  stale = len(translated) - len(shared)
+                  print(f"{path}: {len(translated)} strings, {ratio:.0%} identical to the source,"
+                        f" {stale} no longer in the source")
+
+                  if len(shared) >= SMALLEST_FILE and ratio >= SAME_AS_SOURCE:
+                      problems.append(
+                          f"{path}: {ratio:.0%} of it is the English text, so it is not a"
+                          f" translation"
+                      )
+
+          if problems:
+              print("\n" + "\n".join(problems))
+              print("::error::the translations need a look before they are merged")
+              sys.exit(1)
+          PY
+
+      - name: Merge it
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr merge ${{ github.event.pull_request.number }} \
+            --squash --delete-branch \
+            --subject 'chore(i18n): new translations from Crowdin' \
+            --body 'Merged automatically: only translated strings.xml files changed.'

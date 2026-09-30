@@ -1,0 +1,77 @@
+name: Translations
+
+# Two halves of one job, and they run on different days, because they answer different
+# questions. A push that changes the source strings tells Crowdin what there is to translate,
+# and that has to happen while the change is still fresh. Translations arrive whenever a
+# translator gets to them, which no push can predict, so the download runs on a schedule and
+# opens a pull request with whatever changed - the one part of this that needs a person.
+#
+# Nothing here can push a translation into the tree on its own, which is deliberate: a locale
+# folder in this repository is a claim that the language is translated, and that claim is worth
+# a look before it is made.
+on:
+  push:
+    branches: [master]
+    paths:
+      - manager/src/main/res/values/strings.xml
+      - crowdin.yml
+      - .github/workflows/crowdin.yml
+  schedule:
+    # Nightly. Nothing here is urgent, and every language costs hosted words on the free plan.
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  upload:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - name: Send the new source strings
+        uses: crowdin/github-action@v3
+        with:
+          config: crowdin.yml
+          project_id: 935085
+          token: ${{ secrets.CROWDIN_PERSONAL_TOKEN }}
+          upload_sources: true
+          # The repository is not where translations are written, so nothing is uploaded back.
+          upload_translations: false
+          download_translations: false
+          create_pull_request: false
+
+  download:
+    if: github.event_name != 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+      - name: Bring back whatever has been translated
+        uses: crowdin/github-action@v3
+        with:
+          config: crowdin.yml
+          project_id: 935085
+          token: ${{ secrets.CROWDIN_PERSONAL_TOKEN }}
+          # Belt and braces on the project setting of the same name: without it Crowdin writes
+          # the source text into a language with no translation of its own, which is how ~200
+          # English copies ended up in this repository looking translated.
+          skip_untranslated_strings: true
+          download_translations: true
+          upload_sources: false
+          # Deliberately not Crowdin's own branch name, so this and the GitHub integration in
+          # the Crowdin project cannot both write the same one.
+          localization_branch_name: l10n
+          push_translations: true
+          create_pull_request: true
+          pull_request_base_branch_name: master
+          pull_request_title: 'chore(i18n): new translations from Crowdin'
+          pull_request_body: >-
+            Translations that arrived in Crowdin since the last sync. Only
+            `manager/src/main/res/values-*/strings.xml` changes, and the merge is automatic
+            once that is all it is.
+          commit_message: 'chore(i18n): new translations from Crowdin'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
