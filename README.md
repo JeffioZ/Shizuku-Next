@@ -57,74 +57,357 @@ on purpose, because the second list is the only part this project is responsible
 
 ### 🍴 From [thedjchi's fork](https://github.com/thedjchi/Shizuku) his work, carried over
 
-<details>
-<summary><b>8 features carried over from that fork</b></summary>
-
 Shizuku Next started from his fork of Shizuku, so these are his features. A couple have been extended here
 since the transport split inside **TCP mode**, for instance and where that is so, the extra behaviour
 also appears under this fork's own list below.
 
-* **More robust "start on boot":** waits for a Wi-Fi connection before starting the Shizuku service
-* **TCP mode:** keep the classic ADB port open (i.e. the `adb tcpip` command) so the USB start and the watchdog can restart Shizuku without Wi-Fi or pairing. With it off, an open port is closed whenever Shizuku starts over wireless
-* **Watchdog service:** automatically restarts Shizuku if it stops unexpectedly, and can alert you of crashes/potential fixes
-* **Start/stop intents:** toggle Shizuku on-demand using automation apps (e.g., Tasker, MacroDroid, Automate)
-* **[BETA] Stealth mode:** hide Shizuku from other apps that don't work when Shizuku is installed
-* **[BETA] In-app updates:** option to automatically check for new updates, and can automatically download/install the latest version from GitHub. A check that could not run says so (no connection, GitHub rate limit) instead of answering that you already have the latest version
-* **Android/Google TV and VR headset support:** UI is now compatible with D-Pad remotes, all TVs are supported (including Android 14+ TVs that require pairing), and the multi-window pairing dialog is toggleable in settings for VR headsets
-* **MediaTek support:** fixes a critical bug in the original v13.6.0 which prevented Shizuku from working on MediaTek devices
-* And more!
+<details>
+<summary><b>More robust "start on boot"</b></summary>
+
+waits for a Wi-Fi connection before starting the Shizuku service
 
 </details>
 
-### 🦊 Added by Shizuku Next (this fork)
+<details>
+<summary><b>TCP mode</b></summary>
+
+keep the classic ADB port open (i.e. the `adb tcpip` command) so the USB start and the watchdog can restart Shizuku without Wi-Fi or pairing. With it off, an open port is closed whenever Shizuku starts over wireless
+
+</details>
 
 <details>
-<summary><b>41 features added by this fork</b></summary>
+<summary><b>Watchdog service</b></summary>
+
+automatically restarts Shizuku if it stops unexpectedly, and can alert you of crashes/potential fixes
+
+</details>
+
+<details>
+<summary><b>Start/stop intents</b></summary>
+
+toggle Shizuku on-demand using automation apps (e.g., Tasker, MacroDroid, Automate)
+
+</details>
+
+<details>
+<summary><b>[BETA] Stealth mode</b></summary>
+
+hide Shizuku from other apps that don't work when Shizuku is installed
+
+</details>
+
+<details>
+<summary><b>[BETA] In-app updates</b></summary>
+
+option to automatically check for new updates, and can automatically download/install the latest version from GitHub. A check that could not run says so (no connection, GitHub rate limit) instead of answering that you already have the latest version
+
+</details>
+
+<details>
+<summary><b>Android/Google TV and VR headset support</b></summary>
+
+UI is now compatible with D-Pad remotes, all TVs are supported (including Android 14+ TVs that require pairing), and the multi-window pairing dialog is toggleable in settings for VR headsets
+
+</details>
+
+<details>
+<summary><b>MediaTek support</b></summary>
+
+fixes a critical bug in the original v13.6.0 which prevented Shizuku from working on MediaTek devices
+
+</details>
+
+* And more!
+
+### 🦊 Added by Shizuku Next (this fork)
 
 The interface work, the start-method handling and the reliability fixes below are ours, built on top of his
 fork, which is built on [RikkaApps' Shizuku](https://github.com/RikkaApps/Shizuku).
 
-* **Automated setup:** the separate "Pair" button has been removed: pressing "Start" detects when wireless debugging still needs to be paired and launches the pairing flow automatically
-* **Pair without typing:** Shizuku reads the pairing code and port straight out of the system's "Pair with device" dialog, pairs, and starts itself so the code never has to be typed, and can't expire while you switch apps. Manual pairing (notification + typed code) stays one tap away as a fallback: the *Manual* button beside *Automated* in the same dialog, and both labels are single words so they fit on one button row instead of stacking
-* **Wireless debugging auto-disable (optional):** restore the old behaviour of turning wireless debugging off once Shizuku has started over it, instead of leaving it on so Shizuku can restart itself
-* **Wireless debugging stays enabled:** starting Shizuku no longer turns off wireless debugging, so it can restart with USB debugging off and no Wi-Fi connection; the status card shows whether it runs over wireless or USB debugging
-* **Accurate status label:** the home status card shows the server's real UID as the number, with what that uid is called underneath it (2000, then `(shell)`) instead of always assuming adb, plus three facts that can't be confused with each other: the transport it actually runs on, the method this launch used (*Current*) and the method the next Start will use (*Default*) so wireless, USB, system and root stay apart. The four read as one row across the card, label above value, with a hairline rule between each pair so the whole state is legible without reading left to right. Every status notification names the method too ("USB debugging · Waiting to retry")
-* **Fewer cryptic failure cards:** a pairing request that the device rejects is reported as a pairing failure instead of being retried until the dead socket reports "Socket closed"
-* **One-tap battery-optimization bypass:** "fix" whitelists Shizuku directly through Shizuku/root (`deviceidle whitelist`, `appops`) instead of only opening the system dialog
-* **Duplicate server cleanup:** the starter detects stale Shizuku server processes via multiple `/proc` vectors and terminates them cleanly (with a short yield) before starting a new one. It also waits for the manager's provider to appear instead of failing on the first look, because the app and the starter are started by the same broadcast and the provider is not always published by the time the starter looks for it (upstream RikkaApps/Shizuku pull 1220)
-* **Clearer auto-start progress:** the wireless/boot start notification now shows more states: waiting for Wi-Fi, waiting for unlock, and connecting
-* **Auto wake-up:** when an app requests the Shizuku binder while the server is down, the manager tries to start it in the background (if start on boot is enabled and you did not deliberately stop it)
-* **Shell, in the app:** a terminal opened from the navigation bar, next to Settings, which runs commands as the uid Shizuku runs as (2000 over adb, 0 with root, 1000 with the exploit) with the working directory and anything you export carried from command to command, so `cd` and `export` behave the way a session does even though every command is its own process. A second backend runs through the root shell for when Shizuku is stopped, and asks for root on the spot rather than assuming it, saying so when it is refused. Output streams in as it arrives, stderr in red, non-zero exits marked, with copy and clear in the header, and a row of quick commands above the input for the jobs the manager already does itself: battery, storage, device and your apps run on a tap because they only read, while grant, revoke, app op and force stop ask for the app first from a searchable list of what is installed, then write the command into the input, so what runs is what you can read. Typing turns that row into suggestions: the commands that start with what you have typed, the apps whose names do, and once the token has a dot in it the package or permission it could be picking one replaces the token and leaves the space for the next, so a permission can be granted in three taps. Commands worth keeping are saved by name from the header and listed from the Saved chip, which leads that row in both of its modes; the sheet sorts them by newest or by name, a tap fills the input and the play button beside it runs it, and deleting offers to undo in the sheet itself, where a snackbar could not be seen. A Library chip opens 108 commands with a description and tags each, searchable by any of them: "battery" finds the standby-bucket commands as well as dumpsys battery. Picking one puts it in the input, and one with placeholders asks for them first: a field per variable, with the app list a tap away for the ones that name an app, and the finished command handed back to read before it runs. The output can be searched, with the matches marked where they are rather than filtered down to and a count and a step through them; the tools can be hidden so the log has the screen, and the whole buffer can be written out through the system file picker, so it lands where you chose and needs no permission to get there. It is selectable too, for copying one line instead of all of them. An `adb shell` prefix, typed out of habit from a computer, is dropped with a line saying so, and three commands are answered on this side rather than by the shell: `clear` empties the transcript (a shell with no terminal would repaint a screen it does not have and return the escape codes for it), `exit` says there is no shell to leave because every command is its own, and a bare `su` says root comes from the Root backend here instead of waiting at a permission prompt nothing can show. There is no tty to be had from an app, so a program that needs one (nano, an ssh prompt) belongs in the rish export instead
-* **Fade behind the navigation bar:** the bar's band carries a gradient from transparent to the page colour, so a list scrolling under the floating bar fades out instead of arriving at it at full contrast. It is drawn on the bar's own band rather than by the pages, so it leaves with the bar and is already there before a page has scrolled; a gradient rather than a blur, because blurring a scrolling page means drawing it into an offscreen layer and re-blurring it every frame
-* **Reliable TCP-port rebinding:** after switching adbd to the configured TCP/IP port, Shizuku waits until the new port is actually listening before connecting (custom ports avoid the 5555 conflict)
-* **Batch permission management:** long-press an app to enter multi-select, then grant or revoke permission for many apps at once, with select-all and a confirmation, plus a Toggle all action that flips every listed app in one tap (narrow the list with the search first, it only touches what is listed), and the snackbar that follows offers to put a batch back, because flipping every listed app is a lot of permission to change by accident
-* **Device info card:** the home screen describes the device the way KernelSU's manager does: manager version, kernel version, device model, fingerprint, SELinux status and seccomp status (SELinux is read through the server when one is running, and otherwise inferred the way KernelSU's manager does, where `getenforce` being denied means the policy is enforcing)
-* **New Material 3 interface:** the manager UI is rebuilt in Jetpack Compose with a KernelSU-style layout a bottom tab bar (Home · Apps · Manage · Shell · Settings) that is icons with the selected one in a filled pill, and switches to a tab rather than scrolling through the ones in between, and slides out of the way when a list is scrolled — all the way, rather than part of it hanging at the bottom, tonal status cards with dynamic color, hairline outlines on pure-black OLED themes, and one rounded card per app in the Apps tab so a long list reads as separate entries instead of a flat column
-* **Start as system (UID 1000):** a "Start (system)" card launches Shizuku under the system UID through the device's own exploit, which is Samsung only: it abuses that vendor's FOTA agent (`com.sdet.fotaagent`), a system-signed component that declares `android.uid.system`, and Android only lets an app into a shared uid whose signature matches, so no other firmware can host it. The start method setting names that vendor for the same reason. It needs the app in the foreground, so a boot or watchdog start cannot use it. Its start method setting picks between that exploit and a custom command: with the custom one the app attempts nothing itself, shows the command that launches the executable it ships (resolved from the installed APK, so an update cannot break it, and naming the installed package, so stealth mode still works), copies it to the clipboard and waits for the binder, which is what a device whose escalation is something else entirely needs. The server it starts is moved out of every control group it inherited from the app the payload borrowed, including the ones a root process sits in, because the payload's last step stops that app and the framework takes everything it left behind with it: a server left there was handed to the manager and killed moments later, which read as a start that reported success and then did nothing. The starter also reports on the screen, stage by stage, how far the payload got, and leaves its own account in the manager's external files directory, shown when a start times out
-* **A failed system start explains itself, and says when it cannot:** the binary a device exploit runs is started by another app, so its output is not ours to read and a start that went wrong showed only "waiting for service" and then a timeout. It writes its own account of the attempt every step, every warning, the `errno` behind a failed exec, and the cgroup it was moved into to this app's external files directory, falling back to the app's media directory (`Android/media/<package>`, which exists to be reachable from outside the app and is what survives a write from another app's process) and then `/data/local/tmp`. The app prints that account when a start times out, and when there is no account it names the files it looked in, so a start that produced nothing says so rather than staying silent
-* **Start method setting:** pick how Shizuku starts Wireless debugging, USB debugging, System (UID 1000) or Root, and the Start button, start on boot, the watchdog and the start intents all follow it instead of guessing from the last method that happened to work. Root is only offered where the device can actually grant it, and a device that loses root (an OTA, root switched off in the manager) has a stored Root rewritten to Wireless debugging with a line in settings explaining the change rather than every start pointing at a method that can't run
-* **Separate USB start:** home now has "Start via USB debugging" next to the wireless one, and the two never cross over in transport: a wireless start always goes over the wireless port (so it can't come back reporting USB), and never enables USB debugging or pairing; a USB start uses the classic ADB port, where the connection authenticates itself and Android asks you to allow USB debugging once
-* **The USB start reopens its port by itself:** Android clears the classic ADB port on every reboot and it isn't persistent, so a USB start borrows the wireless connection to reopen it whenever Wi-Fi is available, then starts over the port as usual. With nothing to borrow and the no-Wi-Fi start on, it carries on over wireless debugging instead of failing, and the card says so before you tap it; with that setting off it says exactly what to do connect to Wi-Fi, run `adb tcpip 5555` from a computer, or turn the no-Wi-Fi start on
-* **Restart timing:** choose whether unattended restarts wait for an unmetered Wi-Fi connection (starts you trigger yourself never wait, and neither does anything when TCP mode has a port to reuse, because waiting for a network a start does not need is how it ends up waiting forever); an unattended start that fails retries with backoff rather than giving up on the first try
-* **One start at a time:** while Shizuku is running, every start row on the home screen (wireless, USB, system, root and the "Start using computer" ADB command) is dimmed and inert, so a tap can't silently do nothing; **Restart** is how you relaunch it
-* **ADB without Developer options:** a startup switch that turns the Developer options flag off and puts back the two ADB settings it would otherwise take with it, so Shizuku still starts and restarts on a device that looks clean to apps which refuse to run when Developer options is on. It is re-applied after every reboot, and switching it off puts the flag back
-* **Asks for the minimum, and only once:** WRITE_SECURE_SETTINGS is needed to switch wireless debugging on, nothing else, so a USB start, or a wireless start with that toggle already on, works on a fresh install without it, and no start is aborted by a setting the app isn't allowed to write. Only ADB can hand that permission out, so Shizuku grants it to itself as soon as a server is running (which is also what lets it enable its own accessibility service for pairing instead of asking you to). A brand-new install still needs either one `adb shell pm grant …` or the manual pairing fallback before the first server exists
-* **One-tap ADB port fix:** a USB start that finds the classic ADB port closed offers to open it and start in one tap, instead of only explaining `adb tcpip`
-* **Clearer apps list:** the Apps tab now says what is happening a spinner while it loads, "Shizuku is not running" with a Start button, no apps matching the search, or no app having asked for permission yet instead of a blank page
-* **Search and sort authorized apps:** filter the apps list by name, narrow it to All, Granted, Revoked or Hidden with the count shown on the filter in force, and sort it alphabetically, by most recently updated or by most recently installed, and a row whose app is disabled, suspended or has no launcher entry says so on a chip, so a state you would otherwise have to filter for is visible where it is
-* **Per-app system permissions (Manage tab):** a tab listing every installed app, and behind each one the things that normally need a computer grant or revoke its system and runtime permissions, and each row says which permission it is by name and what the platform's protection for it is. The split comes from the platform's own protection levels rather than a list of ours, and one adb is not allowed to change keeps its switch off and says why, instead of failing when tapped. Handing an app a privileged permission asks first, and the app's page in system settings is one tap away in the header
-* **App ops:** the switches the platform itself consults run in background, foreground services, keep awake, notifications, clipboard, draw over other apps and installing other apps, each as Default / Allow / Ignore / Deny. Every change is read back before it is reported, because the platform answers a refused op with success, so "it worked" has to mean the op actually changed. Capabilities that are special access in system settings rather than app ops (all files access, usage access, exact alarms, modifying system settings) are deliberately absent, because no app can change them, and the section says so
-* **Per-app actions and battery:** force stop, suspend (greys an app out and stops it running while keeping its data), disable, clear data, uninstall for this user, restore a removed system app, plus the app standby bucket from Unrestricted down to Never and the battery-optimisation exemption. Buckets only the system can assign are reported rather than offered, so no switch promises a change the platform will not make
-* **App facts:** version, UID, target and minimum SDK, ABI, data directory, signature, install source, install and update dates, debuggable, backup allowed and whether the app has a launcher entry. All of it is read from the local package manager, so the tab opens and lists apps with Shizuku stopped; only the rows that change something need it, and they are dimmed until it is running
-* **Permissions page (Settings, Tools):** one page listing what the app needs: notifications, nearby devices, write secure settings, the accessibility service and battery optimisation, with what each is for, whether it is granted, and a row that opens the right system screen (or App info, when a permission has been denied for good and asking again would do nothing)
-* **More resilient watchdog:** self-heals a dead server on screen unlock (even if the manager wasn't running when it died) and never fights a deliberate Stop
-* **Watchdog control intents:** enable/disable the watchdog via `moe.shizuku.privileged.api.WATCHDOG_ON`, `...WATCHDOG_OFF`, or `...WATCHDOG_TOGGLE`
-* **Status broadcasts:** automation apps can react to `moe.shizuku.privileged.api.SHIZUKU_CHANGED` and `...WATCHDOG_CHANGED`, each carrying a `status` extra (1 = on, 0 = off), and can ask for one with `...WATCHDOG_STATUS`
-* **Intents screen:** the ready-made commands to copy for automation: start, stop, the watchdog toggles, the ADB command and the pairing token. Start and stop are authenticated with that token, which the screen shows and can regenerate, so a random app cannot start your server
-* **Android 17 (SDK 37), where the platform hides its own switches:** Android 17 QPR1 stopped third-party apps from reading whether USB debugging and Developer options are on, so `adb_enabled` and `development_settings_enabled` both return 0 whatever the device is set to. Believing them made Shizuku announce that USB debugging was disabled on a device where it was on, refuse the TCP-mode path with "ADB is not enabled", and, whenever a start failed for a reason of its own, put "Developer options is off because ADB without Developer options is enabled" on the home card and offer to turn off a setting nobody had switched on. Reads go through helpers that treat a 0 there as unknown: USB debugging is assumed on, which is what the redaction asks apps to do, and Developer options are reported hidden only when this app's own setting is what hid them
-* **Stability on some Chinese devices (Xiaomi/OPPO/Lenovo):** background starts no longer force USB debugging on, so Shizuku no longer dies when the USB mode is File Transfer and the screen is off
-* **Starting with no Wi-Fi at all:** the wireless port is found over mDNS, which needs a network interface, so a reboot with nothing to associate with used to leave Shizuku down until a network turned up. Two things cover it now. When discovery finds nothing and TCP mode has kept the classic ADB port open, the start falls back to that port instead of failing a transport that needs no network at all, which is what the mode is for, and the home screen still reports honestly that the classic port carried it. And an experimental setting, off by default, asks for wireless debugging over and over the way the Settings toggle cannot be asked while offline, bringing up a local-only hotspot when asking alone is not enough. Turning it on also turns off waiting for Wi-Fi and auto-disabling wireless debugging, because both of those fight it: the first would hold back the start it exists to make possible, and the second would undo the state it keeps. Both rows say so and stay switched off and unswitchable while the feature is on, rather than letting the two be set against each other, and a stop will not disable wireless debugging even if the setting was left on from before. That setting leans on a platform bug (see thedjchi/Shizuku issue 165): it can stop working after a system update, it works on some devices and not others, and it can leave wireless debugging on where a managed device would normally refuse it. Nothing depends on it, so a start that cannot use it behaves exactly as it did before. It is not tied to the Wireless debugging start method either: a start whose own method cannot work at all (a USB start with no port and no network to borrow one over) hands over to it rather than failing, and reports itself over the transport it actually used, because the method is a preference and "start it with no network" is the request
-* **A port that survives a reboot:** the one thing none of the above fixes is the first start after a reboot, because `service.adb.tcp.port` the port `adb tcpip` opens is cleared by every boot and wireless debugging needs a network and a hotspot before it can be asked for. adbd also reads `persist.adb.tcp.port`, which does survive, so a port written there is simply listening when the device comes back and a start is a connection to 127.0.0.1 with no network, no hotspot and no race. The catch is who may write it: the property belongs to adbd's own security context, so the shell uid is refused it (the log says so in the platform's words: `Failed to set property`, exit 1), while root and the system uid are not. The setting writes it through whichever server is running, reports whether it took, and only stays on when the property reads back as the port you asked for, so it cannot claim something the device refused. It needs a server running as root or the system UID, which on a Samsung means the System UID start, and while it is set the port answers anything that can reach the device on the network
+<details>
+<summary><b>Automated setup</b></summary>
+
+the separate "Pair" button has been removed: pressing "Start" detects when wireless debugging still needs to be paired and launches the pairing flow automatically
+
+</details>
+
+<details>
+<summary><b>Pair without typing</b></summary>
+
+Shizuku reads the pairing code and port straight out of the system's "Pair with device" dialog, pairs, and starts itself so the code never has to be typed, and can't expire while you switch apps. Manual pairing (notification + typed code) stays one tap away as a fallback: the *Manual* button beside *Automated* in the same dialog, and both labels are single words so they fit on one button row instead of stacking
+
+</details>
+
+<details>
+<summary><b>Wireless debugging auto-disable (optional)</b></summary>
+
+restore the old behaviour of turning wireless debugging off once Shizuku has started over it, instead of leaving it on so Shizuku can restart itself
+
+</details>
+
+<details>
+<summary><b>Wireless debugging stays enabled</b></summary>
+
+starting Shizuku no longer turns off wireless debugging, so it can restart with USB debugging off and no Wi-Fi connection; the status card shows whether it runs over wireless or USB debugging
+
+</details>
+
+<details>
+<summary><b>Accurate status label</b></summary>
+
+the home status card shows the server's real UID as the number, with what that uid is called underneath it (2000, then `(shell)`) instead of always assuming adb, plus three facts that can't be confused with each other: the transport it actually runs on, the method this launch used (*Current*) and the method the next Start will use (*Default*) so wireless, USB, system and root stay apart. The four read as one row across the card, label above value, with a hairline rule between each pair so the whole state is legible without reading left to right. Every status notification names the method too ("USB debugging · Waiting to retry")
+
+</details>
+
+<details>
+<summary><b>Fewer cryptic failure cards</b></summary>
+
+a pairing request that the device rejects is reported as a pairing failure instead of being retried until the dead socket reports "Socket closed"
+
+</details>
+
+<details>
+<summary><b>One-tap battery-optimization bypass</b></summary>
+
+"fix" whitelists Shizuku directly through Shizuku/root (`deviceidle whitelist`, `appops`) instead of only opening the system dialog
+
+</details>
+
+<details>
+<summary><b>Duplicate server cleanup</b></summary>
+
+the starter detects stale Shizuku server processes via multiple `/proc` vectors and terminates them cleanly (with a short yield) before starting a new one. It also waits for the manager's provider to appear instead of failing on the first look, because the app and the starter are started by the same broadcast and the provider is not always published by the time the starter looks for it (upstream RikkaApps/Shizuku pull 1220)
+
+</details>
+
+<details>
+<summary><b>Clearer auto-start progress</b></summary>
+
+the wireless/boot start notification now shows more states: waiting for Wi-Fi, waiting for unlock, and connecting
+
+</details>
+
+<details>
+<summary><b>Auto wake-up</b></summary>
+
+when an app requests the Shizuku binder while the server is down, the manager tries to start it in the background (if start on boot is enabled and you did not deliberately stop it)
+
+</details>
+
+<details>
+<summary><b>Shell, in the app</b></summary>
+
+a terminal opened from the navigation bar, next to Settings, which runs commands as the uid Shizuku runs as (2000 over adb, 0 with root, 1000 with the exploit) with the working directory and anything you export carried from command to command, so `cd` and `export` behave the way a session does even though every command is its own process. A second backend runs through the root shell for when Shizuku is stopped, and asks for root on the spot rather than assuming it, saying so when it is refused. Output streams in as it arrives, stderr in red, non-zero exits marked, with copy and clear in the header, and a row of quick commands above the input for the jobs the manager already does itself: battery, storage, device and your apps run on a tap because they only read, while grant, revoke, app op and force stop ask for the app first from a searchable list of what is installed, then write the command into the input, so what runs is what you can read. Typing turns that row into suggestions: the commands that start with what you have typed, the apps whose names do, and once the token has a dot in it the package or permission it could be picking one replaces the token and leaves the space for the next, so a permission can be granted in three taps. Commands worth keeping are saved by name from the header and listed from the Saved chip, which leads that row in both of its modes; the sheet sorts them by newest or by name, a tap fills the input and the play button beside it runs it, and deleting offers to undo in the sheet itself, where a snackbar could not be seen. A Library chip opens 108 commands with a description and tags each, searchable by any of them: "battery" finds the standby-bucket commands as well as dumpsys battery. Picking one puts it in the input, and one with placeholders asks for them first: a field per variable, with the app list a tap away for the ones that name an app, and the finished command handed back to read before it runs. The output can be searched, with the matches marked where they are rather than filtered down to and a count and a step through them; the tools can be hidden so the log has the screen, and the whole buffer can be written out through the system file picker, so it lands where you chose and needs no permission to get there. It is selectable too, for copying one line instead of all of them. An `adb shell` prefix, typed out of habit from a computer, is dropped with a line saying so, and three commands are answered on this side rather than by the shell: `clear` empties the transcript (a shell with no terminal would repaint a screen it does not have and return the escape codes for it), `exit` says there is no shell to leave because every command is its own, and a bare `su` says root comes from the Root backend here instead of waiting at a permission prompt nothing can show. There is no tty to be had from an app, so a program that needs one (nano, an ssh prompt) belongs in the rish export instead
+
+</details>
+
+<details>
+<summary><b>Fade behind the navigation bar</b></summary>
+
+the bar's band carries a gradient from transparent to the page colour, so a list scrolling under the floating bar fades out instead of arriving at it at full contrast. It is drawn on the bar's own band rather than by the pages, so it leaves with the bar and is already there before a page has scrolled; a gradient rather than a blur, because blurring a scrolling page means drawing it into an offscreen layer and re-blurring it every frame
+
+</details>
+
+<details>
+<summary><b>Reliable TCP-port rebinding</b></summary>
+
+after switching adbd to the configured TCP/IP port, Shizuku waits until the new port is actually listening before connecting (custom ports avoid the 5555 conflict)
+
+</details>
+
+<details>
+<summary><b>Batch permission management</b></summary>
+
+long-press an app to enter multi-select, then grant or revoke permission for many apps at once, with select-all and a confirmation, plus a Toggle all action that flips every listed app in one tap (narrow the list with the search first, it only touches what is listed), and the snackbar that follows offers to put a batch back, because flipping every listed app is a lot of permission to change by accident
+
+</details>
+
+<details>
+<summary><b>Device info card</b></summary>
+
+the home screen describes the device the way KernelSU's manager does: manager version, kernel version, device model, fingerprint, SELinux status and seccomp status (SELinux is read through the server when one is running, and otherwise inferred the way KernelSU's manager does, where `getenforce` being denied means the policy is enforcing)
+
+</details>
+
+<details>
+<summary><b>New Material 3 interface</b></summary>
+
+the manager UI is rebuilt in Jetpack Compose with a KernelSU-style layout a bottom tab bar (Home · Apps · Manage · Shell · Settings) that is icons with the selected one in a filled pill, and switches to a tab rather than scrolling through the ones in between, and slides out of the way when a list is scrolled — all the way, rather than part of it hanging at the bottom, tonal status cards with dynamic color, hairline outlines on pure-black OLED themes, and one rounded card per app in the Apps tab so a long list reads as separate entries instead of a flat column
+
+</details>
+
+<details>
+<summary><b>Start as system (UID 1000)</b></summary>
+
+a "Start (system)" card launches Shizuku under the system UID through the device's own exploit, which is Samsung only: it abuses that vendor's FOTA agent (`com.sdet.fotaagent`), a system-signed component that declares `android.uid.system`, and Android only lets an app into a shared uid whose signature matches, so no other firmware can host it. The start method setting names that vendor for the same reason. It needs the app in the foreground, so a boot or watchdog start cannot use it. Its start method setting picks between that exploit and a custom command: with the custom one the app attempts nothing itself, shows the command that launches the executable it ships (resolved from the installed APK, so an update cannot break it, and naming the installed package, so stealth mode still works), copies it to the clipboard and waits for the binder, which is what a device whose escalation is something else entirely needs. The server it starts is moved out of every control group it inherited from the app the payload borrowed, including the ones a root process sits in, because the payload's last step stops that app and the framework takes everything it left behind with it: a server left there was handed to the manager and killed moments later, which read as a start that reported success and then did nothing. The starter also reports on the screen, stage by stage, how far the payload got, and leaves its own account in the manager's external files directory, shown when a start times out
+
+</details>
+
+<details>
+<summary><b>A failed system start explains itself, and says when it cannot</b></summary>
+
+the binary a device exploit runs is started by another app, so its output is not ours to read and a start that went wrong showed only "waiting for service" and then a timeout. It writes its own account of the attempt every step, every warning, the `errno` behind a failed exec, and the cgroup it was moved into to this app's external files directory, falling back to the app's media directory (`Android/media/<package>`, which exists to be reachable from outside the app and is what survives a write from another app's process) and then `/data/local/tmp`. The app prints that account when a start times out, and when there is no account it names the files it looked in, so a start that produced nothing says so rather than staying silent
+
+</details>
+
+<details>
+<summary><b>Start method setting</b></summary>
+
+pick how Shizuku starts Wireless debugging, USB debugging, System (UID 1000) or Root, and the Start button, start on boot, the watchdog and the start intents all follow it instead of guessing from the last method that happened to work. Root is only offered where the device can actually grant it, and a device that loses root (an OTA, root switched off in the manager) has a stored Root rewritten to Wireless debugging with a line in settings explaining the change rather than every start pointing at a method that can't run
+
+</details>
+
+<details>
+<summary><b>Separate USB start</b></summary>
+
+home now has "Start via USB debugging" next to the wireless one, and the two never cross over in transport: a wireless start always goes over the wireless port (so it can't come back reporting USB), and never enables USB debugging or pairing; a USB start uses the classic ADB port, where the connection authenticates itself and Android asks you to allow USB debugging once
+
+</details>
+
+<details>
+<summary><b>The USB start reopens its port by itself</b></summary>
+
+Android clears the classic ADB port on every reboot and it isn't persistent, so a USB start borrows the wireless connection to reopen it whenever Wi-Fi is available, then starts over the port as usual. With nothing to borrow and the no-Wi-Fi start on, it carries on over wireless debugging instead of failing, and the card says so before you tap it; with that setting off it says exactly what to do connect to Wi-Fi, run `adb tcpip 5555` from a computer, or turn the no-Wi-Fi start on
+
+</details>
+
+<details>
+<summary><b>Restart timing</b></summary>
+
+choose whether unattended restarts wait for an unmetered Wi-Fi connection (starts you trigger yourself never wait, and neither does anything when TCP mode has a port to reuse, because waiting for a network a start does not need is how it ends up waiting forever); an unattended start that fails retries with backoff rather than giving up on the first try
+
+</details>
+
+<details>
+<summary><b>One start at a time</b></summary>
+
+while Shizuku is running, every start row on the home screen (wireless, USB, system, root and the "Start using computer" ADB command) is dimmed and inert, so a tap can't silently do nothing; **Restart** is how you relaunch it
+
+</details>
+
+<details>
+<summary><b>ADB without Developer options</b></summary>
+
+a startup switch that turns the Developer options flag off and puts back the two ADB settings it would otherwise take with it, so Shizuku still starts and restarts on a device that looks clean to apps which refuse to run when Developer options is on. It is re-applied after every reboot, and switching it off puts the flag back
+
+</details>
+
+<details>
+<summary><b>Asks for the minimum, and only once</b></summary>
+
+WRITE_SECURE_SETTINGS is needed to switch wireless debugging on, nothing else, so a USB start, or a wireless start with that toggle already on, works on a fresh install without it, and no start is aborted by a setting the app isn't allowed to write. Only ADB can hand that permission out, so Shizuku grants it to itself as soon as a server is running (which is also what lets it enable its own accessibility service for pairing instead of asking you to). A brand-new install still needs either one `adb shell pm grant …` or the manual pairing fallback before the first server exists
+
+</details>
+
+<details>
+<summary><b>One-tap ADB port fix</b></summary>
+
+a USB start that finds the classic ADB port closed offers to open it and start in one tap, instead of only explaining `adb tcpip`
+
+</details>
+
+<details>
+<summary><b>Clearer apps list</b></summary>
+
+the Apps tab now says what is happening a spinner while it loads, "Shizuku is not running" with a Start button, no apps matching the search, or no app having asked for permission yet instead of a blank page
+
+</details>
+
+<details>
+<summary><b>Search and sort authorized apps</b></summary>
+
+filter the apps list by name, narrow it to All, Granted, Revoked or Hidden with the count shown on the filter in force, and sort it alphabetically, by most recently updated or by most recently installed, and a row whose app is disabled, suspended or has no launcher entry says so on a chip, so a state you would otherwise have to filter for is visible where it is
+
+</details>
+
+<details>
+<summary><b>Per-app system permissions (Manage tab)</b></summary>
+
+a tab listing every installed app, and behind each one the things that normally need a computer grant or revoke its system and runtime permissions, and each row says which permission it is by name and what the platform's protection for it is. The split comes from the platform's own protection levels rather than a list of ours, and one adb is not allowed to change keeps its switch off and says why, instead of failing when tapped. Handing an app a privileged permission asks first, and the app's page in system settings is one tap away in the header
+
+</details>
+
+<details>
+<summary><b>App ops</b></summary>
+
+the switches the platform itself consults run in background, foreground services, keep awake, notifications, clipboard, draw over other apps and installing other apps, each as Default / Allow / Ignore / Deny. Every change is read back before it is reported, because the platform answers a refused op with success, so "it worked" has to mean the op actually changed. Capabilities that are special access in system settings rather than app ops (all files access, usage access, exact alarms, modifying system settings) are deliberately absent, because no app can change them, and the section says so
+
+</details>
+
+<details>
+<summary><b>Per-app actions and battery</b></summary>
+
+force stop, suspend (greys an app out and stops it running while keeping its data), disable, clear data, uninstall for this user, restore a removed system app, plus the app standby bucket from Unrestricted down to Never and the battery-optimisation exemption. Buckets only the system can assign are reported rather than offered, so no switch promises a change the platform will not make
+
+</details>
+
+<details>
+<summary><b>App facts</b></summary>
+
+version, UID, target and minimum SDK, ABI, data directory, signature, install source, install and update dates, debuggable, backup allowed and whether the app has a launcher entry. All of it is read from the local package manager, so the tab opens and lists apps with Shizuku stopped; only the rows that change something need it, and they are dimmed until it is running
+
+</details>
+
+<details>
+<summary><b>Permissions page (Settings, Tools)</b></summary>
+
+one page listing what the app needs: notifications, nearby devices, write secure settings, the accessibility service and battery optimisation, with what each is for, whether it is granted, and a row that opens the right system screen (or App info, when a permission has been denied for good and asking again would do nothing)
+
+</details>
+
+<details>
+<summary><b>More resilient watchdog</b></summary>
+
+self-heals a dead server on screen unlock (even if the manager wasn't running when it died) and never fights a deliberate Stop
+
+</details>
+
+<details>
+<summary><b>Watchdog control intents</b></summary>
+
+enable/disable the watchdog via `moe.shizuku.privileged.api.WATCHDOG_ON`, `...WATCHDOG_OFF`, or `...WATCHDOG_TOGGLE`
+
+</details>
+
+<details>
+<summary><b>Status broadcasts</b></summary>
+
+automation apps can react to `moe.shizuku.privileged.api.SHIZUKU_CHANGED` and `...WATCHDOG_CHANGED`, each carrying a `status` extra (1 = on, 0 = off), and can ask for one with `...WATCHDOG_STATUS`
+
+</details>
+
+<details>
+<summary><b>Intents screen</b></summary>
+
+the ready-made commands to copy for automation: start, stop, the watchdog toggles, the ADB command and the pairing token. Start and stop are authenticated with that token, which the screen shows and can regenerate, so a random app cannot start your server
+
+</details>
+
+<details>
+<summary><b>Android 17 (SDK 37), where the platform hides its own switches</b></summary>
+
+Android 17 QPR1 stopped third-party apps from reading whether USB debugging and Developer options are on, so `adb_enabled` and `development_settings_enabled` both return 0 whatever the device is set to. Believing them made Shizuku announce that USB debugging was disabled on a device where it was on, refuse the TCP-mode path with "ADB is not enabled", and, whenever a start failed for a reason of its own, put "Developer options is off because ADB without Developer options is enabled" on the home card and offer to turn off a setting nobody had switched on. Reads go through helpers that treat a 0 there as unknown: USB debugging is assumed on, which is what the redaction asks apps to do, and Developer options are reported hidden only when this app's own setting is what hid them
+
+</details>
+
+<details>
+<summary><b>Stability on some Chinese devices (Xiaomi/OPPO/Lenovo)</b></summary>
+
+background starts no longer force USB debugging on, so Shizuku no longer dies when the USB mode is File Transfer and the screen is off
+
+</details>
+
+<details>
+<summary><b>Starting with no Wi-Fi at all</b></summary>
+
+the wireless port is found over mDNS, which needs a network interface, so a reboot with nothing to associate with used to leave Shizuku down until a network turned up. Two things cover it now. When discovery finds nothing and TCP mode has kept the classic ADB port open, the start falls back to that port instead of failing a transport that needs no network at all, which is what the mode is for, and the home screen still reports honestly that the classic port carried it. And an experimental setting, off by default, asks for wireless debugging over and over the way the Settings toggle cannot be asked while offline, bringing up a local-only hotspot when asking alone is not enough. Turning it on also turns off waiting for Wi-Fi and auto-disabling wireless debugging, because both of those fight it: the first would hold back the start it exists to make possible, and the second would undo the state it keeps. Both rows say so and stay switched off and unswitchable while the feature is on, rather than letting the two be set against each other, and a stop will not disable wireless debugging even if the setting was left on from before. That setting leans on a platform bug (see thedjchi/Shizuku issue 165): it can stop working after a system update, it works on some devices and not others, and it can leave wireless debugging on where a managed device would normally refuse it. Nothing depends on it, so a start that cannot use it behaves exactly as it did before. It is not tied to the Wireless debugging start method either: a start whose own method cannot work at all (a USB start with no port and no network to borrow one over) hands over to it rather than failing, and reports itself over the transport it actually used, because the method is a preference and "start it with no network" is the request
+
+</details>
+
+<details>
+<summary><b>A port that survives a reboot</b></summary>
+
+the one thing none of the above fixes is the first start after a reboot, because `service.adb.tcp.port` the port `adb tcpip` opens is cleared by every boot and wireless debugging needs a network and a hotspot before it can be asked for. adbd also reads `persist.adb.tcp.port`, which does survive, so a port written there is simply listening when the device comes back and a start is a connection to 127.0.0.1 with no network, no hotspot and no race. The catch is who may write it: the property belongs to adbd's own security context, so the shell uid is refused it (the log says so in the platform's words: `Failed to set property`, exit 1), while root and the system uid are not. The setting writes it through whichever server is running, reports whether it took, and only stays on when the property reads back as the port you asked for, so it cannot claim something the device refused. It needs a server running as root or the system UID, which on a Samsung means the System UID start, and while it is set the port answers anything that can reach the device on the network
 
 </details>
 
