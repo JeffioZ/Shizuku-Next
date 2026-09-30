@@ -15,6 +15,12 @@ translations come from Crowdin.
 | Nightly at 03:17, or *Run workflow* | `download translations` into a pull request on the `l10n` branch |
 | That pull request | merged automatically, squashed, if it only touches `values-*/strings.xml` and they pass the checks below |
 
+The check and the merge happen **in the same run** as the download, not in a workflow of their
+own reacting to the pull request: GitHub starts no runs for events caused by `GITHUB_TOKEN`, and
+the pull request is opened with that token, so a separate workflow waits for an event that never
+arrives. That is why `merge` sits inside `crowdin.yml`, and why `translations-merge.yml` exists
+only for pull requests opened by somebody else.
+
 So the loop is: change a string → push → Crowdin has it → a translator writes it →
 the next nightly opens a pull request → it merges itself. The two things that remain a
 person's are the push and the translating.
@@ -55,30 +61,50 @@ have run at least once, since the upload half is the Action's job now).
 
 ## Only translated strings are exported
 
-The project has **two** switches for this, and both are needed:
+Two switches sound like they do the same thing and do not:
 
-- **skip untranslated strings** - with it off, Crowdin writes the *source* text into a language
-  that has no translation of its own, so the file looks translated and reads as English.
-- **skip untranslated files** - with it off, Crowdin still writes a file (of nothing but
-  comments) for a language with no translations at all, and that folder becomes an entry in the
-  system's app-language list which changes nothing when it is picked.
+| Setting | Meaning | Here |
+| --- | --- | --- |
+| *skip untranslated strings* | leave untranslated strings **out of** an exported file, so what is written is only what someone translated | **on** - this is what stopped English text being written into languages that have none |
+| *skip untranslated files* | **omit files that are not fully translated** | **off** |
 
-The second one is why a stale `crowdin` branch carried 193 language folders that contained no
-strings between them. Both are on now, so an export writes a file only for a language that has
-something in it. That is what had put ~200 English copies into this
-repository (`values-hi/strings.xml` was one: 6 of its 491 strings differed from English, and those
-six were out of date), and it is why choosing Hindi in the system's per-language picker changed
-nothing — there was nothing behind it.
+That second one is the trap, and it cost a day: *reading* it as "do not write a file for a
+language with nothing in it" is natural and wrong. Since no language here is 100% translated,
+turning it on made Crowdin export **nothing at all**, and the sync reported success while
+finding no changes, run after run - which is what "the pull request is empty" turned out to mean.
 
-So **a locale folder in this repository means someone has translated into that language**. It
-does not mean the whole file is translated: measured now, `values-ja` holds 131 real Japanese
-strings and 359 that are still the English text, because those files were written by an export
-that ran before the setting was turned on. The text they hold is what the app would fall back
-to anyway, so no one sees anything wrong; the next export writes only the translated strings and
-each file shrinks to what it should always have been.
+With the first switch off instead, Crowdin writes the source text into every language that has no
+translation of its own, which is how this repository came to carry ~200 folders that looked
+translated and read as English.
+
+**A locale folder here means someone has translated into that language**, not that the whole file
+is translated. Files written before the switch was turned on still carry English text for the
+untranslated half; the text is what the app would fall back to anyway, so nobody sees anything
+wrong, and each export strips a little more of it. The first sync that ran wrote 23 files, added
+483 lines and **removed 8,113**: `values-ja` went from 491 strings to 382, `values-fil` from 491
+to 115, and the English copies that were never doing anything are gone.
 
 If your language has no folder, or is missing from the system's app-language list, it has not
 been translated yet rather than being broken.
+
+## Which folders the export writes
+
+The project's target languages are **regional locales** - Japanese is `ja` whose Android code is
+`ja-rJP`, Russian is `ru-BY`, Indonesian's is the legacy `in-rID` - while this app's folders are
+named for the plain language. So Android's own placeholder wrote `values-ja-rJP`, `values-ru-rBY`
+and `values-in-rID`: 32 folders the app does not carry, against the one (`values-pt-rBR`) that it
+does. Neither placeholder alone gets this right - `%two_letters_code%` collapses `pt-BR`, `zh-CN`
+and `zh-TW` instead.
+
+[`crowdin.yml`](../crowdin.yml) therefore names each language explicitly in a `languages_mapping`,
+and lists the ten languages the app does not carry in `excluded_target_languages` so their
+translations stay in Crowdin rather than arriving as folders the app would then advertise. The
+check in `ci/check-translations.py` refuses any file that would create a folder the repository has
+not got, so an unmapped language cannot slip in by accident.
+
+**To start shipping a language**: map it in `crowdin.yml`, remove it from the excluded list, and
+merge its first pull request by hand - the check only accepts folders that already exist, which is
+the point of it.
 
 ## Which languages ship
 
