@@ -1,4 +1,9 @@
 <resources>
+    <!--
+      The source strings. Translations are written in Crowdin and arrive as a pull request; see
+      docs/translations.md. Uploading this file is also what applies its settings over there, so
+      a change here reaches translators on the next push and not before.
+    -->
     <string name="app_name" translatable="false">Shizuku-Next</string>
 
     <!-- To translators: you can leave your here -->

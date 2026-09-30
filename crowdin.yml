@@ -55,5 +55,15 @@ files:
         uk: uk
         vi: vi
 
+    # Stated rather than left out: the exclusion list lives on the file in Crowdin as well as
+    # in this config, and there is no API to clear it there - only an upload does. An empty
+    # list is how this says "no language is held back from this file".
+    excluded_target_languages: []
+
+    # Stated rather than left out. The exclusion list lives on the file in Crowdin as well as
+    # in this config, and there is no API to clear it there - only an upload does - so an
+    # empty list is how this says "no language is held back from this file".
+    excluded_target_languages: []
+
     translate_attributes: 0
     content_segmentation: 0
