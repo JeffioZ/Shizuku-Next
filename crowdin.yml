@@ -1,15 +1,61 @@
 files:
   # Both paths are relative to the repository, and deliberately have no leading slash: with
   # one, the download writes to that path from the filesystem root instead of from the
-  # checkout, so the files land outside the working tree, git sees no change, and the sync
-  # quietly reports success having committed nothing.
+  # checkout, so the files land outside the working tree and git has no change to commit.
   - source: manager/src/main/res/values/strings.xml
-    # %android_code% and not %two_letters_code%: the two agree for a plain language (ja, ko)
-    # but not for a region or a script, where this one produces the folder name Android
-    # itself uses - pt-rBR, zh-rCN, zh-rTW. With the two-letter code those three were written
-    # to values-pt and values-zh, which are different resource folders: the ones this
-    # repository keeps (values-pt-rBR, values-zh-rCN, values-zh-rTW) would have gone stale
-    # while a second Portuguese and a region-less Chinese appeared beside them.
     translation: manager/src/main/res/values-%android_code%/%original_file_name%
+
+    # Crowdin's target languages are regional locales - Japanese is `ja` and its Android code
+    # is `ja-rJP`, Russian is `ru-BY`, Indonesian's Android code is the legacy `in-rID` - so
+    # Android's own placeholder writes values-ja-rJP, values-ru-rBY and values-in-rID, folders
+    # this app does not carry. This maps each of them onto the folder name it should have.
+    # The format is Crowdin's language code: the code the placeholder should produce.
+    #
+    # Only the languages the app already ships are mapped. Adding a language to the app is
+    # meant to be deliberate, so the check that guards this branch refuses any file whose
+    # folder does not already exist, and an unmapped language here would be refused with it.
+    languages_mapping:
+      android_code:
+        af: af
+        az: az
+        cs: cs
+        fa-AF: fa
+        fi: fi
+        fil: fil
+        hu: hu
+        hy-AM: hy
+        id: id
+        ja: ja
+        ka: ka
+        ko: ko
+        ms-BN: ms
+        no: no
+        pl: pl
+        pt-BR: pt-rBR
+        ro: ro
+        ru-BY: ru
+        sl: sl
+        ta: ta
+        th: th
+        uk: uk
+        vi: vi
+
+    # The other ten of the project's languages have no folder in this repository and are not
+    # carried by the app: German, French, Spanish, Italian, Dutch, Swedish, Turkish, Arabic,
+    # Greek and Serbian, all of them the regional locale rather than the plain language.
+    # Translations for them stay in Crowdin and are simply not exported. Mapping one of these
+    # above instead is what it takes to start shipping it.
+    excluded_target_languages:
+      - ar-EG
+      - de-BE
+      - el-CY
+      - es-419
+      - fr-LU
+      - it-CH
+      - nl-SR
+      - sr-Cyrl-ME
+      - sv-FI
+      - tr-CY
+
     translate_attributes: 0
     content_segmentation: 0
