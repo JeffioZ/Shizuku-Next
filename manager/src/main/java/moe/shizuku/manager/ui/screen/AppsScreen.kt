@@ -42,6 +42,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import moe.shizuku.manager.ui.component.ExpressiveSwitch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -125,6 +126,11 @@ fun AppsScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = fals
     var permissionLimited by remember { mutableStateOf(false) }
     var loading by remember { mutableStateOf(true) }
     var running by remember { mutableStateOf(ShizukuStateMachine.isRunning()) }
+    // Pull-to-refresh. While this is set the list is being read again behind the rows
+    // already on screen, so the gesture's own indicator stands in for the page spinner
+    // and the list never blinks back to blank.
+    var refreshing by remember { mutableStateOf(false) }
+    var refreshKey by remember { mutableIntStateOf(0) }
 
     // The list comes from the server, so it has to be re-read when that comes or goes
     // (and the answer while it is down is "there is nothing to list", not an empty page).
@@ -140,9 +146,12 @@ fun AppsScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = fals
     // settled after launch, so that the swipe towards it stays cheap and the first visit does
     // not wait for the server to be asked about every package.
     var loadedFor by remember { mutableStateOf<Pair<Boolean, Int>?>(null) }
-    LaunchedEffect(running, active, warmUp) {
+    LaunchedEffect(running, active, warmUp, refreshKey) {
         if (!active && !warmUp) return@LaunchedEffect
-        if (loadedFor == (running to version)) return@LaunchedEffect
+        // A pull starts from a list that is already on screen, so it is the one case that
+        // skips the guard: reading again is the whole point of the gesture. Every other
+        // trigger still waits until its version is the one that was read.
+        if (!refreshing && loadedFor == (running to version)) return@LaunchedEffect
 
         loading = true
         Log.d(AppConstants.TAG, "Apps: reading the authorised apps")
@@ -153,6 +162,7 @@ fun AppsScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = fals
         }
         loadedFor = running to version
         loading = false
+        refreshing = false
     }
 
     // Both sets are worked out once per loaded list, off the main thread: the granted one is
@@ -407,7 +417,17 @@ fun AppsScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = fals
             )
         )
 
-        Box(modifier = Modifier.fillMaxSize()) {
+        PullToRefreshBox(
+            isRefreshing = refreshing,
+            onRefresh = {
+                refreshing = true
+                // The derived sets are worked out per list, so a re-read has to ask for
+                // them again too: a pull is how you pick up a grant made elsewhere.
+                derivedFor = null
+                refreshKey++
+            },
+            modifier = Modifier.fillMaxSize()
+        ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             // Every app is its own card, so they need room between them; the padding

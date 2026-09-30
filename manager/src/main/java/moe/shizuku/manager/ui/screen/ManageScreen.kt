@@ -39,6 +39,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -109,6 +110,11 @@ fun ManageScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = fa
 
     var apps by remember { mutableStateOf<List<PackageInfo>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
+    // Pull-to-refresh. While this is set the list is being read again behind the rows
+    // already on screen, so the gesture's own indicator stands in for the page spinner
+    // and the list never blinks back to blank.
+    var refreshing by remember { mutableStateOf(false) }
+    var refreshKey by remember { mutableIntStateOf(0) }
     var query by remember { mutableStateOf("") }
     var sortOrder by remember { mutableStateOf(SortOrder.ALPHABETICAL) }
     var sortMenu by remember { mutableStateOf(false) }
@@ -130,9 +136,12 @@ fun ManageScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = fa
     // settled after launch: the pager composes the neighbour being dragged in, so starting
     // this on composition would spend it on a swipe past, and waiting for the tab alone would
     // make the first visit wait instead.
-    LaunchedEffect(version, active, warmUp) {
+    LaunchedEffect(version, active, warmUp, refreshKey) {
         if (!active && !warmUp) return@LaunchedEffect
-        if (loadedFor == version) return@LaunchedEffect
+        // A pull starts from a list that is already on screen, so it is the one case that
+        // skips the guard: reading again is the whole point of the gesture. Every other
+        // trigger still waits until its version is the one that was read.
+        if (!refreshing && loadedFor == version) return@LaunchedEffect
 
         loading = true
         Log.d(AppConstants.TAG, "Manage: reading the installed packages")
@@ -143,6 +152,7 @@ fun ManageScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = fa
         }
         loadedFor = version
         loading = false
+        refreshing = false
     }
 
     // An app that is no longer installed keeps its row but has no application record, so it
@@ -314,7 +324,17 @@ fun ManageScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = fa
             )
         )
 
-        Box(modifier = Modifier.fillMaxSize()) {
+        PullToRefreshBox(
+            isRefreshing = refreshing,
+            onRefresh = {
+                refreshing = true
+                // The hidden set is worked out per list, so a re-read has to ask for it
+                // again too: a pull is how you pick up an app installed elsewhere.
+                derivedFor = -1
+                refreshKey++
+            },
+            modifier = Modifier.fillMaxSize()
+        ) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(start = 16.dp, top = 4.dp, end = 16.dp, bottom = bottomPadding),
