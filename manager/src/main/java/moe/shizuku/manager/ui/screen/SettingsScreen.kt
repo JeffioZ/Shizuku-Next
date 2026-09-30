@@ -17,10 +17,37 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.AdminPanelSettings
+import androidx.compose.material.icons.outlined.Bolt
+import androidx.compose.material.icons.outlined.BugReport
+import androidx.compose.material.icons.outlined.Code
+import androidx.compose.material.icons.outlined.Contrast
+import androidx.compose.material.icons.outlined.DarkMode
+import androidx.compose.material.icons.outlined.DeveloperMode
+import androidx.compose.material.icons.outlined.Devices
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Link
+import androidx.compose.material.icons.outlined.MenuBook
+import androidx.compose.material.icons.outlined.MonitorHeart
+import androidx.compose.material.icons.outlined.NetworkCheck
+import androidx.compose.material.icons.outlined.Numbers
+import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.PowerSettingsNew
+import androidx.compose.material.icons.outlined.PushPin
+import androidx.compose.material.icons.outlined.RocketLaunch
+import androidx.compose.material.icons.outlined.SystemUpdate
+import androidx.compose.material.icons.outlined.Terminal
+import androidx.compose.material.icons.outlined.Translate
+import androidx.compose.material.icons.outlined.Usb
+import androidx.compose.material.icons.outlined.VerifiedUser
+import androidx.compose.material.icons.outlined.VisibilityOff
+import androidx.compose.material.icons.outlined.Wifi
+import androidx.compose.material.icons.outlined.WifiTethering
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -42,9 +69,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -202,6 +231,8 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                 SegmentedColumn(modifier = Modifier.fillMaxWidth()) {
                     item {
                         SegmentedListItem(
+                            centerSlots = true,
+                            leadingContent = { SettingsIcon(Icons.Outlined.PowerSettingsNew) },
                             headlineContent = { Text(stringResource(R.string.settings_start_on_boot)) },
                             switchState = startOnBoot,
                             onSwitchChange =
@@ -221,6 +252,8 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                     }
                     item {
                         SegmentedListItem(
+                            centerSlots = true,
+                            leadingContent = { SettingsIcon(Icons.Outlined.MonitorHeart) },
                             headlineContent = { Text(stringResource(R.string.settings_watchdog)) },
                             supportingContent = { Text(stringResource(R.string.settings_watchdog_summary)) },
                             switchState = watchdog,
@@ -240,6 +273,8 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                     }
                     item {
                         SegmentedListItem(
+                            centerSlots = true,
+                            leadingContent = { SettingsIcon(Icons.Outlined.Usb) },
                             headlineContent = { Text(stringResource(R.string.settings_auto_disable_usb_debugging)) },
                             supportingContent = { Text(stringResource(R.string.settings_auto_disable_usb_debugging_summary)) },
                             switchState = autoDisableUsb,
@@ -253,6 +288,8 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                     }
                     item {
                         SegmentedListItem(
+                            centerSlots = true,
+                            leadingContent = { SettingsIcon(Icons.Outlined.Wifi) },
                             headlineContent = { Text(stringResource(R.string.settings_auto_disable_wireless_debugging)) },
                             supportingContent = {
                                 Text(
@@ -277,6 +314,8 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                     }
                     item {
                         SegmentedListItem(
+                            centerSlots = true,
+                            leadingContent = { SettingsIcon(Icons.Outlined.RocketLaunch) },
                             headlineContent = { Text(stringResource(R.string.settings_start_method)) },
                             supportingContent = {
                                 // Say why the row no longer reads Root, rather than changing
@@ -298,6 +337,8 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                     }
                     item {
                         SegmentedListItem(
+                            centerSlots = true,
+                            leadingContent = { SettingsIcon(Icons.Outlined.DeveloperMode) },
                             headlineContent = { Text(stringResource(R.string.settings_adb_without_developer_options)) },
                             supportingContent = {
                                 Text(stringResource(R.string.settings_adb_without_developer_options_summary))
@@ -319,6 +360,8 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                     }
                     item {
                         SegmentedListItem(
+                            centerSlots = true,
+                            leadingContent = { SettingsIcon(Icons.Outlined.NetworkCheck) },
                             headlineContent = { Text(stringResource(R.string.settings_wait_for_wifi)) },
                             supportingContent = {
                                 Text(
@@ -341,6 +384,8 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                     }
                     item {
                         SegmentedListItem(
+                            centerSlots = true,
+                            leadingContent = { SettingsIcon(Icons.Outlined.WifiTethering) },
                             headlineContent = { Text(stringResource(R.string.settings_force_wireless_debugging)) },
                             supportingContent = {
                                 Text(stringResource(R.string.settings_force_wireless_debugging_summary))
@@ -392,6 +437,8 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                     }
                     item {
                         SegmentedListItem(
+                            centerSlots = true,
+                            leadingContent = { SettingsIcon(Icons.Outlined.AdminPanelSettings) },
                             headlineContent = { Text(stringResource(R.string.settings_system_start_method)) },
                             supportingContent = {
                                 Text(
@@ -418,6 +465,8 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                 SegmentedColumn(modifier = Modifier.fillMaxWidth()) {
                     item {
                         SegmentedListItem(
+                            centerSlots = true,
+                            leadingContent = { SettingsIcon(Icons.Outlined.Link) },
                             headlineContent = { Text(stringResource(R.string.settings_tcp_mode)) },
                             supportingContent = { Text(stringResource(R.string.settings_tcp_mode_summary)) },
                             switchState = tcpMode,
@@ -446,6 +495,8 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                     }
                     if (persistAdbPort || canPersistAdbPort) item {
                         SegmentedListItem(
+                            centerSlots = true,
+                            leadingContent = { SettingsIcon(Icons.Outlined.PushPin) },
                             headlineContent = { Text(stringResource(R.string.settings_persist_adb_port)) },
                             supportingContent = {
                                 Text(stringResource(R.string.settings_persist_adb_port_summary))
@@ -479,6 +530,8 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                     }
                     item {
                         SegmentedListItem(
+                            centerSlots = true,
+                            leadingContent = { SettingsIcon(Icons.Outlined.Numbers) },
                             headlineContent = { Text(stringResource(R.string.settings_tcp_port)) },
                             supportingContent = { Text(tcpPort) },
                             trailingContent = {
@@ -489,6 +542,8 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                     }
                     item {
                         SegmentedListItem(
+                            centerSlots = true,
+                            leadingContent = { SettingsIcon(Icons.Outlined.Devices) },
                             headlineContent = { Text(stringResource(R.string.settings_legacy_pairing)) },
                             supportingContent = { Text(stringResource(R.string.settings_legacy_pairing_summary)) },
                             switchState = legacyPairing,
@@ -512,6 +567,8 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                     // same question as the rest of that page (may this app do its job?)
                     item {
                         SegmentedListItem(
+                            centerSlots = true,
+                            leadingContent = { SettingsIcon(Icons.Outlined.VerifiedUser) },
                             headlineContent = { Text(stringResource(R.string.settings_permissions)) },
                             supportingContent = { Text(stringResource(R.string.settings_permissions_summary)) },
                             trailingContent = {
@@ -522,6 +579,8 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                     }
                     item {
                         SegmentedListItem(
+                            centerSlots = true,
+                            leadingContent = { SettingsIcon(Icons.Outlined.VisibilityOff) },
                             headlineContent = { Text(stringResource(R.string.tools_stealth)) },
                             supportingContent = { Text(stringResource(R.string.stealth_description)) },
                             trailingContent = {
@@ -532,6 +591,8 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                     }
                     item {
                         SegmentedListItem(
+                            centerSlots = true,
+                            leadingContent = { SettingsIcon(Icons.Outlined.Terminal) },
                             headlineContent = { Text(stringResource(R.string.tools_terminal)) },
                             supportingContent = { Text(stringResource(R.string.tools_terminal_summary)) },
                             trailingContent = {
@@ -542,6 +603,8 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                     }
                     item {
                         SegmentedListItem(
+                            centerSlots = true,
+                            leadingContent = { SettingsIcon(Icons.Outlined.Bolt) },
                             headlineContent = { Text(stringResource(R.string.intents_title)) },
                             supportingContent = { Text(stringResource(R.string.intents_description)) },
                             trailingContent = {
@@ -560,6 +623,8 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                 SegmentedColumn(modifier = Modifier.fillMaxWidth()) {
                     item {
                         SegmentedListItem(
+                            centerSlots = true,
+                            leadingContent = { SettingsIcon(Icons.Outlined.DarkMode) },
                             headlineContent = { Text(stringResource(R.string.settings_theme)) },
                             supportingContent = {
                                 Text(
@@ -578,6 +643,8 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                     }
                     item {
                         SegmentedListItem(
+                            centerSlots = true,
+                            leadingContent = { SettingsIcon(Icons.Outlined.Palette) },
                             headlineContent = { Text(stringResource(R.string.settings_use_system_color)) },
                             switchState = useSystemColor,
                             onSwitchChange =
@@ -591,6 +658,8 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                     }
                     item {
                         SegmentedListItem(
+                            centerSlots = true,
+                            leadingContent = { SettingsIcon(Icons.Outlined.Contrast) },
                             headlineContent = { Text(stringResource(R.string.settings_black_night_theme)) },
                             supportingContent = { Text(stringResource(R.string.settings_black_night_theme_summary)) },
                             switchState = blackNight,
@@ -605,6 +674,8 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                     }
                     item {
                         SegmentedListItem(
+                            centerSlots = true,
+                            leadingContent = { SettingsIcon(Icons.Outlined.Translate) },
                             headlineContent = { Text(stringResource(R.string.settings_language)) },
                             trailingContent = {
                                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
@@ -631,18 +702,24 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                 SegmentedColumn(modifier = Modifier.fillMaxWidth()) {
                     item {
                         SegmentedListItem(
+                            centerSlots = true,
+                            leadingContent = { SettingsIcon(Icons.Outlined.Info) },
                             headlineContent = { Text(stringResource(R.string.app_name)) },
                             supportingContent = { Text(BuildConfig.VERSION_NAME) }
                         )
                     }
                     item {
                         SegmentedListItem(
+                            centerSlots = true,
+                            leadingContent = { SettingsIcon(Icons.Outlined.Code) },
                             headlineContent = { Text(stringResource(R.string.about_package)) },
                             supportingContent = { Text(context.packageName) }
                         )
                     }
                     item {
                         SegmentedListItem(
+                            centerSlots = true,
+                            leadingContent = { SettingsIcon(Icons.Outlined.SystemUpdate) },
                             headlineContent = { Text(stringResource(R.string.check_for_updates)) },
                             supportingContent = {
                                 Text(
@@ -661,6 +738,8 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                     }
                     item {
                         SegmentedListItem(
+                            centerSlots = true,
+                            leadingContent = { SettingsIcon(Icons.Outlined.MenuBook) },
                             headlineContent = { Text(stringResource(R.string.settings_help)) },
                             trailingContent = {
                                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
@@ -672,6 +751,8 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                     }
                     item {
                         SegmentedListItem(
+                            centerSlots = true,
+                            leadingContent = { SettingsIcon(Icons.Outlined.BugReport) },
                             headlineContent = { Text(stringResource(R.string.settings_report_bug)) },
                             trailingContent = {
                                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
@@ -943,9 +1024,27 @@ private fun needsRestart(setting: String, newValue: Any? = null): Boolean {
 private fun SettingsSectionHeader(@StringRes titleRes: Int) {
     Text(
         text = stringResource(titleRes),
-        style = MaterialTheme.typography.titleSmall,
+        style = MaterialTheme.typography.labelLarge,
+        fontWeight = FontWeight.SemiBold,
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.padding(start = 16.dp, top = 12.dp)
+    )
+}
+
+/**
+ * The icon every settings row leads with.
+ *
+ * The word already says what the row is, so the icon is not there to be read: it is an
+ * outline to run an eye down, which is what makes a long list of switches scannable. Tinted
+ * as secondary content for the same reason, so the titles stay the first thing seen.
+ */
+@Composable
+private fun SettingsIcon(icon: ImageVector) {
+    Icon(
+        imageVector = icon,
+        contentDescription = null,
+        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.size(24.dp)
     )
 }
 

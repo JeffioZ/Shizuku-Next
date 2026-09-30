@@ -239,7 +239,7 @@ fun AppDetailScreen(
                                         )
                                     }
                                 },
-                                centerTrailing = true
+                                centerSlots = true
                             )
                         }
                     }
@@ -329,7 +329,7 @@ fun AppDetailScreen(
                                         },
                                         onClick = { opPicker = op },
                                         enabled = !busy,
-                                        centerTrailing = true
+                                        centerSlots = true
                                     )
                                 }
                             }
@@ -472,7 +472,7 @@ fun AppDetailScreen(
                                     },
                                     onClick = { bucketPicker = true },
                                     enabled = !busy,
-                                    centerTrailing = true
+                                    centerSlots = true
                                 )
                             }
                             item {
@@ -490,7 +490,7 @@ fun AppDetailScreen(
                                             }
                                         )
                                     },
-                                    centerTrailing = true
+                                    centerSlots = true
                                 )
                             }
                         }
@@ -644,7 +644,7 @@ private fun PermissionRow(
         },
         // The protection string can wrap, and a switch level with the headline looks
         // broken rather than deliberate.
-        centerTrailing = true
+        centerSlots = true
     )
 }
 

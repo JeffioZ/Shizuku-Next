@@ -392,7 +392,7 @@ fun ManageScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = fa
                             // Centred, so the chip and the arrow sit against the row rather than
                             // level with its first line, and the row's own padding keeps them off
                             // the card's edge.
-                            centerTrailing = true
+                            centerSlots = true
                         )
                     }
                 }

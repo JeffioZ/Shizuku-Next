@@ -122,7 +122,12 @@ fun SegmentedListItem(
     trailingContent: (@Composable () -> Unit)? = null,
     onClick: (() -> Unit)? = null,
     enabled: Boolean = true,
-    centerTrailing: Boolean = false,
+    // Centres every slot on the row rather than letting Material place them. Material aligns
+    // the leading and trailing slots with the headline as soon as the supporting text wraps,
+    // which leaves an icon and a switch beside the first line of a two or three line row
+    // instead of beside the row. Centring them means owning the layout, so the typography
+    // Material would have supplied is provided below instead.
+    centerSlots: Boolean = false,
     switchState: Boolean? = null,
     switchEnabled: Boolean = true,
     onSwitchChange: ((Boolean) -> Unit)? = null
@@ -161,7 +166,7 @@ fun SegmentedListItem(
         }
     } else trailingContent
 
-    if (!centerTrailing) {
+    if (!centerSlots) {
         ListItem(
             modifier = clickable,
             headlineContent = headlineContent,
@@ -175,10 +180,6 @@ fun SegmentedListItem(
         return
     }
 
-    // Material 3 puts the trailing slot level with the headline as soon as the supporting
-    // text wraps onto a second line, which leaves a switch or an arrow sitting beside the
-    // first line instead of beside the row. Centring it means owning the layout, so the
-    // typography Material 3 would have supplied is provided here instead.
     Row(
         modifier = clickable
             .fillMaxWidth()
