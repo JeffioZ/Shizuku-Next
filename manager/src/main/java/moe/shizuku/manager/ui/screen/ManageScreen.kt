@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
@@ -104,7 +105,10 @@ enum class ManageFilter {
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ManageScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = false) {
+fun ManageScreen(
+    bottomPadding: Dp,
+    onBack: (() -> Unit)? = null
+) {
     val context = LocalContext.current
     val pm = context.packageManager
 
@@ -126,18 +130,16 @@ fun ManageScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = fa
     // a different filter afterwards).
     var version by remember { mutableIntStateOf(0) }
 
-    // Which version the list has been read for, so that the warm-up below and landing on the
-    // tab cannot both read it: the second one is what would put the reading back on a swipe's
-    // bill for nothing.
+    // Which version the list has been read for, so that opening this screen twice cannot read
+    // it twice: the second read would put the cost back on a screen that already has an
+    // answer.
     var loadedFor by remember { mutableIntStateOf(-1) }
 
     // Reading every installed package, and then asking about each one, is the most expensive
-    // thing any tab does. It waits until this is the tab on screen, or until the app has
-    // settled after launch: the pager composes the neighbour being dragged in, so starting
-    // this on composition would spend it on a swipe past, and waiting for the tab alone would
-    // make the first visit wait instead.
-    LaunchedEffect(version, active, warmUp, refreshKey) {
-        if (!active && !warmUp) return@LaunchedEffect
+    // thing this app does, which is why it happens on open rather than for a page nobody asked
+    // for: this screen is a tile on the Labs tab, so it exists only once somebody opened it,
+    // and the placeholder rows stand in while it reads.
+    LaunchedEffect(version, refreshKey) {
         // A pull starts from a list that is already on screen, so it is the one case that
         // skips the guard: reading again is the whole point of the gesture. Every other
         // trigger still waits until its version is the one that was read.
@@ -179,8 +181,8 @@ fun ManageScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = fa
     // question per app, and the chip needs its size before anyone picks it.
     var launcherless by remember { mutableStateOf(emptySet<String>()) }
     var derivedFor by remember { mutableIntStateOf(-1) }
-    LaunchedEffect(apps, version, active, warmUp) {
-        if ((!active && !warmUp) || apps.isEmpty()) {
+    LaunchedEffect(apps, version) {
+        if (apps.isEmpty()) {
             launcherless = emptySet()
             return@LaunchedEffect
         }
@@ -244,6 +246,18 @@ fun ManageScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = fa
         TopAppBar(
             title = { Text(stringResource(R.string.tab_manage)) },
             windowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
+            // Shown when this is opened from the Labs list rather than being the page: it is a
+            // detail over the tabs then, with no bar underneath to go back to.
+            navigationIcon = {
+                if (onBack != null) {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = null
+                        )
+                    }
+                }
+            },
             actions = {
                 IconButton(onClick = { sortMenu = true }) {
                     Icon(Icons.Filled.Sort, contentDescription = null)

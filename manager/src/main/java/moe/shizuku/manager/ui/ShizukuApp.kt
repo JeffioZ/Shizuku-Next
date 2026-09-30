@@ -37,13 +37,12 @@ import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Terminal
+import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.outlined.AdminPanelSettings
 import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Science
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.Terminal
-import androidx.compose.material.icons.outlined.Terminal
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.FloatingToolbarExitDirection
@@ -86,6 +85,7 @@ import moe.shizuku.manager.R
 import moe.shizuku.manager.ui.screen.AppsScreen
 import moe.shizuku.manager.ui.screen.HomeScreen
 import moe.shizuku.manager.ui.screen.IntentsScreen
+import moe.shizuku.manager.ui.screen.LabsScreen
 import moe.shizuku.manager.ui.screen.ManageScreen
 import moe.shizuku.manager.ui.screen.PermissionsScreen
 import moe.shizuku.manager.ui.screen.SettingsScreen
@@ -95,8 +95,15 @@ import moe.shizuku.manager.ui.screen.TerminalScreen
 import moe.shizuku.manager.ui.theme.LocalAmoledTheme
 import moe.shizuku.manager.ui.theme.ShizukuTheme
 
-/** A secondary screen shown on top of the tab pager. */
-enum class Detail { STEALTH, TERMINAL, INTENTS, PERMISSIONS }
+/**
+ * A secondary screen shown on top of the tab pager.
+ *
+ * The first two are what the Labs tab opens, and they are the reason it exists: an app's ops
+ * and a shell are things you go to, not places you live, and giving each of them a tab meant
+ * the bar spent its whole width on five icons while the two screens behind two of them were
+ * mostly empty when you arrived.
+ */
+enum class Detail { APP_OPS, SHELL, STEALTH, TERMINAL, INTENTS, PERMISSIONS }
 
 /**
  * On wide windows (tablets, foldables, desktop mode, mirrored displays) a
@@ -117,14 +124,11 @@ private data class Tab(
 private val tabs = listOf(
     Tab(R.string.tab_home, Icons.Filled.Home, Icons.Outlined.Home),
     Tab(R.string.tab_apps, Icons.Filled.Apps, Icons.Outlined.Apps),
-    // Apps answers "which apps may use Shizuku"; Manage answers "what may they do on the
-    // device", so they belong next to each other rather than either side of Settings.
-    Tab(R.string.tab_manage, Icons.Filled.AdminPanelSettings, Icons.Outlined.AdminPanelSettings),
-    // The shell is a tab like the others. It was a place you opened over them and came back
-    // from, on the grounds that a page has to keep a session and its output alive behind the
-    // other pages, which turns out to be what you want from a shell: leave it, come back, and
-    // what you ran is still there.
-    Tab(R.string.tab_shell, Icons.Filled.Terminal, Icons.Outlined.Terminal),
+    // Labs holds the things that are gone to rather than lived in: the app-ops list and the
+    // shell to begin with, and whatever else turns out to belong there. Each was a tab of its
+    // own before, which is a lot of the bar for two screens that are mostly a list you read
+    // once, and it also made the shell's own session the price of switching to Settings.
+    Tab(R.string.tab_labs, Icons.Filled.Science, Icons.Outlined.Science),
     Tab(R.string.tab_settings, Icons.Filled.Settings, Icons.Outlined.Settings),
 )
 
@@ -167,6 +171,15 @@ fun ShizukuApp() {
                         )
                     ) {
                         when (current) {
+                            // Both get the bar's padding of zero: a detail has no floating
+                            // bar under it to keep clear of, and this wrapper already keeps
+                            // them off the navigation bar.
+                            Detail.APP_OPS -> ManageScreen(
+                                bottomPadding = 0.dp,
+                                onBack = { detail = null }
+                            )
+
+                            Detail.SHELL -> ShellScreen(bottomPadding = 0.dp, onBack = { detail = null })
                             Detail.STEALTH -> StealthScreen(onBack = { detail = null })
                             Detail.TERMINAL -> TerminalScreen(onBack = { detail = null })
                             Detail.INTENTS -> IntentsScreen(onBack = { detail = null })
@@ -178,36 +191,6 @@ fun ShizukuApp() {
                 }
             }
         }
-    }
-}
-
-/**
- * The bar's one action, drawn exactly like the tabs beside it so the row keeps its rhythm.
- * It never shows as selected: pressing it opens the shell over the tabs rather than switching
- * to a page, so there is no state for it to hold.
- */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun ShellBarButton(onOpen: () -> Unit) {
-    ToggleButton(
-        checked = false,
-        onCheckedChange = { onOpen() },
-        shapes = ToggleButtonShapes(
-            shape = CircleShape,
-            pressedShape = CircleShape,
-            checkedShape = CircleShape
-        ),
-        colors = ToggleButtonDefaults.toggleButtonColors(
-            containerColor = Color.Transparent,
-            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            checkedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-            checkedContentColor = MaterialTheme.colorScheme.onSecondaryContainer
-        )
-    ) {
-        Icon(
-            Icons.Outlined.Terminal,
-            contentDescription = stringResource(R.string.shell_title)
-        )
     }
 }
 
@@ -296,13 +279,8 @@ private fun MainTabs(
                         active = active,
                         warmUp = warmUp
                     )
-                    2 -> ManageScreen(
-                        bottomPadding = bottomPadding,
-                        active = active,
-                        warmUp = warmUp
-                    )
-                    3 -> ShellScreen(bottomPadding = bottomPadding)
-                    4 -> SettingsScreen(bottomPadding = bottomPadding, onOpenDetail = onOpenDetail)
+                    2 -> LabsScreen(bottomPadding = bottomPadding, onOpenDetail = onOpenDetail)
+                    3 -> SettingsScreen(bottomPadding = bottomPadding, onOpenDetail = onOpenDetail)
                 }
             }
         }

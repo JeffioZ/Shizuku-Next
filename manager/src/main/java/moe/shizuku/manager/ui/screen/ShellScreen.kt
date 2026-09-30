@@ -120,6 +120,7 @@ import moe.shizuku.manager.shell.ShellHistory
 import moe.shizuku.manager.shell.ShellHostCommands
 import moe.shizuku.manager.ui.component.stripHtmlTags
 import moe.shizuku.manager.shell.ShellBookmarks
+import moe.shizuku.manager.shell.ShellContinuity
 import moe.shizuku.manager.shell.ShellCommands
 import moe.shizuku.manager.shell.ShellOutput
 import moe.shizuku.manager.shell.ShellSuggestion
@@ -184,17 +185,20 @@ private val BARE_SU = Regex("""^su(?:\s+-\s*)?$""")
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ShellScreen(bottomPadding: Dp = 0.dp) {
+fun ShellScreen(bottomPadding: Dp = 0.dp, onBack: (() -> Unit)? = null) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val clipboard = LocalClipboardManager.current
-    val session = remember { ShellSession() }
+    // The session, the output and the channel it arrives on outlive this screen, because it is
+    // opened from the Labs list rather than being a page: leaving it to check something and
+    // coming back has to find what was run still there. See ShellContinuity.
+    val session = ShellContinuity.session
     val listState = rememberLazyListState()
 
-    val lines = remember { mutableStateListOf<ShellLine>() }
+    val lines = ShellContinuity.lines
     // The command runs off the main thread and writes here; the UI drains it on the main
     // one, which is why streaming output does not need a recomposition per line.
-    val incoming = remember { Channel<ShellLine>(Channel.UNLIMITED) }
+    val incoming = ShellContinuity.incoming
 
     // A TextFieldValue rather than a plain String, for one reason: a chip that fills the
     // input has to leave the caret at the end of what it wrote. With a String the caret
@@ -591,7 +595,19 @@ fun ShellScreen(bottomPadding: Dp = 0.dp) {
                     }
                 },
                 windowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
-                // No back arrow: this is a tab, and the bar below is how you leave it.
+                // An arrow only when this was opened from the Labs list: it used to be a tab,
+                // where the bar underneath was how you left, and it is a screen over the tabs
+                // now, so the arrow is the way back.
+                navigationIcon = {
+                    if (onBack != null) {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = null
+                            )
+                        }
+                    }
+                },
                 actions = {
                     // Always offered, because the most common thing to do with a shell is run
                     // something copied from somewhere else, and that is the first thing you
