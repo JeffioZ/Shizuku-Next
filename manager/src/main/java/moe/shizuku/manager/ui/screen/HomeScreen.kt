@@ -476,17 +476,13 @@ fun HomeScreen(bottomPadding: Dp) {
                         contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
                         shape = MaterialTheme.shapes.large
                     ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                text = stringResource(R.string.home_hiding_active_title),
-                                style = MaterialTheme.typography.titleSmall
-                            )
-                            Text(
-                                text = stringResource(R.string.home_hiding_active_note),
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.padding(top = 8.dp)
-                            )
-                        }
+                        // The summary alone: the sentence already says what is happening and why,
+                        // and a heading over one line of text read as a label for itself.
+                        Text(
+                            text = stringResource(R.string.home_hiding_active_note),
+                            modifier = Modifier.padding(16.dp),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
                     }
                 }
             }
