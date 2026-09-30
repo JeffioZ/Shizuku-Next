@@ -913,9 +913,11 @@ private fun StatusFact(fact: StatusFactEntry, modifier: Modifier = Modifier) {
         Text(
             fact.value,
             // One step up from the label and no more: four facts share the width, so a
-            // bigger value just eats its own ellipsis.
+            // bigger value just eats its own ellipsis. Two lines rather than one, because
+            // the method names are longer than a quarter of the width and "Start without
+            // Wi-Fi" clipped to "Start wi…" says less than it costs to wrap.
             style = MaterialTheme.typography.bodyMedium,
-            maxLines = 1,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis
         )
         fact.detail?.let {
