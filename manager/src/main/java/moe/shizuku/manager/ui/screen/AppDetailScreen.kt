@@ -32,7 +32,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Switch
+import moe.shizuku.manager.ui.component.ExpressiveSwitch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -478,7 +478,7 @@ fun AppDetailScreen(
                                     headlineContent = { Text(stringResource(R.string.app_battery_unrestricted)) },
                                     supportingContent = { Text(stringResource(R.string.app_battery_unrestricted_note)) },
                                     trailingContent = {
-                                        Switch(
+                                        ExpressiveSwitch(
                                             checked = app.batteryUnrestricted,
                                             enabled = !busy,
                                             onCheckedChange = { checked ->
@@ -632,7 +632,7 @@ private fun PermissionRow(
         headlineContent = { Text(permission.short) },
         supportingContent = { Text(supporting) },
         trailingContent = {
-            Switch(
+            ExpressiveSwitch(
                 checked = permission.granted,
                 // A permission adb cannot change stays readable but not switchable; the
                 // row says why, so it does not look like a bug.

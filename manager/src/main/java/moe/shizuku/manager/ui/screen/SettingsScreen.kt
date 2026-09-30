@@ -27,7 +27,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Switch
+import moe.shizuku.manager.ui.component.ExpressiveSwitch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -204,7 +204,7 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                         SegmentedListItem(
                             headlineContent = { Text(stringResource(R.string.settings_start_on_boot)) },
                             trailingContent = {
-                                Switch(checked = startOnBoot, onCheckedChange = { checked ->
+                                ExpressiveSwitch(checked = startOnBoot, onCheckedChange = { checked ->
                                     if (checked && needsBatteryPrompt(context)) {
                                         batteryPrompt = {
                                             ShizukuSettings.setStartOnBoot(context, true)
@@ -224,7 +224,7 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                             headlineContent = { Text(stringResource(R.string.settings_watchdog)) },
                             supportingContent = { Text(stringResource(R.string.settings_watchdog_summary)) },
                             trailingContent = {
-                                Switch(checked = watchdog, onCheckedChange = { checked ->
+                                ExpressiveSwitch(checked = watchdog, onCheckedChange = { checked ->
                                     if (checked && needsBatteryPrompt(context)) {
                                         batteryPrompt = {
                                             ShizukuSettings.setWatchdog(context, true)
@@ -243,7 +243,7 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                             headlineContent = { Text(stringResource(R.string.settings_auto_disable_usb_debugging)) },
                             supportingContent = { Text(stringResource(R.string.settings_auto_disable_usb_debugging_summary)) },
                             trailingContent = {
-                                Switch(checked = autoDisableUsb, onCheckedChange = {
+                                ExpressiveSwitch(checked = autoDisableUsb, onCheckedChange = {
                                     ShizukuSettings.getPreferences().edit()
                                         .putBoolean(ShizukuSettings.Keys.KEY_AUTO_DISABLE_USB_DEBUGGING, it).apply()
                                     autoDisableUsb = it
@@ -263,7 +263,7 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                                 )
                             },
                             trailingContent = {
-                                Switch(
+                                ExpressiveSwitch(
                                     checked = autoDisableWireless && !forceWireless,
                                     // Turning wireless debugging off when Shizuku stops is
                                     // the one thing the experiment cannot survive, so this
@@ -307,7 +307,7 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                                 Text(stringResource(R.string.settings_adb_without_developer_options_summary))
                             },
                             trailingContent = {
-                                Switch(
+                                ExpressiveSwitch(
                                     checked = adbWithoutDeveloperOptions,
                                     onCheckedChange = { checked ->
                                         // Hiding Developer options is not something to do to
@@ -336,7 +336,7 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                                 )
                             },
                             trailingContent = {
-                                Switch(
+                                ExpressiveSwitch(
                                     checked = waitForWifi && !forceWireless,
                                     // Waiting for a network is what the experiment starts
                                     // without, so asking for both at once is not a state
@@ -357,7 +357,7 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                                 Text(stringResource(R.string.settings_force_wireless_debugging_summary))
                             },
                             trailingContent = {
-                                Switch(checked = forceWireless, onCheckedChange = { checked ->
+                                ExpressiveSwitch(checked = forceWireless, onCheckedChange = { checked ->
                                     // The two settings this one cannot work with are turned
                                     // off along with it, and both are rows in this same
                                     // list, so nothing moves out of sight: waiting for a
@@ -411,7 +411,7 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                             headlineContent = { Text(stringResource(R.string.settings_tcp_mode)) },
                             supportingContent = { Text(stringResource(R.string.settings_tcp_mode_summary)) },
                             trailingContent = {
-                                Switch(checked = tcpMode, onCheckedChange = { checked ->
+                                ExpressiveSwitch(checked = tcpMode, onCheckedChange = { checked ->
                                     when {
                                         !checked && EnvironmentUtils.getAdbTcpPort() > 0 ->
                                             closeTcpDialog = true
@@ -441,7 +441,7 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                                 Text(stringResource(R.string.settings_persist_adb_port_summary))
                             },
                             trailingContent = {
-                                Switch(checked = persistAdbPort, onCheckedChange = { checked ->
+                                ExpressiveSwitch(checked = persistAdbPort, onCheckedChange = { checked ->
                                     // The write is the platform's to allow or refuse, so the
                                     // switch follows what actually happened rather than
                                     // what was asked for.
@@ -482,7 +482,7 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                             headlineContent = { Text(stringResource(R.string.settings_legacy_pairing)) },
                             supportingContent = { Text(stringResource(R.string.settings_legacy_pairing_summary)) },
                             trailingContent = {
-                                Switch(checked = legacyPairing, onCheckedChange = {
+                                ExpressiveSwitch(checked = legacyPairing, onCheckedChange = {
                                     ShizukuSettings.getPreferences().edit()
                                         .putBoolean(ShizukuSettings.Keys.KEY_LEGACY_PAIRING, it).apply()
                                     legacyPairing = it
@@ -570,7 +570,7 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                         SegmentedListItem(
                             headlineContent = { Text(stringResource(R.string.settings_use_system_color)) },
                             trailingContent = {
-                                Switch(checked = useSystemColor, onCheckedChange = {
+                                ExpressiveSwitch(checked = useSystemColor, onCheckedChange = {
                                     ShizukuSettings.getPreferences().edit()
                                         .putBoolean(ShizukuSettings.Keys.KEY_USE_SYSTEM_COLOR, it).apply()
                                     useSystemColor = it
@@ -584,7 +584,7 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                             headlineContent = { Text(stringResource(R.string.settings_black_night_theme)) },
                             supportingContent = { Text(stringResource(R.string.settings_black_night_theme_summary)) },
                             trailingContent = {
-                                Switch(checked = blackNight, onCheckedChange = {
+                                ExpressiveSwitch(checked = blackNight, onCheckedChange = {
                                     ShizukuSettings.getPreferences().edit()
                                         .putBoolean(ShizukuSettings.Keys.KEY_BLACK_NIGHT_THEME, it).apply()
                                     blackNight = it

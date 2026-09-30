@@ -40,7 +40,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
+import moe.shizuku.manager.ui.component.ExpressiveSwitch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -479,7 +479,7 @@ fun AppsScreen(bottomPadding: Dp) {
                             if (selectionMode) {
                                 Checkbox(checked = isSelected, onCheckedChange = null)
                             } else {
-                                Switch(
+                                ExpressiveSwitch(
                                     checked = granted,
                                     onCheckedChange = { checked ->
                                         val result = runCatching {
