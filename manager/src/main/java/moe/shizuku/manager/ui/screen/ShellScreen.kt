@@ -34,6 +34,7 @@ import androidx.compose.material.icons.outlined.BookmarkAdd
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.LibraryBooks
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -107,6 +108,7 @@ import kotlinx.coroutines.withContext
 import moe.shizuku.manager.R
 import moe.shizuku.manager.shell.ShellBackend
 import moe.shizuku.manager.shell.LibraryCommand
+import moe.shizuku.manager.shell.ShellHistory
 import moe.shizuku.manager.shell.ShellBookmarks
 import moe.shizuku.manager.shell.ShellCommands
 import moe.shizuku.manager.shell.ShellOutput
@@ -123,7 +125,6 @@ import rikka.shizuku.Shizuku
 /** How much scrollback to keep. A command like `logcat` would otherwise grow without end. */
 private const val MAX_LINES = 2000
 
-private const val MAX_HISTORY = 100
 
 /**
  * One of the commands the shell offers, which are the ones the manager already runs itself.
@@ -202,6 +203,9 @@ fun ShellScreen(onBack: () -> Unit) {
     // with a hole where the package goes.
     var pickFor by remember { mutableStateOf<QuickCommand?>(null) }
 
+    /** Whether the list of what has been run is open. */
+    var historyOpen by remember { mutableStateOf(false) }
+
     // Commands worth keeping: the ones that took a while to work out. Read once per screen.
     var bookmarks by remember { mutableStateOf(ShellBookmarks.load(context)) }
     var sheetOpen by remember { mutableStateOf(false) }
@@ -266,7 +270,10 @@ fun ShellScreen(onBack: () -> Unit) {
     }
     var rootAvailable by remember { mutableStateOf<Boolean?>(null) }
     var uid by remember { mutableIntStateOf(-1) }
-    val history = remember { mutableStateListOf<String>() }
+    // What has been run, newest first, kept in the app's preferences: the arrows above the
+    // input walk it and the history sheet lists the same list, so a command survived leaving
+    // the screen. It was in memory only, which lost everything on navigation.
+    var history by remember { mutableStateOf(ShellHistory.load(context)) }
     var historyIndex by remember { mutableIntStateOf(-1) }
 
     val shizukuRunning = ShizukuStateMachine.isRunning()
@@ -338,10 +345,7 @@ fun ShellScreen(onBack: () -> Unit) {
             feed(ShellLine(context.getString(R.string.shell_adb_prefix_dropped), ShellLine.Kind.INFO))
         }
         feed(ShellLine("$cwd $ $command", ShellLine.Kind.COMMAND))
-        if (history.isEmpty() || history.last() != command) {
-            history.add(command)
-            if (history.size > MAX_HISTORY) history.removeAt(0)
-        }
+        history = ShellHistory.record(context, command)
         historyIndex = -1
 
         if (session.isPlainCd(command)) {
@@ -382,6 +386,11 @@ fun ShellScreen(onBack: () -> Unit) {
             return
         }
         val targetBackend = backend
+
+        // Recorded where the command actually runs rather than where it is submitted, so the
+        // ones filled in from a chip, the library or a suggestion are in the list as well:
+        // what is worth keeping is what ran, not what was typed.
+        history = ShellHistory.record(context, command)
 
         running = true
         scope.launch {
@@ -434,9 +443,11 @@ fun ShellScreen(onBack: () -> Unit) {
 
     fun recall(direction: Int) {
         if (history.isEmpty()) return
-        if (historyIndex == -1) historyIndex = history.size
-        historyIndex = (historyIndex + direction).coerceIn(0, history.size)
-        val recalled = if (historyIndex == history.size) "" else history[historyIndex]
+
+        // Newest first in the store: -1 walks back through what was run and +1 forward, and
+        // walking past the newest is the blank input the walk started from.
+        historyIndex = (historyIndex - direction).coerceIn(-1, history.size - 1)
+        val recalled = if (historyIndex < 0) "" else history[historyIndex].command
         field = TextFieldValue(recalled, TextRange(recalled.length))
     }
 
@@ -705,6 +716,20 @@ fun ShellScreen(onBack: () -> Unit) {
                 ) {
                     item {
                         AssistChip(
+                            onClick = { historyOpen = true },
+                            enabled = !running,
+                            label = { Text(stringResource(R.string.shell_history)) },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Outlined.History,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        )
+                    }
+                    item {
+                        AssistChip(
                             onClick = { sheetOpen = true },
                             enabled = !running,
                             label = { Text(stringResource(R.string.shell_bookmarks)) },
@@ -838,6 +863,23 @@ fun ShellScreen(onBack: () -> Unit) {
                 }
                 naming = null
             }
+        )
+    }
+
+    if (historyOpen) {
+        ShellHistorySheet(
+            entries = history,
+            onFill = { command ->
+                historyOpen = false
+                fill(command)
+            },
+            onRun = { command ->
+                historyOpen = false
+                submit(command)
+            },
+            onForget = { command -> history = ShellHistory.forget(context, command) },
+            onClear = { history = ShellHistory.clear(context) },
+            onDismiss = { historyOpen = false }
         )
     }
 

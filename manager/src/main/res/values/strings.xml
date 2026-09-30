@@ -408,6 +408,11 @@
     <string name="shell_library_empty">No matching command.</string>
     <string name="shell_variables_title">Fill it in</string>
     <string name="shell_variables_pick_app">Pick an app</string>
+    <string name="shell_history">History</string>
+    <string name="shell_history_empty">Nothing has been run yet. Commands appear here once they do, newest first.</string>
+    <string name="shell_history_clear">Clear</string>
+    <string name="shell_history_run">Run this command</string>
+    <string name="shell_history_forget">Remove from history</string>
     <string name="shell_bookmarks">Saved</string>
     <string name="shell_bookmark_save">Save this command</string>
     <string name="shell_bookmark_saved">Saved</string>
