@@ -42,6 +42,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -61,6 +62,7 @@ import moe.shizuku.manager.manage.PackageTools
 import moe.shizuku.manager.ui.component.AppFilterChip
 import moe.shizuku.manager.ui.component.AppIcon
 import moe.shizuku.manager.ui.component.AppListSkeleton
+import moe.shizuku.manager.ui.component.AppStatusChips
 import moe.shizuku.manager.ui.component.CenteredMessage
 import moe.shizuku.manager.ui.component.ExpressiveSwitch
 import moe.shizuku.manager.ui.component.SegmentedCard
@@ -380,15 +382,23 @@ fun LabsToggleScreen(
                                 )
                             },
                             trailingContent = {
-                                ExpressiveSwitch(
-                                    checked = isBlocked,
-                                    enabled = feature != AppToggleFeature.AUTOSTART || running,
-                                    onCheckedChange = { checked ->
-                                        blocked = if (checked) blocked + pi.packageName
-                                        else blocked - pi.packageName
-                                        toggle(pi.packageName, checked)
-                                    }
-                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    // The chips the other app lists carry, so an app says the
+                                    // same things about itself wherever it is listed.
+                                    AppStatusChips(pi, hidden = pi.packageName in launcherless)
+                                    ExpressiveSwitch(
+                                        checked = isBlocked,
+                                        enabled = feature != AppToggleFeature.AUTOSTART || running,
+                                        onCheckedChange = { checked ->
+                                            blocked = if (checked) blocked + pi.packageName
+                                            else blocked - pi.packageName
+                                            toggle(pi.packageName, checked)
+                                        }
+                                    )
+                                }
                             },
                             colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                         )

@@ -65,6 +65,7 @@ import moe.shizuku.manager.ui.component.AppFilterChip
 import moe.shizuku.manager.ui.component.AppListSkeleton
 import moe.shizuku.manager.ui.component.appLabel
 import moe.shizuku.manager.ui.component.AppIcon
+import moe.shizuku.manager.ui.component.AppStatusChips
 import moe.shizuku.manager.ui.component.CenteredMessage
 import moe.shizuku.manager.ui.component.ChipEmphasis
 import moe.shizuku.manager.ui.component.SegmentedCard
@@ -356,16 +357,6 @@ fun ManageScreen(
             ) {
                 items(shown, key = { it.packageName }) { pi ->
                     val removed = pi.packageName in removedPackages
-                    val flags = pi.applicationInfo?.flags ?: 0
-                    val suspended = flags and ApplicationInfo.FLAG_SUSPENDED != 0
-                    val disabled = pi.applicationInfo?.enabled == false
-                    val status = when {
-                        removed -> stringResource(R.string.manage_status_removed)
-                        suspended -> stringResource(R.string.manage_status_suspended)
-                        disabled -> stringResource(R.string.manage_status_disabled)
-                        flags and ApplicationInfo.FLAG_SYSTEM != 0 -> stringResource(R.string.manage_status_system)
-                        else -> null
-                    }
 
                     SegmentedCard {
                         SegmentedListItem(
@@ -386,16 +377,14 @@ fun ManageScreen(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    if (status != null) {
-                                        StatusChip(
-                                            status,
-                                            emphasis = when {
-                                                removed -> ChipEmphasis.WARN
-                                                disabled || suspended -> ChipEmphasis.SOFT
-                                                else -> ChipEmphasis.NONE
-                                            }
-                                        )
-                                    }
+                                    // The same chips every app list carries, worked out in one
+                                    // place: what kind of app it is, and what is worth
+                                    // knowing about it.
+                                    AppStatusChips(
+                                        pi,
+                                        hidden = pi.packageName in launcherless,
+                                        removed = removed
+                                    )
                                     Icon(
                                         Icons.AutoMirrored.Filled.KeyboardArrowRight,
                                         contentDescription = null,

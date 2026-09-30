@@ -10,6 +10,8 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -75,6 +77,7 @@ import moe.shizuku.manager.authorization.AuthorizationManager
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter
 import moe.shizuku.manager.ui.component.AppFilterChip
 import moe.shizuku.manager.ui.component.AppIcon
+import moe.shizuku.manager.ui.component.AppStatusChips
 import moe.shizuku.manager.ui.component.AppListSkeleton
 import moe.shizuku.manager.ui.component.CenteredMessage
 import moe.shizuku.manager.ui.component.ChipEmphasis
@@ -505,20 +508,6 @@ fun AppsScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = fals
                 }
                 val isSelected = pi.packageName in selected
 
-                // The same chip the Manage tab uses, for the same reason: a state that is only
-                // knowable from the filter you happen to be on is a state nobody sees. One chip
-                // at a time, most actionable first, so a narrow row cannot end up crowded.
-                val flags = pi.applicationInfo!!.flags
-                val state = when {
-                    !pi.applicationInfo!!.enabled ->
-                        stringResource(R.string.manage_status_disabled) to ChipEmphasis.SOFT
-                    flags and ApplicationInfo.FLAG_SUSPENDED != 0 ->
-                        stringResource(R.string.manage_status_suspended) to ChipEmphasis.SOFT
-                    pi.packageName in launcherless ->
-                        stringResource(R.string.manage_status_hidden) to ChipEmphasis.NONE
-                    else -> null
-                }
-
                 SegmentedCard(
                     // A selected row tints its card, so a multi-select pass reads at a
                     // glance instead of needing the checkbox to be spotted each time.
@@ -565,13 +554,10 @@ fun AppsScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = fals
                         // on top of one another: the slot places what it is given as a single
                         // child.
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            if (state != null) {
-                                StatusChip(
-                                    text = state.first,
-                                    emphasis = state.second,
-                                    modifier = Modifier.padding(end = 8.dp)
-                                )
-                            }
+                            // The same chips every app list carries, worked out in one place:
+                            // what kind of app it is, and what is worth knowing about it.
+                            AppStatusChips(pi, hidden = pi.packageName in launcherless)
+                            Spacer(modifier = Modifier.width(8.dp))
                             if (selectionMode) {
                                 Checkbox(checked = isSelected, onCheckedChange = null)
                             } else {

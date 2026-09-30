@@ -502,10 +502,11 @@
     <string name="manage_filter_empty">Nothing in this filter.</string>
     <string name="manage_empty">No apps found.</string>
     <string name="manage_status_system">System</string>
+    <string name="manage_status_user">User</string>
     <string name="manage_status_removed">Removed, data kept</string>
     <string name="manage_status_disabled">Disabled</string>
     <string name="manage_status_suspended">Suspended</string>
-    <string name="manage_status_hidden">No launcher icon</string>
+    <string name="manage_status_hidden">No icon</string>
 
     <!-- One app, and what it may do on the device -->
     <string name="app_detail_missing">This app is no longer installed.</string>

@@ -1,5 +1,6 @@
 package moe.shizuku.manager.ui.component
 
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import androidx.compose.animation.core.LinearEasing
@@ -44,12 +45,14 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import moe.shizuku.manager.R
 
 /**
  * The pictures the two app screens share: a filter chip that carries its own count, the
@@ -210,6 +213,66 @@ fun StatusChip(
             .background(container)
             .padding(horizontal = 8.dp, vertical = 3.dp)
     )
+}
+
+/**
+ * What a row says about the app beside its name.
+ *
+ * Two at most: what kind of app it is - system or user, which is a fact about the app that
+ * nothing else in the list shows - and one thing worth knowing about its state, most actionable
+ * first: gone from this user, suspended, disabled, or with no launcher entry. Always at least
+ * the kind, so a row that says nothing else still says what it is.
+ */
+fun appStatusChips(
+    pi: PackageInfo,
+    hidden: Boolean,
+    removed: Boolean = false
+): List<Pair<Int, ChipEmphasis>> {
+    val ai = pi.applicationInfo
+    if (removed || ai == null) {
+        return listOf(R.string.manage_status_removed to ChipEmphasis.WARN)
+    }
+
+    val chips = mutableListOf(
+        (if (ai.flags and ApplicationInfo.FLAG_SYSTEM != 0) R.string.manage_status_system
+        else R.string.manage_status_user) to ChipEmphasis.NONE
+    )
+    val flags = ai.flags
+    when {
+        flags and ApplicationInfo.FLAG_SUSPENDED != 0 ->
+            chips += R.string.manage_status_suspended to ChipEmphasis.SOFT
+
+        !ai.enabled -> chips += R.string.manage_status_disabled to ChipEmphasis.SOFT
+
+        hidden -> chips += R.string.manage_status_hidden to ChipEmphasis.NONE
+    }
+    return chips
+}
+
+/**
+ * The chips of [appStatusChips], laid out for a row's trailing slot.
+ *
+ * Stacked, not side by side. Two chips in a row take the width the name needs, and a name
+ * squeezed into what is left wraps one letter per line - which is what "3 Button Navigation
+ * Bar" did next to System and No launcher icon. A taller row is the better trade, and one chip
+ * is a column of one.
+ */
+@Composable
+fun AppStatusChips(
+    pi: PackageInfo,
+    hidden: Boolean,
+    removed: Boolean = false,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.End,
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        appStatusChips(pi, hidden, removed).forEach { (label, emphasis) ->
+            StatusChip(stringResource(label), emphasis = emphasis)
+        }
+    }
 }
 
 /** Centred content for the states that aren't a list. */
