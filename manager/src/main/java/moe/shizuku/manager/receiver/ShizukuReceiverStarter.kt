@@ -16,6 +16,7 @@ import moe.shizuku.manager.R
 import moe.shizuku.manager.AppConstants
 import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.start.StartFailureKind
+import moe.shizuku.manager.service.WatchdogGuard
 import moe.shizuku.manager.start.StartStatusReporter
 import moe.shizuku.manager.start.StartMethodGuard
 import moe.shizuku.manager.start.hasWriteSecureSettings
@@ -64,11 +65,25 @@ object ShizukuReceiverStarter {
         // left the belief behind, and a start was then ignored in silence: a tap that does
         // nothing at all, until a reboot resets the belief. The refusal is also said out
         // loud now, because a tap that quietly does nothing is the worst of the two.
-        if ((UserHandleCompat.myUserId() > 0 ||
-                ShizukuStateMachine.update() == ShizukuStateMachine.State.RUNNING) && !forceStart
-        ) {
+        val wasRunning = UserHandleCompat.myUserId() > 0 ||
+            ShizukuStateMachine.update() == ShizukuStateMachine.State.RUNNING
+        if (wasRunning && !forceStart) {
             Log.i(AppConstants.TAG, "Start ignored: the service is already running")
             return
+        }
+        // A forced start replaces whatever is there, so the binder death on the way is ours,
+        // and the watchdog reads a binder death as a crash unless it is told otherwise: it
+        // would answer a deliberate Restart with a crash notification and a second start
+        // racing this one.
+        //
+        // Marked for any forced start rather than only when this process can still see the
+        // server, because by the time a start request is handled the old server may already
+        // be gone: there is nothing left to ping then, and the death it left behind would go
+        // through unclaimed. The mark carries a deadline, so the worst a forced start with
+        // nothing to replace can do is ignore one genuine death inside the next half minute.
+        if (forceStart) {
+            Log.i(AppConstants.TAG, "Forced start: the server's death is expected")
+            WatchdogGuard.expectDeath()
         }
 
         // Root can be gone since the method was chosen (an OTA, root switched off), and a

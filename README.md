@@ -365,7 +365,7 @@ one page listing what the app needs: notifications, nearby devices, write secure
 <details>
 <summary><b>More resilient watchdog</b></summary>
 
-self-heals a dead server on screen unlock (even if the manager wasn't running when it died) and never fights a deliberate Stop
+self-heals a dead server on screen unlock (even if the manager wasn't running when it died) and never fights a deliberate Stop. It also knows which deaths are its own doing: a forced start marks the server's death as expected, so a Restart is not answered with a crash notification and a second start racing the one that was asked for, while the mark carries a deadline and is spent on the first death, so a real crash cannot hide behind it. A death it did not expect is reported and restarted, and the restart is checked rather than trusted: if the server is not back shortly after, the retry stays armed for the next unlock, and if it is, the crash notification is replaced by one saying the server is running again. Restarts are also rate-limited, so an outage that is being retried hard cannot turn into a start every few seconds
 
 </details>
 

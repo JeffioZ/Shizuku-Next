@@ -13,6 +13,7 @@ import android.content.pm.ServiceInfo
 import android.net.Uri
 import android.os.Build
 import android.os.IBinder
+import android.os.SystemClock
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.work.WorkManager
@@ -40,16 +41,54 @@ class WatchdogService : Service() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var pendingRestart = false
 
-    private val stateListener: (ShizukuStateMachine.State) -> Unit = {
-        when (it) {
-            ShizukuStateMachine.State.CRASHED -> {
-                showCrashNotification()
-                attemptRestart()
-            }
+    /** Set while the user owes a notification that an outage is over. */
+    @Volatile
+    private var awaitingRecovery = false
+
+    /** Only one restart at a time, and not one every few seconds for the same outage. */
+    private val restartInFlight = AtomicBoolean(false)
+
+    @Volatile
+    private var lastRestartAt = 0L
+
+    private val stateListener: (ShizukuStateMachine.State) -> Unit = { state ->
+        // Deliberately not cleared when the server is seen running again: the binder that
+        // reports that is the sticky one, and during a replacement it arrives while the old
+        // server is still up, an instant before the death the mark was set for. Clearing
+        // there wiped the mark and the death came through as a crash after all. The mark
+        // carries its own deadline, so a stale one drops itself.
+        when (state) {
+            ShizukuStateMachine.State.CRASHED ->
+                // Three ways for this to be somebody's decision rather than a crash: the
+                // server is being replaced, or it was stopped on purpose, or a start that
+                // asked for it is already on its way. Reporting any of those as a crash and
+                // starting again over the top of it is what made a deliberate restart look
+                // like Shizuku falling over, twice.
+                when {
+                    WatchdogGuard.consumeExpectedDeath() ->
+                        Log.d(TAG, "Server went down as expected, nothing to report")
+
+                    ShizukuSettings.getManuallyStopped() ->
+                        Log.d(TAG, "Server was stopped on purpose, nothing to report")
+
+                    else -> {
+                        Log.w(TAG, "Server died: reporting it and starting it again")
+                        showCrashNotification()
+                        awaitingRecovery = true
+                        attemptRestart()
+                    }
+                }
+
             ShizukuStateMachine.State.RUNNING -> {
-                // Server is back no longer need the screen-on retry
+                // Server is back, so there is nothing left for the screen-on retry to do,
+                // and any outage the user was told about is over.
                 pendingRestart = false
+                if (awaitingRecovery) {
+                    awaitingRecovery = false
+                    showRecoveryNotification()
+                }
             }
+
             else -> Unit
         }
     }
@@ -89,6 +128,9 @@ class WatchdogService : Service() {
             // can flip the state to RUNNING before we probe it.
             delay(BINDER_GRACE_MS)
             if (ShizukuSettings.getManuallyStopped()) return@launch
+            // A replacement is in flight: the old server being gone right now is the point
+            // of it, and starting another one would race it.
+            if (WatchdogGuard.isExpectingDeath()) return@launch
             when (ShizukuStateMachine.get()) {
                 // A start/stop appears to be in flight. Give it ample time to
                 // resolve instead of skipping outright a state stuck at
@@ -109,6 +151,24 @@ class WatchdogService : Service() {
     }
 
     private fun attemptRestart() {
+        if (WatchdogGuard.isExpectingDeath() || ShizukuSettings.getManuallyStopped()) {
+            Log.d(TAG, "Restart attempt skipped: one is expected, or the stop was deliberate")
+            return
+        }
+
+        // The binder listener and the unlock probe can land here for the same outage, and a
+        // restart that keeps failing must not turn into a start every few seconds.
+        val now = SystemClock.elapsedRealtime()
+        if (now - lastRestartAt < RESTART_COOLDOWN_MS) {
+            Log.d(TAG, "Restart attempt skipped: one was made moments ago")
+            return
+        }
+        if (!restartInFlight.compareAndSet(false, true)) {
+            Log.d(TAG, "Restart attempt skipped: one is already in flight")
+            return
+        }
+        lastRestartAt = now
+
         // Cancel any prior WorkManager attempt so we don't inherit exponential backoff
         WorkManager.getInstance(applicationContext).cancelUniqueWork("adb_start_worker")
 
@@ -135,6 +195,21 @@ class WatchdogService : Service() {
                 Log.w(TAG, "Direct restart failed, falling back", e)
                 pendingRestart = true
                 ShizukuReceiverStarter.start(applicationContext, forceStart = true)
+            } finally {
+                restartInFlight.set(false)
+            }
+
+            // A start reports success as soon as the binder appears, and the interesting case
+            // is the one that appears and then goes away again, so the restart is checked
+            // rather than trusted: until the server is actually there, the screen-on retry
+            // stays armed.
+            delay(RECOVERY_CHECK_MS)
+            ShizukuStateMachine.update()
+            if (ShizukuStateMachine.isRunning()) {
+                pendingRestart = false
+            } else if (!ShizukuSettings.getManuallyStopped()) {
+                Log.w(TAG, "Restart did not bring the server back, leaving the retry armed")
+                pendingRestart = true
             }
         }
     }
@@ -143,6 +218,10 @@ class WatchdogService : Service() {
         super.onCreate()
         isRunning.set(true)
         sendWatchdogChangedBroadcast(applicationContext, true)
+        // The state it starts in is worth a line: a watchdog that came up after the server
+        // was already gone is the case it cannot see a transition for, and that is what the
+        // unlock probe is for.
+        Log.i(TAG, "Watchdog started, server is ${ShizukuStateMachine.get()}")
         ShizukuStateMachine.addListener(stateListener)
         registerReceiver(screenOnReceiver, IntentFilter(Intent.ACTION_USER_PRESENT))
     }
@@ -276,12 +355,56 @@ class WatchdogService : Service() {
         nm.notify(NOTIFICATION_ID_CRASH, notification)
     }
 
+    /**
+     * The other half of the crash notification, and only ever the other half: it is posted
+     * when a restart answered an outage the user was already told about, so nothing about a
+     * service that came and went on its own reaches anyone.
+     */
+    private fun showRecoveryNotification() {
+        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        nm.createNotificationChannel(
+            NotificationChannel(
+                CRASH_CHANNEL_ID,
+                "Crash Reports",
+                NotificationManager.IMPORTANCE_DEFAULT
+            )
+        )
+
+        val notification = NotificationCompat.Builder(this, CRASH_CHANNEL_ID)
+            .setContentTitle(getString(R.string.watchdog_shizuku_recovered_title))
+            .setContentText(
+                getString(R.string.watchdog_shizuku_recovered_text) + runningMethodSuffix()
+            )
+            .setSmallIcon(R.drawable.ic_system_icon)
+            .setContentIntent(
+                PendingIntent.getActivity(
+                    this,
+                    0,
+                    Intent(this, MainActivity::class.java),
+                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+                )
+            )
+            .setAutoCancel(true)
+            .build()
+
+        nm.notify(NOTIFICATION_ID_RECOVERY, notification)
+        // The alarm it answers is spent either way.
+        nm.cancel(NOTIFICATION_ID_CRASH)
+    }
+
     companion object {
         private const val TAG = "ShizukuWatchdog"
         private const val BINDER_GRACE_MS = 3000L
         private const val IN_FLIGHT_GRACE_MS = 90_000L
+
+        /** Long enough for a wireless start to have got somewhere, short enough to be news. */
+        private const val RECOVERY_CHECK_MS = 15_000L
+
+        /** Two restarts within this are the same outage, not two. */
+        private const val RESTART_COOLDOWN_MS = 15_000L
         private const val NOTIFICATION_ID_WATCHDOG = 1001
         private const val NOTIFICATION_ID_CRASH = 1002
+        private const val NOTIFICATION_ID_RECOVERY = 1003
         const val CRASH_CHANNEL_ID = "crash_reports"
         const val ACTION_WATCHDOG_CHANGED = "WATCHDOG_CHANGED"
         const val EXTRA_WATCHDOG_STATUS = "status"

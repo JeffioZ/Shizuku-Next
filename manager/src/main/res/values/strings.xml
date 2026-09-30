@@ -462,6 +462,8 @@
     <string name="watchdog_shizuku_crashed_title">Shizuku crashed recently</string>
     <string name="watchdog_shizuku_crashed_text">Watchdog restarted Shizuku. Tap to see ways to prevent crashes.</string>
     <string name="watchdog_shizuku_crashed_action_turn_off_alerts">Turn Off Alerts</string>
+    <string name="watchdog_shizuku_recovered_title">Shizuku is running again</string>
+    <string name="watchdog_shizuku_recovered_text">Watchdog started it again after it stopped by itself.</string>
 
     <!-- Misc -->
     <string name="error">Error</string>
