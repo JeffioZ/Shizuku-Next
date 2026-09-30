@@ -144,6 +144,7 @@ public class BinderSender {
             return;
 
         LOGGER.d("sendBinder to uid %d: packages=%s", uid, TextUtils.join(", ", packages));
+        ServerLog.mark("sendBinder to uid " + uid + ", pid " + pid);
 
         int userId = uid / 100000;
         for (String packageName : packages) {

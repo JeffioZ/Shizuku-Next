@@ -22,11 +22,13 @@ import android.content.pm.PackageManager;
 import android.content.pm.UserInfo;
 import android.ddm.DdmHandleAppName;
 import android.os.Binder;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Parcel;
+import android.os.Process;
 import android.os.RemoteException;
 import android.os.ServiceManager;
 import android.util.Log;
@@ -91,12 +93,25 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
 
 
     public static void main(String[] args) {
-        DdmHandleAppName.setAppName("shizuku_server", 0);
-        RishConfig.setLibraryPath(System.getProperty("shizuku.library.path"));
+        // First, and before anything can fail: from here on the manager can read what this
+        // process did, which it otherwise cannot tell apart from the server never running.
+        ServerLog.mark("main entered, uid=" + Process.myUid() + ", sdk=" + Build.VERSION.SDK_INT);
 
-        Looper.prepareMainLooper();
-        new ShizukuService();
-        Looper.loop();
+        try {
+            DdmHandleAppName.setAppName("shizuku_server", 0);
+            RishConfig.setLibraryPath(System.getProperty("shizuku.library.path"));
+
+            Looper.prepareMainLooper();
+            new ShizukuService();
+            ServerLog.mark("service created, entering the main looper");
+
+            Looper.loop();
+        } catch (Throwable tr) {
+            // Nothing else can report this one: there is no manager connection to report it
+            // over yet, and the logcat is not readable by the app that is waiting.
+            ServerLog.mark("startup failed: " + Log.getStackTraceString(tr));
+            throw tr;
+        }
     }
 
     private static void waitSystemService(String name) {
@@ -225,6 +240,8 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         if (requestPackageName == null) {
             return;
         }
+
+        ServerLog.mark("attachApplication from " + requestPackageName);
         int apiVersion = args.getInt(ATTACH_APPLICATION_API_VERSION, -1);
 
         int callingPid = Binder.getCallingPid();
@@ -540,7 +557,11 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     }
 
     static void sendBinderToManager(Binder binder, int userId) {
+        ServerLog.mark("handing the binder to " + MANAGER_APPLICATION_ID + " in user " + userId);
         boolean success = sendBinderToUserApp(binder, MANAGER_APPLICATION_ID, userId);
+        ServerLog.mark(success
+                ? "the manager took the binder"
+                : "the manager did not take the binder: retrying, which force stops it first");
         if (!success) {
             // For unknown reason, sometimes this could happens
             // Kill Shizuku app and try again could work

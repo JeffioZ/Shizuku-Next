@@ -8,6 +8,7 @@
 #include <libgen.h>
 #include <sys/stat.h>
 #include <sys/system_properties.h>
+#include <sys/wait.h>
 #include <cerrno>
 #include <cstdarg>
 #include <string>
@@ -65,6 +66,10 @@ static void log_to_manager(const char *fmt, ...) {
 /** How many times to exec the server before giving up, and how far apart. */
 #define SERVER_ATTEMPTS 16
 #define SERVER_ATTEMPT_INTERVAL_US 16000
+
+/** How long the parent watches the forked server before it reports success, and how often. */
+#define SERVER_WATCH_ATTEMPTS 15
+#define SERVER_WATCH_INTERVAL_US 200000
 #define SERVER_CLASS_PATH "rikka.shizuku.server.ShizukuService"
 
 #if defined(__arm__)
@@ -196,6 +201,37 @@ static void start_server(const char *path, const char *main_class, const char *p
             close(fds[0]);
 
             info("info: shizuku_server pid is %d\n", pid);
+
+            // Watch the child for a few seconds instead of assuming it survived. The manager
+            // waits a minute for a binder, and "the server was forked" is not "the server is
+            // running": one that dies the moment this process leaves and one that runs
+            // silently without ever handing the binder over look identical from there, and
+            // they are two completely different bugs. An exit code says which of our own
+            // fatal paths it took, and a signal says something outside this process killed
+            // it, which is what the payload stopping the app it borrowed would look like.
+            int status = 0;
+            pid_t ended = 0;
+            int watched = 0;
+            for (; watched < SERVER_WATCH_ATTEMPTS; watched++) {
+                ended = waitpid(pid, &status, WNOHANG);
+                if (ended == pid) break;
+                usleep(SERVER_WATCH_INTERVAL_US);
+            }
+
+            int waited_ms = watched * (SERVER_WATCH_INTERVAL_US / 1000);
+            if (ended == pid) {
+                if (WIFSIGNALED(status)) {
+                    perrorf("warn: the server was killed by signal %d, %d ms after it started\n",
+                            WTERMSIG(status), waited_ms);
+                } else {
+                    perrorf("warn: the server exited with %d, %d ms after it started\n",
+                            WEXITSTATUS(status), waited_ms);
+                }
+            } else {
+                info("info: the server is still running %d ms after it was started\n",
+                     waited_ms);
+            }
+
             info("info: shizuku_starter exit with 0\n");
             exit(EXIT_SUCCESS);
         }
@@ -243,28 +279,29 @@ static void log_cgroup(const char *when) {
 
 static int switch_cgroup() {
     int pid = getpid();
+    // Through info/perrorf, not printf: these lines are how a system start can be told apart
+    // from one that never moved, and printf would keep them out of the log the manager reads.
     if (cgroup::switch_cgroup("/acct", pid)) {
-        printf("info: switch cgroup succeeded, cgroup in /acct\n");
+        info("info: switch cgroup succeeded, cgroup in /acct\n");
         return 0;
     }
     if (cgroup::switch_cgroup("/dev/cg2_bpf", pid)) {
-        printf("info: switch cgroup succeeded, cgroup in /dev/cg2_bpf\n");
+        info("info: switch cgroup succeeded, cgroup in /dev/cg2_bpf\n");
         return 0;
     }
     if (cgroup::switch_cgroup("/sys/fs/cgroup", pid)) {
-        printf("info: switch cgroup succeeded, cgroup in /sys/fs/cgroup\n");
+        info("info: switch cgroup succeeded, cgroup in /sys/fs/cgroup\n");
         return 0;
     }
     char buf[PROP_VALUE_MAX + 1];
     if (__system_property_get("ro.config.per_app_memcg", buf) > 0 &&
         strncmp(buf, "false", 5) != 0) {
         if (cgroup::switch_cgroup("/dev/memcg/apps", pid)) {
-            printf("info: switch cgroup succeeded, cgroup in /dev/memcg/apps\n");
+            info("info: switch cgroup succeeded, cgroup in /dev/memcg/apps\n");
             return 0;
         }
     }
-    printf("warn: can't switch cgroup\n");
-    fflush(stdout);
+    perrorf("warn: can't switch cgroup: every path refused\n");
     return -1;
 }
 
