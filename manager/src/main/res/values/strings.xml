@@ -116,6 +116,9 @@
     <string name="tab_hide_private_dns">Hide Private DNS</string>
     <string name="tab_hide_vpn">Hide VPN</string>
     <string name="hiding_hidden_count">%1$d hidden</string>
+    <string name="hiding_gate">Enabled</string>
+    <string name="hiding_gate_disabled">Disabled</string>
+    <string name="hiding_gate_kept">%1$d kept</string>
     <string name="hiding_filter_hidden">Hidden</string>
     <string name="hiding_filter_shown">Visible</string>
     <string name="hiding_filter_empty">Nothing hidden.</string>

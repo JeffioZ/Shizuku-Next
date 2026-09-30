@@ -80,8 +80,9 @@ class HidingWatchService : Service() {
          */
         fun refresh(context: Context) {
             val intent = Intent(context, HidingWatchService::class.java)
-            if (!Hiding.hasAnyApp()) {
-                // No list names an app any more, so no setting has a reason to stay hidden.
+            if (!Hiding.hasWorkToDo()) {
+                // No list that is switched on names an app any more, so no setting has a reason
+                // to stay hidden - and nothing for a watch to watch.
                 Hiding.restoreAll()
                 runCatching { context.stopService(intent) }
                 return
@@ -184,7 +185,7 @@ class HidingWatchService : Service() {
         var paused = false
 
         while (scope.isActive) {
-            if (!Hiding.hasAnyApp()) {
+            if (!Hiding.hasWorkToDo()) {
                 holding.set(null)
                 Hiding.restoreAll()
                 notify(notification(hidingFor = null, paused = false))
@@ -240,9 +241,9 @@ class HidingWatchService : Service() {
      */
     private fun logState(hidingFor: String?) {
         val state = Signal.entries.joinToString(" ") { signal ->
-            val wanted = Hiding.appsFor(signal).isNotEmpty()
             when {
-                !wanted -> "${signal.name}=off-list"
+                !Hiding.isSignalEnabled(signal) -> "${signal.name}=off"
+                Hiding.appsFor(signal).isEmpty() -> "${signal.name}=off-list"
                 Hiding.isHidden(signal) -> "${signal.name}=HIDDEN"
                 else -> "${signal.name}=visible"
             }

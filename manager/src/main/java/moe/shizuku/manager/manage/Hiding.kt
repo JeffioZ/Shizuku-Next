@@ -148,6 +148,7 @@ object Hiding {
     private const val PREF_PREFIX_ORIGINALS = "hiding_originals_"
     private const val PREF_PREFIX_APPS = "hiding_apps_"
     private const val PREF_PAUSED = "hiding_paused"
+    private const val PREF_DISABLED = "hiding_disabled_signals"
     private const val PREF_HIDDEN_SINCE = "hiding_since"
 
     const val ACTION_RESTORE_HIDING = "moe.shizuku.manager.action.RESTORE_HIDING"
@@ -251,8 +252,39 @@ object Hiding {
     /** Enough records to see past an app that was killed for memory and restarted. */
     private const val EXIT_RECORDS = 5
 
-    /** Whether any signal has an app on its list, which is what the watch is for. */
+    /** Whether any signal has an app on its list. */
     fun hasAnyApp(): Boolean = Signal.entries.any { appsFor(it).isNotEmpty() }
+
+    /**
+     * Whether any list is both switched on and has an app on it - which is when there is
+     * something for the watch to do at all.
+     *
+     * Separate from [hasAnyApp] because a list can be kept while its mode is off: the names of the
+     * apps that object are worth keeping, and somebody may want them kept while the hiding itself
+     * is turned off for a while. Nothing should be watching in that state, and the notification
+     * that says hiding is on should not be there either.
+     */
+    fun hasWorkToDo(): Boolean =
+        Signal.entries.any { isSignalEnabled(it) && appsFor(it).isNotEmpty() }
+
+    /**
+     * Whether a whole mode is switched on.
+     *
+     * Off is stored rather than on, so that a list that existed before this switch did is on by
+     * default and nothing has to be migrated: only somebody who turns a mode off has a record.
+     */
+    fun isSignalEnabled(signal: Signal): Boolean = signal.name !in disabledSignals()
+
+    fun setSignalEnabled(signal: Signal, enabled: Boolean) {
+        val disabled = disabledSignals().toMutableSet()
+        if (enabled) disabled.remove(signal.name) else disabled.add(signal.name)
+        ShizukuSettings.getPreferences().edit()
+            .putStringSet(PREF_DISABLED, disabled)
+            .apply()
+    }
+
+    private fun disabledSignals(): Set<String> =
+        ShizukuSettings.getPreferences().getStringSet(PREF_DISABLED, emptySet()).orEmpty().toSet()
 
     /**
      * Whether hiding is suspended.
@@ -379,6 +411,13 @@ object Hiding {
         val inFront = foreground?.takeIf { !closedByUserSince(it, hiddenSince()) }
 
         Signal.entries.forEach { signal ->
+            // A mode somebody switched off is put back and left alone, list and all: turning it
+            // off is a statement about now, not about the apps named on it.
+            if (!isSignalEnabled(signal)) {
+                if (isHidden(signal)) restore(signal)
+                return@forEach
+            }
+
             val apps = appsFor(signal)
             if (apps.isEmpty()) return@forEach
 

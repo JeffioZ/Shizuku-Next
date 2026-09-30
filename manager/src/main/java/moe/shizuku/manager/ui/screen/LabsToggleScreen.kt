@@ -219,6 +219,9 @@ fun LabsToggleScreen(
     var version by remember { mutableIntStateOf(0) }
     var running by remember { mutableStateOf(ShizukuStateMachine.isRunning()) }
     var vpnClient by remember { mutableStateOf(Hiding.chosenVpnClient()) }
+    var gateOn by remember {
+        mutableStateOf(feature.signal?.let { Hiding.isSignalEnabled(it) } ?: true)
+    }
     // The name rather than the package, with the package as the fallback: what a person chose is
     // PairVPN, and "com.pairvpn" is the answer to a different question.
     val vpnClientLabel = vpnClient
@@ -251,6 +254,7 @@ fun LabsToggleScreen(
             withContext(Dispatchers.IO) { HidingWatchService.refresh(context) }
         }
         vpnClient = Hiding.chosenVpnClient()
+        gateOn = feature.signal?.let { Hiding.isSignalEnabled(it) } ?: true
         loading = false
     }
 
@@ -409,7 +413,17 @@ fun LabsToggleScreen(
                     // How many are blocked, next to the name: the list's filters can say it,
                     // but the count is the thing somebody opens this screen to see.
                     Text(
-                        text = stringResource(feature.countRes, blocked.size),
+                        // "Off" rather than a count while the mode is switched off: the number
+                        // of apps on the list is true either way, and it is not the thing this
+                        // screen is currently doing.
+                        // Off shows what is being kept rather than repeating the word below it,
+                        // which is the one question this screen still answers with the list out
+                        // of sight.
+                        text = if (!gateOn) {
+                            stringResource(R.string.hiding_gate_kept, blocked.size)
+                        } else {
+                            stringResource(feature.countRes, blocked.size)
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -435,6 +449,53 @@ fun LabsToggleScreen(
         // scrolls horizontally - and a scrolling row hands its children an unbounded width, so
         // a card that asked to fill the width hugged its own text and changed size with the
         // length of a package name.
+        // The mode itself, off and on, above the list it applies to. A list of apps that object
+        // is worth keeping while the hiding is turned off - for a day, for an app that no longer
+        // minds, or to prove the hiding is what caused something - and until this switch the only
+        // way to stop a mode was to empty its list, which threw that work away.
+        feature.signal?.let { signal ->
+            SegmentedCard(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+            ) {
+                ListItem(
+                    // The state word and the switch, nothing under them. The word used to be
+                    // fixed at "Enabled" while the switch said otherwise, and the sentence
+                    // under it explained the state the screen was not in; both are gone, and the
+                    // one thing the row has to say is what the switch is doing now.
+                    headlineContent = {
+                        Text(
+                            stringResource(
+                                if (gateOn) R.string.hiding_gate else R.string.hiding_gate_disabled
+                            )
+                        )
+                    },
+                    trailingContent = {
+                        ExpressiveSwitch(
+                            checked = gateOn,
+                            onCheckedChange = { checked ->
+                                Hiding.setSignalEnabled(signal, checked)
+                                gateOn = checked
+                                // The watch starts and stops with the gates, so it is told to
+                                // look again: turning the last one off has nothing left to do.
+                                scope.launch {
+                                    withContext(Dispatchers.IO) {
+                                        HidingWatchService.refresh(context)
+                                    }
+                                    version++
+                                }
+                            }
+                        )
+                    },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                )
+            }
+        }
+
+        // A mode that is switched off has nothing to list. The list is kept - that is the whole
+        // point of the gate - and it is not drawn, because a list of apps somebody is not being
+        // hidden from is something to come back to, not something to work through now.
+        if (feature.signal != null && !gateOn) return@Column
+
         if (feature.signal == Signal.VPN) {
             SegmentedCard(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
