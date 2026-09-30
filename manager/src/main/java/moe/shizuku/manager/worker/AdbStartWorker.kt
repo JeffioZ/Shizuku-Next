@@ -336,6 +336,23 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             AdbStarter.startAdb(applicationContext, port, openTcpPort = usbMethod)
             Starter.waitForBinder()
 
+            // TCP mode promises a classic ADB port, and only a USB start ever opened one: a
+            // wireless start, which is what the no-network method is, left TCP mode meaning
+            // "keep whatever port there is", and after a reboot with no Wi-Fi there is none,
+            // so the unattended restarts the mode exists for had nothing to connect to. The
+            // port can be opened from here because there is now a running server and, with
+            // the no-network start, a hotspot still up to reach adbd over: the same borrow a
+            // USB start makes to repair its own port, and it is best effort either way.
+            if (!usbMethod && ShizukuSettings.getTcpMode() &&
+                EnvironmentUtils.getAdbTcpPort() <= 0 &&
+                AdbStarter.openTcpPort(applicationContext, ShizukuSettings.getTcpPort())
+            ) {
+                Log.i(
+                    AppConstants.TAG,
+                    "TCP mode: opened the classic ADB port ${ShizukuSettings.getTcpPort()}"
+                )
+            }
+
             val nm = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             nm.cancel(ShizukuReceiverStarter.NOTIFICATION_ID)
 

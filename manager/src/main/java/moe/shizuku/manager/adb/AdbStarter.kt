@@ -183,9 +183,15 @@ object AdbStarter {
      * Throws [AdbPairingRequiredException] when the fallback needs pairing first.
      */
     suspend fun openTcpPort(context: Context, port: Int): Boolean = withContext(Dispatchers.IO) {
-        // Wi-Fi is what keeps wireless debugging and with it the wireless port 
-        // alive; without it there is nothing to borrow.
-        if (!EnvironmentUtils.isWifiConnected()) {
+        // Wi-Fi is what keeps wireless debugging and with it the wireless port alive, and
+        // without it there is usually nothing to borrow. The no-network start is the
+        // exception, and the reason it exists: it brings up a local-only hotspot for that
+        // interface, so the discovery below is given its chance and says so if it finds
+        // nothing, rather than this refusing on the grounds that there is no Wi-Fi when the
+        // port was just reached over something else.
+        if (!EnvironmentUtils.isWifiConnected() &&
+            !ShizukuSettings.getForceWirelessDebugging()
+        ) {
             Log.i(TAG, "Not opening the ADB port: no Wi-Fi connection to borrow")
             return@withContext false
         }
