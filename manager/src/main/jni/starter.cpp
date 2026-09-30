@@ -109,26 +109,43 @@ v_current = (uintptr_t) v + v_size - sizeof(char *); \
 #define ARG_PUSH_FMT(v, fmt, ...) snprintf(buf_##v, PATH_MAX, fmt, __VA_ARGS__); \
     ARG_PUSH(v, buf_##v)
 
+/*
+ * The hidden APIs, in every build rather than only a debugging one.
+ *
+ * Android refuses the platform's hidden APIs to a process that is not marked debuggable, and
+ * calling those APIs is the whole of what this server is for: without the marking, a release
+ * build's server starts and then cannot grant a permission, read a package or reach the
+ * activity manager, which looks like a broken release and works in a debug build because a
+ * debug build happens to pass this already. It is a runtime argument, so it costs the APK
+ * nothing.
+ *
+ * The compiler filter is set back to speed with it, because a debuggable process otherwise
+ * runs its own code through the interpreter instead of the version compiled at install time.
+ */
+#define ARG_PUSH_DEBUGGABLE_PARAMS(v) \
+    ARG_PUSH(v, "-Xcompiler-option"); \
+    ARG_PUSH(v, "--debuggable"); \
+    ARG_PUSH(v, "-Xcompiler-option"); \
+    ARG_PUSH(v, "--compiler-filter=speed")
+
+/*
+ * A debugger port is another matter, and stays in debug builds: it is a listening socket and
+ * a JDWP client on the other end of it, which a release has no business offering.
+ */
 #ifdef JAVA_DEBUGGABLE
 #define ARG_PUSH_DEBUG_ONLY(v, arg) ARG_PUSH(v, arg)
-#define ARG_PUSH_DEBUG_VM_PARAMS(v) \
+#define ARG_PUSH_JDWP_PARAMS(v) \
     if (android_get_device_api_level() >= 30) { \
-        ARG_PUSH(v, "-Xcompiler-option"); \
-        ARG_PUSH(v, "--debuggable"); \
         ARG_PUSH(v, "-XjdwpProvider:adbconnection"); \
         ARG_PUSH(v, "-XjdwpOptions:suspend=n,server=y"); \
     } else if (android_get_device_api_level() >= 28) { \
-        ARG_PUSH(v, "-Xcompiler-option"); \
-        ARG_PUSH(v, "--debuggable"); \
         ARG_PUSH(v, "-XjdwpProvider:internal"); \
         ARG_PUSH(v, "-XjdwpOptions:transport=dt_android_adb,suspend=n,server=y"); \
     } else { \
-        ARG_PUSH(v, "-Xcompiler-option"); \
-        ARG_PUSH(v, "--debuggable"); \
         ARG_PUSH(v, "-agentlib:jdwp=transport=dt_android_adb,suspend=n,server=y"); \
     }
 #else
-#define ARG_PUSH_DEBUG_VM_PARAMS(v)
+#define ARG_PUSH_JDWP_PARAMS(v)
 #define ARG_PUSH_DEBUG_ONLY(v, arg)
 #endif
 
@@ -139,7 +156,8 @@ v_current = (uintptr_t) v + v_size - sizeof(char *); \
     ARG_PUSH(argv, "/system/bin/app_process")
     ARG_PUSH_FMT(argv, "-Djava.class.path=%s", dex_path)
     ARG_PUSH_FMT(argv, "-Dshizuku.library.path=%s", lib_path)
-    ARG_PUSH_DEBUG_VM_PARAMS(argv)
+    ARG_PUSH_DEBUGGABLE_PARAMS(argv)
+    ARG_PUSH_JDWP_PARAMS(argv)
     ARG_PUSH(argv, "/system/bin")
     ARG_PUSH_FMT(argv, "--nice-name=%s", process_name)
     ARG_PUSH(argv, main_class)
