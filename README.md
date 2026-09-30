@@ -134,7 +134,7 @@ the separate "Pair" button has been removed: pressing "Start" detects when wirel
 <details>
 <summary><b>Pair without typing</b></summary>
 
-Shizuku reads the pairing code and port straight out of the system's "Pair with device" dialog, pairs, and starts itself so the code never has to be typed, and can't expire while you switch apps. Manual pairing (notification + typed code) stays one tap away as a fallback: the *Manual* button beside *Automated* in the same dialog, and both labels are single words so they fit on one button row instead of stacking
+Shizuku reads the pairing code and port straight out of the system's "Pair with device" dialog, pairs, and starts itself so the code never has to be typed, and can't expire while you switch apps. On Android 17 that dialog prints the device's mDNS hostname and folds the addresses away behind "Additional device addresses", so the code is the only thing it still says out loud: the port is asked for over mDNS in that case, the same way the notification flow finds it, and the dialog is read for a few seconds after the screen it opens from is touched rather than once, because Android 17's dialog sends no event of its own and the code appears in the window just after the tap that asked for it. Manual pairing (notification + typed code) stays one tap away as a fallback: the *Manual* button beside *Automated* in the same dialog, and both labels are single words so they fit on one button row instead of stacking
 
 </details>
 

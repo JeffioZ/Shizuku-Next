@@ -8,10 +8,13 @@ import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Toast
+import kotlin.coroutines.resume
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import moe.shizuku.manager.AppConstants
 import moe.shizuku.manager.MainActivity
 import moe.shizuku.manager.R
@@ -37,7 +40,12 @@ import java.net.ConnectException
  */
 class AdbPairingAccessibilityService : AccessibilityService() {
 
-    private data class PairingDialog(val host: String, val port: Int, val code: String)
+    /**
+     * What the pairing dialog says. The address is optional because Android 17's dialog does
+     * not print one: it shows the device's mDNS hostname, with the addresses folded away behind
+     * "Additional device addresses", so the code is all that can be read out of it.
+     */
+    private data class PairingDialog(val code: String, val host: String?, val port: Int?)
 
     private val handler = Handler(Looper.getMainLooper())
 
@@ -45,6 +53,9 @@ class AdbPairingAccessibilityService : AccessibilityService() {
 
     /** Last code we attempted, so dialog refreshes don't retry the code we failed on. */
     private var lastAttempt: String? = null
+
+    /** How many reads are left in the burst that follows a touch on Settings. */
+    private var readsLeft = 0
 
     /** Only TV needs driving; elsewhere the user drives the dialog themselves. */
     private val isTelevision
@@ -79,13 +90,33 @@ class AdbPairingAccessibilityService : AccessibilityService() {
         val packageName = event.packageName?.toString().orEmpty()
         if (!packageName.contains("settings", ignoreCase = true)) return
 
-        val dialog = readPairingDialog() ?: return
+        // One read per event was enough while the dialog announced itself, but the tap that
+        // opens it is the last event Android 17's dialog sends: the code is in the window a
+        // moment later, with nothing left to say so, which is why the flow only worked after
+        // something else was touched. So a touch on Settings starts a short burst of reads
+        // instead, and it stops as soon as there is a code to act on.
+        handler.removeCallbacks(readAgain)
+        readsLeft = READ_ATTEMPTS
+        readAgain.run()
+    }
 
-        val signature = "${dialog.host}:${dialog.port}:${dialog.code}"
-        if (signature == lastAttempt) return
-        lastAttempt = signature
+    private val readAgain = object : Runnable {
+        override fun run() {
+            if (pairing) return
 
-        pair(dialog)
+            val dialog = readPairingDialog()
+            if (dialog != null) {
+                val signature = listOfNotNull(dialog.code, dialog.host, dialog.port?.toString())
+                    .joinToString(":")
+                if (signature != lastAttempt) {
+                    lastAttempt = signature
+                    pair(dialog)
+                }
+                return
+            }
+
+            if (readsLeft-- > 0) handler.postDelayed(this, READ_INTERVAL_MS)
+        }
     }
 
     /**
@@ -112,17 +143,43 @@ class AdbPairingAccessibilityService : AccessibilityService() {
             ) continue
 
             val code = texts.firstOrNull { CODE_REGEX.matches(it) } ?: continue
+
+            // Optional, and not a reason to walk away: see [PairingDialog].
             val hostPort = texts.asSequence()
                 .mapNotNull { HOST_PORT_REGEX.find(it) }
-                .firstOrNull() ?: continue
+                .firstOrNull()
 
-            val host = hostPort.groupValues[1]
-            val port = hostPort.groupValues[2].toIntOrNull() ?: continue
-
-            return PairingDialog(host, port, code)
+            return PairingDialog(
+                code = code,
+                host = hostPort?.groupValues?.get(1),
+                port = hostPort?.groupValues?.get(2)?.toIntOrNull()
+            )
         }
 
         return null
+    }
+
+    /**
+     * The pairing port as the device advertises it, for a dialog that does not print one.
+     *
+     * Returns null if nothing answers within the timeout, which is the same situation as a
+     * dialog whose address cannot be read: the attempt is reported as a failed connection
+     * rather than left hanging.
+     */
+    private suspend fun discoverPairingEndpoint(
+        timeoutMs: Long = PAIRING_DISCOVERY_TIMEOUT_MS
+    ): Pair<String, Int>? = withTimeoutOrNull(timeoutMs) {
+        suspendCancellableCoroutine { continuation ->
+            lateinit var mdns: AdbMdns
+            mdns = AdbMdns(this@AdbPairingAccessibilityService, AdbMdns.TLS_PAIRING) { (host, port) ->
+                if (port > 0 && continuation.isActive) {
+                    mdns.stop()
+                    continuation.resume(host to port)
+                }
+            }
+            continuation.invokeOnCancellation { mdns.stop() }
+            mdns.start()
+        }
     }
 
     private fun collectText(node: AccessibilityNodeInfo, out: MutableList<String>) {
@@ -137,6 +194,23 @@ class AdbPairingAccessibilityService : AccessibilityService() {
         pairing = true
 
         GlobalScope.launch(Dispatchers.IO) {
+            // The dialog's own address when it has one, and the port the device advertises when
+            // it does not: the pairing service is on `_adb-tls-pairing._tcp` either way, which
+            // is how the notification flow finds it. On Android 17 this is the only way to
+            // pair without the user unfolding the dialog's address list first.
+            val endpoint = if (dialog.host != null && dialog.port != null) {
+                dialog.host to dialog.port
+            } else {
+                Log.i(TAG, "Dialog had no address, asking the device where pairing is listening")
+                discoverPairingEndpoint()
+            }
+            if (endpoint == null) {
+                Log.w(TAG, "No pairing endpoint found")
+                finish(getString(R.string.cannot_connect_port))
+                return@launch
+            }
+            val (host, port) = endpoint
+
             val key = try {
                 AdbKey(PreferenceAdbKeyStore(ShizukuSettings.getPreferences()), "shizuku")
             } catch (e: Throwable) {
@@ -145,7 +219,7 @@ class AdbPairingAccessibilityService : AccessibilityService() {
                 return@launch
             }
 
-            AdbPairingClient(dialog.host, dialog.port, dialog.code, key)
+            AdbPairingClient(host, port, dialog.code, key)
                 .runCatching { start() }
                 .onFailure { e ->
                     Log.w(TAG, "Pair failed", e)
@@ -205,6 +279,13 @@ class AdbPairingAccessibilityService : AccessibilityService() {
 
     companion object {
         private const val TAG = "AdbPairingAccessibility"
+
+        /** How many times a touch on Settings is followed up, and how far apart. */
+        private const val READ_ATTEMPTS = 15
+        private const val READ_INTERVAL_MS = 400L
+
+        /** Long enough for discovery to answer, short enough to report a failure. */
+        private const val PAIRING_DISCOVERY_TIMEOUT_MS = 8_000L
 
         private val CODE_REGEX = Regex("""\d{6}""")
         private val HOST_PORT_REGEX = Regex("""(\d{1,3}(?:\.\d{1,3}){3}):(\d{2,5})""")
