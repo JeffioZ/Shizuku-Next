@@ -323,7 +323,7 @@ the Apps tab now says what is happening a spinner while it loads, "Shizuku is no
 <details>
 <summary><b>Search and sort authorized apps</b></summary>
 
-filter the apps list by name, narrow it to All, Granted, Revoked or Hidden with the count shown on the filter in force, and sort it alphabetically, by most recently updated or by most recently installed, and a row whose app is disabled, suspended or has no launcher entry says so on a chip, so a state you would otherwise have to filter for is visible where it is
+filter the apps list by name and by two rows of chips - what kind of app it is (All / User / System / Disabled / Hidden) and whether Shizuku may use it (Granted / Revoked), the count shown on the chip in force - and sort it alphabetically, by most recently updated or by most recently installed, and a row whose app is disabled, suspended or has no launcher entry says so on a chip, so a state you would otherwise have to filter for is visible where it is. The kind row is the same one the app-ops list and the Labs lists carry, in the same words: the same apps asked about in three places should not come with three different sets of filters, and "hidden" should not mean one thing here and another there
 
 </details>
 

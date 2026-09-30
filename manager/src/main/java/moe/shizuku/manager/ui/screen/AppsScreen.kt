@@ -7,6 +7,7 @@ import android.content.pm.PackageInfo
 import android.content.Intent
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Arrangement
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
@@ -90,7 +92,14 @@ enum class SortOrder {
     ALPHABETICAL
 }
 
-/** Which slice of the app list to show. */
+/**
+ * The Shizuku half of the filter: whether this app is allowed to use the service.
+ *
+ * The other half - what kind of app it is - is the same list every other app list in the app
+ * uses, so the words are the same wherever the question is asked. Filtering by kind was on the
+ * app-ops and Labs lists long before it was here, and a list of the same apps with a different
+ * set of chips is how two screens end up disagreeing about what "hidden" means.
+ */
 enum class AppFilter {
     ALL,
 
@@ -98,13 +107,7 @@ enum class AppFilter {
     GRANTED,
 
     /** It is not the apps you can still hand it to. */
-    REVOKED,
-
-    /**
-     * Apps with no launcher entry, so they never appear in the app drawer: services and
-     * system pieces. They are in the list either way, which is why they need naming.
-     */
-    HIDDEN
+    REVOKED
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -120,6 +123,8 @@ fun AppsScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = fals
     var version by remember { mutableIntStateOf(0) }
     var sortMenu by remember { mutableStateOf(false) }
     var filter by remember { mutableStateOf(AppFilter.ALL) }
+    // The kind of app, from the same set of filters the app-ops and Labs lists use.
+    var kind by remember { mutableStateOf(ManageFilter.ALL) }
     var pendingBatch by remember { mutableStateOf<Boolean?>(null) }
     // Set to the state every listed app should end up in, once the user confirms.
     var pendingToggleAll by remember { mutableStateOf<Boolean?>(null) }
@@ -205,13 +210,39 @@ fun AppsScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = fals
         launcherless = withoutLauncher
     }
 
-    val shown = remember(all, query, sortOrder, filter, launcherless, grantedNames) {
+    // What kind of app it is, which needs no server: the flags and the record are on the app
+    // already, so these three are worked out from the list the package manager just handed over.
+    val systemPackages = remember(all) {
+        all.filter { (it.applicationInfo?.flags ?: 0) and ApplicationInfo.FLAG_SYSTEM != 0 }
+            .map { it.packageName }.toSet()
+    }
+    val userPackages = remember(all, systemPackages) {
+        all.filter { it.applicationInfo != null && it.packageName !in systemPackages }
+            .map { it.packageName }.toSet()
+    }
+    val disabledPackages = remember(all) {
+        all.filter {
+            val ai = it.applicationInfo ?: return@filter false
+            !ai.enabled || (ai.flags and ApplicationInfo.FLAG_SUSPENDED) != 0
+        }.map { it.packageName }.toSet()
+    }
+
+    val shown = remember(
+        all, query, sortOrder, filter, kind,
+        userPackages, systemPackages, disabledPackages, launcherless, grantedNames
+    ) {
         val q = query.trim()
+        val byKind = when (kind) {
+            ManageFilter.ALL -> all
+            ManageFilter.USER -> all.filter { it.packageName in userPackages }
+            ManageFilter.SYSTEM -> all.filter { it.packageName in systemPackages }
+            ManageFilter.DISABLED -> all.filter { it.packageName in disabledPackages }
+            ManageFilter.HIDDEN -> all.filter { it.packageName in launcherless }
+        }
         val byFilter = when (filter) {
-            AppFilter.ALL -> all
-            AppFilter.GRANTED -> all.filter { it.packageName in grantedNames }
-            AppFilter.REVOKED -> all.filter { it.packageName !in grantedNames }
-            AppFilter.HIDDEN -> all.filter { it.packageName in launcherless }
+            AppFilter.ALL -> byKind
+            AppFilter.GRANTED -> byKind.filter { it.packageName in grantedNames }
+            AppFilter.REVOKED -> byKind.filter { it.packageName !in grantedNames }
         }
         val filtered = if (q.isBlank()) {
             byFilter
@@ -360,37 +391,69 @@ fun AppsScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = fals
         // A search field, not just a text field: Material 3 gives search boxes the fully
         // rounded shape and a quieter outline, so this reads as "search" at a glance
         // instead of as a box someone put a magnifier in.
+        // Same two rows as the app-ops and Labs lists: what kind of app it is on a row that
+        // scrolls, because five labels do not fit on a phone, and Shizuku's own question on a
+        // row of its own. Granted and revoked are the only two answers to that one, so neither
+        // being chosen shows everything.
         // Filter first, search within it: the two answer different questions and the search
-        // box alone cannot say "only what is granted". The four share the width equally and
-        // carry how many each one holds, so the state of the list is readable before picking.
+        // box alone cannot say "only what is granted".
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            ManageFilter.entries.forEach { option ->
+                val count = when (option) {
+                    ManageFilter.ALL -> all.size
+                    ManageFilter.USER -> userPackages.size
+                    ManageFilter.SYSTEM -> systemPackages.size
+                    ManageFilter.DISABLED -> disabledPackages.size
+                    ManageFilter.HIDDEN -> launcherless.size
+                }
+                AppFilterChip(
+                    label = stringResource(
+                        when (option) {
+                            ManageFilter.ALL -> R.string.manage_filter_all
+                            ManageFilter.USER -> R.string.manage_filter_user
+                            ManageFilter.SYSTEM -> R.string.manage_filter_system
+                            ManageFilter.DISABLED -> R.string.manage_filter_disabled
+                            ManageFilter.HIDDEN -> R.string.manage_filter_hidden
+                        }
+                    ),
+                    count = count,
+                    selected = kind == option,
+                    fill = false,
+                    onClick = { kind = option }
+                )
+            }
+        }
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            AppFilter.entries.forEach { option ->
-                val count = when (option) {
-                    AppFilter.ALL -> all.size
-                    AppFilter.GRANTED -> grantedNames.size
-                    AppFilter.REVOKED -> all.size - grantedNames.size
-                    AppFilter.HIDDEN -> launcherless.size
+            AppFilterChip(
+                modifier = Modifier.weight(1f),
+                label = stringResource(R.string.apps_filter_granted),
+                count = grantedNames.size,
+                selected = filter == AppFilter.GRANTED,
+                onClick = {
+                    filter = if (filter == AppFilter.GRANTED) AppFilter.ALL else AppFilter.GRANTED
                 }
-                AppFilterChip(
-                    modifier = Modifier.weight(1f),
-                    label = stringResource(
-                        when (option) {
-                            AppFilter.ALL -> R.string.apps_filter_all
-                            AppFilter.GRANTED -> R.string.apps_filter_granted
-                            AppFilter.REVOKED -> R.string.apps_filter_revoked
-                            AppFilter.HIDDEN -> R.string.apps_filter_hidden
-                        }
-                    ),
-                    count = count,
-                    selected = filter == option,
-                    onClick = { filter = option }
-                )
-            }
+            )
+            AppFilterChip(
+                modifier = Modifier.weight(1f),
+                label = stringResource(R.string.apps_filter_revoked),
+                count = all.size - grantedNames.size,
+                selected = filter == AppFilter.REVOKED,
+                onClick = {
+                    filter = if (filter == AppFilter.REVOKED) AppFilter.ALL else AppFilter.REVOKED
+                }
+            )
         }
 
         OutlinedTextField(
@@ -569,7 +632,7 @@ fun AppsScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = fals
 
                     // A filter can legitimately hold nothing (Hidden often does), which is
                     // not the same as there being no apps at all.
-                    filter != AppFilter.ALL -> Text(
+                    filter != AppFilter.ALL || kind != ManageFilter.ALL -> Text(
                         text = stringResource(R.string.apps_filter_empty),
                         style = MaterialTheme.typography.bodyMedium,
                         textAlign = TextAlign.Center
