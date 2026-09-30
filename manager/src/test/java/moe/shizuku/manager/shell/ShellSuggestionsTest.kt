@@ -1,5 +1,6 @@
 package moe.shizuku.manager.shell
 
+import moe.shizuku.manager.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -86,9 +87,28 @@ class ShellSuggestionsTest {
     }
 
     @Test
-    fun `adb commands that are not the shell are left alone`() {
-        assertNull(ShellSuggestions.withoutAdbPrefix("adb tcpip 5555"))
+    fun `a device command typed with the computer prefix is the command itself`() {
+        // The prefix is a habit, not a choice about where it runs: `adb reboot` on a computer
+        // is `reboot` on the device, one command with a word in front of it.
+        assertEquals("reboot", ShellSuggestions.withoutAdbPrefix("adb reboot"))
+        assertEquals("tcpip 5555", ShellSuggestions.withoutAdbPrefix("adb tcpip 5555"))
+
+        // Nothing prefixed, nothing dropped.
         assertNull(ShellSuggestions.withoutAdbPrefix("ls"))
+    }
+
+    @Test
+    fun `host-side adb commands are answered with the device equivalent`() {
+        assertEquals(R.string.shell_adb_host_devices, ShellHostCommands.hintFor("devices"))
+        assertEquals(R.string.shell_adb_host_install, ShellHostCommands.hintFor("install app.apk"))
+        assertEquals(R.string.shell_adb_host_transfer, ShellHostCommands.hintFor("push file.apk"))
+        assertEquals(R.string.shell_adb_host_generic, ShellHostCommands.hintFor("tcpip 5555"))
+
+        // Everything else is a device command and runs: answering these would be worse than
+        // running them.
+        assertNull(ShellHostCommands.hintFor("pm list packages"))
+        assertNull(ShellHostCommands.hintFor("ps -A"))
+        assertNull(ShellHostCommands.hintFor("dumpsys battery"))
     }
 
     @Test

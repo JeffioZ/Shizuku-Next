@@ -433,6 +433,11 @@
     <string name="shell_quick_app_ops">App op</string>
     <string name="shell_quick_force_stop">Force stop</string>
     <string name="shell_adb_prefix_dropped">Ran on the device: the adb shell prefix is what you would type on a computer.</string>
+    <string name="shell_adb_host_devices">That lists the devices attached to a computer. This is the device, so there is nothing to list: `pm list packages` is what is installed on it.</string>
+    <string name="shell_adb_host_install">Installing belongs to the computer side of that command. Here the same job is <b>pm install /path/to/app.apk</b>, run over Shizuku like any other command.</string>
+    <string name="shell_adb_host_transfer">That one needs a computer at one end. On the device, files are moved with <b>cp</b>, and the paths are the ones this shell can reach.</string>
+    <string name="shell_adb_host_generic">That is the half of adb that runs on a computer, and it has nothing to act on from inside the device. Run the device command itself here instead: <b>adb shell ps</b> and <b>ps</b> are the same thing.</string>
+    <string name="shell_adb_host_help">This is the shell of the device itself rather than adb on a computer: commands run as the uid Shizuku runs as, one at a time. Start with <b>pm list packages</b>, <b>dumpsys battery</b> or the Library above the input.</string>
     <string name="shell_paste">Paste a command</string>
     <string name="shell_paste_empty">Nothing on the clipboard to paste.</string>
     <string name="shell_jump_to_newest">Jump to the newest output</string>

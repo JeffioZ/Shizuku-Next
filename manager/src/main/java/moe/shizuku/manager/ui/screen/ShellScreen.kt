@@ -114,6 +114,8 @@ import moe.shizuku.manager.R
 import moe.shizuku.manager.shell.ShellBackend
 import moe.shizuku.manager.shell.LibraryCommand
 import moe.shizuku.manager.shell.ShellHistory
+import moe.shizuku.manager.shell.ShellHostCommands
+import moe.shizuku.manager.ui.component.stripHtmlTags
 import moe.shizuku.manager.shell.ShellBookmarks
 import moe.shizuku.manager.shell.ShellCommands
 import moe.shizuku.manager.shell.ShellOutput
@@ -335,7 +337,17 @@ fun ShellScreen(onBack: () -> Unit) {
         // prefix is dropped and said out loud, because a command that ran somewhere other
         // than where it looks like it ran is worth one line of honesty.
         val inner = ShellSuggestions.withoutAdbPrefix(raw)
-        val command = (inner ?: raw).trim()
+        var command = (inner ?: raw).trim()
+
+        // A command copied out of a guide often arrives wrapped in quotes, which the shell
+        // would otherwise hand to the command as part of its first argument.
+        if (command.length >= 2 &&
+            ((command.startsWith("\"") && command.endsWith("\"")) ||
+                (command.startsWith("'") && command.endsWith("'")))
+        ) {
+            command = command.substring(1, command.length - 1).trim()
+        }
+
         if (command.isEmpty() || running) return
 
         field = TextFieldValue("")
@@ -381,6 +393,14 @@ fun ShellScreen(onBack: () -> Unit) {
         }
         if (BARE_SU.matches(command) && backend != ShellBackend.ROOT) {
             feed(ShellLine(context.getString(R.string.shell_su_needs_root), ShellLine.Kind.INFO))
+            return
+        }
+
+        // The computer's half of adb, answered here for the same reason as the three above:
+        // "not found" from a shell that never had these commands explains nothing, and this
+        // is the one mistake somebody used to a computer makes first.
+        ShellHostCommands.hintFor(command)?.let { hint ->
+            feed(ShellLine(context.getString(hint).stripHtmlTags(), ShellLine.Kind.INFO))
             return
         }
 

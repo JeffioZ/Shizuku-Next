@@ -68,7 +68,13 @@ object ShellSuggestions {
         if (!trimmed.startsWith("adb ")) return null
         val rest = trimmed.removePrefix("adb ").trimStart()
         val sub = rest.substringBefore(' ')
-        if (sub !in SUBCOMMANDS) return null
+        if (sub !in SUBCOMMANDS) {
+            // Not one of the subcommands that name the device's shell, so this is a device
+            // command after all, just typed with the computer's prefix: `adb reboot` is
+            // `reboot` here. The computer-only ones (install, push, devices) are answered
+            // before this by ShellHostCommands, so they never reach this line.
+            return rest
+        }
         return rest.removePrefix(sub).trimStart()
     }
 
