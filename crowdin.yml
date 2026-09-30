@@ -1,11 +1,15 @@
 files:
-  - source: /manager/src/main/res/values/strings.xml
+  # Both paths are relative to the repository, and deliberately have no leading slash: with
+  # one, the download writes to that path from the filesystem root instead of from the
+  # checkout, so the files land outside the working tree, git sees no change, and the sync
+  # quietly reports success having committed nothing.
+  - source: manager/src/main/res/values/strings.xml
     # %android_code% and not %two_letters_code%: the two agree for a plain language (ja, ko)
     # but not for a region or a script, where this one produces the folder name Android
     # itself uses - pt-rBR, zh-rCN, zh-rTW. With the two-letter code those three were written
     # to values-pt and values-zh, which are different resource folders: the ones this
     # repository keeps (values-pt-rBR, values-zh-rCN, values-zh-rTW) would have gone stale
     # while a second Portuguese and a region-less Chinese appeared beside them.
-    translation: /manager/src/main/res/values-%android_code%/%original_file_name%
+    translation: manager/src/main/res/values-%android_code%/%original_file_name%
     translate_attributes: 0
     content_segmentation: 0
