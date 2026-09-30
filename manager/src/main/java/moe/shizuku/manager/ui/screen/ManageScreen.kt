@@ -2,6 +2,8 @@ package moe.shizuku.manager.ui.screen
 
 import android.content.Intent
 import android.content.pm.ApplicationInfo
+import android.util.Log
+import moe.shizuku.manager.AppConstants
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import androidx.activity.compose.BackHandler
@@ -101,7 +103,7 @@ enum class ManageFilter {
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ManageScreen(bottomPadding: Dp) {
+fun ManageScreen(bottomPadding: Dp, active: Boolean = true) {
     val context = LocalContext.current
     val pm = context.packageManager
 
@@ -118,8 +120,14 @@ fun ManageScreen(bottomPadding: Dp) {
     // a different filter afterwards).
     var version by remember { mutableIntStateOf(0) }
 
-    LaunchedEffect(version) {
+    // Reading every installed package, and then asking about each one, is the most expensive
+    // thing any tab does. It waits until this is the tab on screen: the pager composes the
+    // neighbour being dragged in, so starting here would spend that on a swipe past.
+    LaunchedEffect(version, active) {
+        if (!active) return@LaunchedEffect
+
         loading = true
+        Log.d(AppConstants.TAG, "Manage: reading the installed packages")
         apps = withContext(Dispatchers.IO) {
             @Suppress("DEPRECATION")
             runCatching { pm.getInstalledPackages(PackageManager.MATCH_UNINSTALLED_PACKAGES) }
@@ -151,8 +159,8 @@ fun ManageScreen(bottomPadding: Dp) {
     // Worked out off the main thread, and once per loaded list: it is a package manager
     // question per app, and the chip needs its size before anyone picks it.
     var launcherless by remember { mutableStateOf(emptySet<String>()) }
-    LaunchedEffect(apps) {
-        if (apps.isEmpty()) {
+    LaunchedEffect(apps, active) {
+        if (!active || apps.isEmpty()) {
             launcherless = emptySet()
             return@LaunchedEffect
         }

@@ -1,6 +1,8 @@
 package moe.shizuku.manager.ui.screen
 
 import android.content.pm.ApplicationInfo
+import android.util.Log
+import moe.shizuku.manager.AppConstants
 import android.content.pm.PackageInfo
 import android.content.Intent
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -106,7 +108,7 @@ enum class AppFilter {
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun AppsScreen(bottomPadding: Dp) {
+fun AppsScreen(bottomPadding: Dp, active: Boolean = true) {
     val context = LocalContext.current
     val pm = context.packageManager
 
@@ -134,8 +136,14 @@ fun AppsScreen(bottomPadding: Dp) {
         onDispose { ShizukuStateMachine.removeListener(listener) }
     }
 
-    LaunchedEffect(running) {
+    // Waits until this is the tab on screen: the pager composes the page being dragged in,
+    // and asking the server about every package for a tab that is being swiped past is what
+    // the swipe spends its frames on.
+    LaunchedEffect(running, active) {
+        if (!active) return@LaunchedEffect
+
         loading = true
+        Log.d(AppConstants.TAG, "Apps: reading the authorised apps")
         all = withContext(Dispatchers.IO) {
             runCatching {
                 AuthorizationManager.getPackages(exclude = listOf(context.packageName))
@@ -150,8 +158,8 @@ fun AppsScreen(bottomPadding: Dp) {
     // counts honest.
     var grantedNames by remember { mutableStateOf(emptySet<String>()) }
     var launcherless by remember { mutableStateOf(emptySet<String>()) }
-    LaunchedEffect(all, version) {
-        if (all.isEmpty()) {
+    LaunchedEffect(all, version, active) {
+        if (!active || all.isEmpty()) {
             grantedNames = emptySet()
             launcherless = emptySet()
             return@LaunchedEffect

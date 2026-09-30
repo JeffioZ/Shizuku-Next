@@ -246,10 +246,18 @@ private fun MainTabs(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize()
             ) { page ->
+                // Each page is told whether it is the one on screen, because the pager
+                // composes the page being dragged in as well. The two that read every
+                // installed package - six hundred of them, twice over in Manage's case -
+                // started that the moment they were half on screen, which is what made
+                // swiping towards the shell stutter: the swipe passes straight through both
+                // app lists on its way there. A page that is not the settled one now waits,
+                // and loads when it is landed on.
+                val active = page == pagerState.settledPage
                 when (page) {
                     0 -> HomeScreen(bottomPadding = bottomPadding)
-                    1 -> AppsScreen(bottomPadding = bottomPadding)
-                    2 -> ManageScreen(bottomPadding = bottomPadding)
+                    1 -> AppsScreen(bottomPadding = bottomPadding, active = active)
+                    2 -> ManageScreen(bottomPadding = bottomPadding, active = active)
                     3 -> ShellScreen(bottomPadding = bottomPadding)
                     4 -> SettingsScreen(bottomPadding = bottomPadding, onOpenDetail = onOpenDetail)
                 }
