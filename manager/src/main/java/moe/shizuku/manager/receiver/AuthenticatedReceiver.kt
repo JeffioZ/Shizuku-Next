@@ -20,6 +20,14 @@ abstract class AuthenticatedReceiver : BroadcastReceiver() {
     }
 
     final override fun onReceive(context: Context, intent: Intent) {
+        // With the token requirement switched off this is the whole check, and the intent runs
+        // for whoever sent it. That is what makes one automation task work across devices,
+        // which is why the setting exists, and what the row that turns it off warns about.
+        if (!ShizukuSettings.getRequireIntentToken()) {
+            onAuthenticated(context, intent)
+            return
+        }
+
         val authToken = intent.getStringExtra("auth")
         val expectedToken = ShizukuSettings.getAuthToken()
 

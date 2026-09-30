@@ -51,6 +51,9 @@ public class ShizukuSettings {
         public static final String KEY_FORCE_WIRELESS_DEBUGGING = "force_wireless_debugging";
         public static final String KEY_PERSIST_ADB_PORT = "persist_adb_port";
         public static final String KEY_SYSTEM_START_METHOD = "system_start_method";
+
+        /** Whether the start and stop intents have to carry the auth token. */
+        public static final String KEY_REQUIRE_INTENT_TOKEN = "require_intent_token";
     }
 
     public static class UpdateMode {
@@ -194,6 +197,24 @@ public class ShizukuSettings {
 
     public static void setLastPromptedVersion(String version) {
         getPreferences().edit().putString("lastPromptedVersion", version).apply();
+    }
+
+    /**
+     * Whether the start and stop intents have to carry the auth token.
+     *
+     * On by default, because with it off any app on the device can start and stop Shizuku,
+     * and the token is what keeps that to the apps the token was given to. Off is for people
+     * who drive several devices from one Tasker or MacroDroid task: the token is generated per
+     * install, so the same task has to be edited for every phone, and the automation intents
+     * for the watchdog are already token-free, which makes the inconsistency the harder thing
+     * to explain. It is the user's risk to take, and the screen that turns it off says so.
+     */
+    public static boolean getRequireIntentToken() {
+        return getPreferences().getBoolean(Keys.KEY_REQUIRE_INTENT_TOKEN, true);
+    }
+
+    public static void setRequireIntentToken(boolean require) {
+        getPreferences().edit().putBoolean(Keys.KEY_REQUIRE_INTENT_TOKEN, require).apply();
     }
 
     public static String getAuthToken() {

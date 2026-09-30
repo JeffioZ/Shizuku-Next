@@ -41,6 +41,7 @@ private const val PACKAGE = "moe.shizuku.privileged.api"
 fun IntentsScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     var token by remember { mutableStateOf(ShizukuSettings.getAuthToken()) }
+    var requireToken by remember { mutableStateOf(ShizukuSettings.getRequireIntentToken()) }
 
     fun copy(label: String, text: String) {
         if (ClipboardUtils.put(context, text)) {
@@ -72,6 +73,19 @@ fun IntentsScreen(onBack: () -> Unit) {
 
             item {
                 SegmentedColumn(modifier = Modifier.fillMaxWidth()) {
+                    item {
+                        SegmentedListItem(
+                            headlineContent = { Text(stringResource(R.string.intents_require_token)) },
+                            supportingContent = {
+                                Text(stringResource(R.string.intents_require_token_summary))
+                            },
+                            switchState = requireToken,
+                            onSwitchChange = { checked ->
+                                requireToken = checked
+                                ShizukuSettings.setRequireIntentToken(checked)
+                            }
+                        )
+                    }
                     item {
                         SegmentedListItem(
                             headlineContent = { Text(stringResource(R.string.intents_token)) },
@@ -116,14 +130,14 @@ fun IntentsScreen(onBack: () -> Unit) {
                     item {
                         CommandRow(
                             label = stringResource(R.string.intents_start),
-                            command = broadcast("$PACKAGE.START", token),
+                            command = broadcast("$PACKAGE.START", token.takeIf { requireToken }),
                             onCopy = { copy("Copied", it) }
                         )
                     }
                     item {
                         CommandRow(
                             label = stringResource(R.string.intents_stop),
-                            command = broadcast("$PACKAGE.STOP", token),
+                            command = broadcast("$PACKAGE.STOP", token.takeIf { requireToken }),
                             onCopy = { copy("Copied", it) }
                         )
                     }

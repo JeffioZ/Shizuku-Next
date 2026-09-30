@@ -160,6 +160,8 @@
     <string name="settings_theme_light">Light</string>
     <string name="settings_theme_dark">Dark</string>
     <string name="intents_description">Automation apps can control Shizuku with these broadcasts. The auth token must be passed in the \"auth\" extra.</string>
+    <string name="intents_require_token">Require the auth token</string>
+    <string name="intents_require_token_summary">Start and stop intents need the token below. Turn this off to send them without a token.</string>
     <string name="intents_token">Auth token</string>
     <string name="intents_copy">Copy</string>
     <string name="intents_regenerate">Regenerate</string>

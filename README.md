@@ -386,7 +386,7 @@ automation apps can react to `moe.shizuku.privileged.api.SHIZUKU_CHANGED` and `.
 <details>
 <summary><b>Intents screen</b></summary>
 
-the ready-made commands to copy for automation: start, stop, the watchdog toggles, the ADB command and the pairing token. Start and stop are authenticated with that token, which the screen shows and can regenerate, so a random app cannot start your server
+the ready-made commands to copy for automation: start, stop, the watchdog toggles, the ADB command and the pairing token. Start and stop are authenticated with that token, which the screen shows and can regenerate, so a random app cannot start your server. That requirement has a switch of its own beside the token, because the token is generated per install and the same Tasker or MacroDroid task therefore has to be edited for every device: with it off the intents run for whoever sends them, which the row says plainly, and the watchdog intents have always worked that way
 
 </details>
 
