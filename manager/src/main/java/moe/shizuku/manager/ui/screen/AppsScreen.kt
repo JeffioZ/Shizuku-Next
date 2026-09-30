@@ -26,8 +26,6 @@ import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -75,6 +73,7 @@ import moe.shizuku.manager.authorization.AuthorizationManager
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter
 import moe.shizuku.manager.ui.component.AppFilterChip
 import moe.shizuku.manager.ui.component.AppIcon
+import moe.shizuku.manager.ui.component.AppListSkeleton
 import moe.shizuku.manager.ui.component.CenteredMessage
 import moe.shizuku.manager.ui.component.ChipEmphasis
 import moe.shizuku.manager.ui.component.SegmentedCard
@@ -108,7 +107,7 @@ enum class AppFilter {
     HIDDEN
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun AppsScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = false) {
     val context = LocalContext.current
@@ -535,13 +534,19 @@ fun AppsScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = fals
             }
         }
 
-        // Say why the page is empty: still loading, no server to ask, nothing matching
-        // the search, or genuinely no apps a blank page explains nothing.
-        if (loading || shown.isEmpty()) {
+        // While the first read is in flight the rows are stood in for rather than left as
+        // a blank page with a spinner over it; the list keeps its shape and the wait is
+        // spent looking at where the content will be. A pull is not this case: the rows
+        // already there stay, which is why the skeleton asks for an empty list as well.
+        if (loading && shown.isEmpty()) {
+            AppListSkeleton()
+        }
+
+        // Say why the page is empty: no server to ask, nothing matching the search, or
+        // genuinely no apps a blank page explains nothing.
+        if (!loading && shown.isEmpty()) {
             CenteredMessage {
                 when {
-                    loading -> LoadingIndicator()
-
                     !running -> {
                         Text(
                             text = stringResource(R.string.apps_needs_shizuku),

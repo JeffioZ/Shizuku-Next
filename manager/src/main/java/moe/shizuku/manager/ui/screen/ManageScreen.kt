@@ -25,8 +25,6 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Sort
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -63,6 +61,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ui.component.AppFilterChip
+import moe.shizuku.manager.ui.component.AppListSkeleton
 import moe.shizuku.manager.ui.component.appLabel
 import moe.shizuku.manager.ui.component.AppIcon
 import moe.shizuku.manager.ui.component.CenteredMessage
@@ -103,7 +102,7 @@ enum class ManageFilter {
  * works with Shizuku stopped; only the rows that change something need the server, and
  * they say so instead of failing.
  */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ManageScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = false) {
     val context = LocalContext.current
@@ -399,11 +398,17 @@ fun ManageScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = fa
                 }
             }
 
-            if (loading || shown.isEmpty()) {
+            // While the first read is in flight the rows are stood in for rather than left
+            // as a blank page with a spinner over it; the list keeps its shape and the wait
+            // is spent looking at where the content will be. A pull is not this case: the
+            // rows already there stay, which is why the skeleton asks for an empty list too.
+            if (loading && shown.isEmpty()) {
+                AppListSkeleton()
+            }
+
+            if (!loading && shown.isEmpty()) {
                 CenteredMessage {
                     when {
-                        loading -> LoadingIndicator()
-
                         query.isNotBlank() -> Text(
                             text = stringResource(R.string.apps_no_match),
                             style = MaterialTheme.typography.bodyMedium,
