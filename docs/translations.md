@@ -41,15 +41,31 @@ Both go in *Settings → Secrets and variables → Actions* on the repository, n
 
 The Crowdin project is also *linked* to this repository through its own GitHub integration,
 set up before these workflows existed. That integration uploads sources and pushes its own
-translation commits to a `crowdin` branch, which nothing merges. The action uses `l10n`
-precisely so the two cannot write the same branch; once these workflows are working, turning
-the integration's translation *download* off leaves one path instead of two.
+translation commits to a `crowdin` branch, and opens a pull request for them that nothing was
+merging.
+
+**That side cannot be configured through the Crowdin API** - it has no endpoint for it; the
+only place the integration's *push sources* / *push translations* / *create pull requests*
+toggles live is the project's Integrations page in the Crowdin web interface. The action uses
+`l10n` so the two can never write the same branch, and with both untranslated switches on the
+integration's own pull request is now a correct one rather than 193 empty language folders, so
+leaving it running costs a duplicate pull request and nothing else. To have one path instead of
+two, turn *push translations* off there (or suspend the Crowdin GitHub app once these workflows
+have run at least once, since the upload half is the Action's job now).
 
 ## Only translated strings are exported
 
-The project is set to **skip untranslated strings**, which matters more than it sounds: with that
-off, Crowdin writes the *source* text into a language that has no translation of its own, so the
-file looks translated and reads as English. That is what had put ~200 English copies into this
+The project has **two** switches for this, and both are needed:
+
+- **skip untranslated strings** - with it off, Crowdin writes the *source* text into a language
+  that has no translation of its own, so the file looks translated and reads as English.
+- **skip untranslated files** - with it off, Crowdin still writes a file (of nothing but
+  comments) for a language with no translations at all, and that folder becomes an entry in the
+  system's app-language list which changes nothing when it is picked.
+
+The second one is why a stale `crowdin` branch carried 193 language folders that contained no
+strings between them. Both are on now, so an export writes a file only for a language that has
+something in it. That is what had put ~200 English copies into this
 repository (`values-hi/strings.xml` was one: 6 of its 491 strings differed from English, and those
 six were out of date), and it is why choosing Hindi in the system's per-language picker changed
 nothing — there was nothing behind it.
