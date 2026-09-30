@@ -88,8 +88,14 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             // the wireless path can do and a USB start cannot, so this carries on over
             // wireless instead of failing. Decided here, before any toggle is written, so
             // the USB debugging switch is never flipped for a start that will not use it.
+            // The method that says "without a network" means it whatever the experiment
+            // setting has been changed to since: it is offered only while that setting is on,
+            // and a start that asked to go without a network and quietly used one instead
+            // would be the wrong way round.
+            val withoutNetwork = startMethod == ShizukuSettings.StartMethod.WIRELESS_NO_NETWORK
+
             var usbMethod = startMethod == ShizukuSettings.StartMethod.USB
-            var forcedWireless = !usbMethod && experiment
+            var forcedWireless = !usbMethod && (experiment || withoutNetwork)
             if (usbMethod && experiment &&
                 EnvironmentUtils.getAdbTcpPort() <= 0 && !EnvironmentUtils.isWifiConnected()
             ) {

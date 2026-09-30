@@ -106,6 +106,7 @@ public class ShizukuSettings {
         StartMethod.USB,
         StartMethod.SYSTEM,
         StartMethod.ROOT,
+        StartMethod.WIRELESS_NO_NETWORK,
     })
     @Retention(SOURCE)
     public @interface StartMethod {
@@ -113,6 +114,16 @@ public class ShizukuSettings {
         int USB = 1;
         int SYSTEM = 2;
         int ROOT = 3;
+
+        /**
+         * Wireless debugging with the no-network experiment pinned on.
+         *
+         * The experiment used to be a setting somebody had to remember to switch on beside
+         * the method, which is two settings that can disagree about how a start should work.
+         * As a method it says what it does, and it is offered only while that experiment is
+         * enabled, since without it there is nothing to choose.
+         */
+        int WIRELESS_NO_NETWORK = 4;
     }
 
     @StartMethod

@@ -48,6 +48,9 @@ sealed interface StartStatus {
 /** Display name of a start method, shared by the home and settings screens. */
 @StringRes
 fun startMethodLabelRes(@ShizukuSettings.StartMethod method: Int): Int = when (method) {
+    ShizukuSettings.StartMethod.WIRELESS_NO_NETWORK ->
+        R.string.start_method_wireless_no_network
+
     ShizukuSettings.StartMethod.USB -> R.string.start_method_usb
     ShizukuSettings.StartMethod.SYSTEM -> R.string.start_method_system
     ShizukuSettings.StartMethod.ROOT -> R.string.start_method_root

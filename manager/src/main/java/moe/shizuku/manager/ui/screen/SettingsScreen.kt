@@ -366,6 +366,27 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                                     }
                                     ShizukuSettings.setForceWirelessDebugging(checked)
                                     forceWireless = checked
+
+                                    // It is a start method as well as a setting, so switching
+                                    // it on makes that the default and switching it off takes
+                                    // the default back to plain wireless debugging. The two
+                                    // cannot then disagree about how a start should work, and
+                                    // nothing is left pointing at a method that is no longer
+                                    // offered.
+                                    if (checked) {
+                                        ShizukuSettings.setStartMethod(
+                                            ShizukuSettings.StartMethod.WIRELESS_NO_NETWORK
+                                        )
+                                        startMethod =
+                                            ShizukuSettings.StartMethod.WIRELESS_NO_NETWORK
+                                    } else if (startMethod ==
+                                        ShizukuSettings.StartMethod.WIRELESS_NO_NETWORK
+                                    ) {
+                                        ShizukuSettings.setStartMethod(
+                                            ShizukuSettings.StartMethod.WIRELESS
+                                        )
+                                        startMethod = ShizukuSettings.StartMethod.WIRELESS
+                                    }
                                 }
                         )
                     }
@@ -835,6 +856,16 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                 // row follows.
                 if (rootAvailable) {
                     add(ShizukuSettings.StartMethod.ROOT.toString() to stringResource(R.string.start_method_root))
+                }
+                // Offered only while the experiment behind it is on, which is what it is: the
+                // wireless start with that fight switched on. Turning the experiment off takes
+                // the default back to wireless debugging, so this cannot be chosen and then
+                // left meaning something else.
+                if (forceWireless) {
+                    add(
+                        ShizukuSettings.StartMethod.WIRELESS_NO_NETWORK.toString() to
+                            stringResource(R.string.start_method_wireless_no_network)
+                    )
                 }
             },
             selected = startMethod.toString(),
