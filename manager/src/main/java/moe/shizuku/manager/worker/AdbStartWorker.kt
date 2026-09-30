@@ -344,12 +344,31 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             // the no-network start, a hotspot still up to reach adbd over: the same borrow a
             // USB start makes to repair its own port, and it is best effort either way.
             if (!usbMethod && ShizukuSettings.getTcpMode() &&
-                EnvironmentUtils.getAdbTcpPort() <= 0 &&
-                AdbStarter.openTcpPort(applicationContext, ShizukuSettings.getTcpPort())
+                EnvironmentUtils.getAdbTcpPort() <= 0
             ) {
+                val wanted = ShizukuSettings.getTcpPort()
+                AdbStarter.openTcpPort(applicationContext, wanted)
+
+                // What the port says, rather than what that call returned: the call waits for
+                // the port to be listening and gives up if it is not listening yet, and adbd
+                // can be a moment longer than it waits. It reported failure while the port
+                // was open, which is backwards for a line that exists to be read.
+                var readBack = EnvironmentUtils.getAdbTcpPort()
+                var waited = 0
+                while (readBack != wanted && waited < TCP_PORT_READBACK_TIMEOUT_MS) {
+                    delay(TCP_PORT_READBACK_INTERVAL_MS)
+                    waited += TCP_PORT_READBACK_INTERVAL_MS.toInt()
+                    readBack = EnvironmentUtils.getAdbTcpPort()
+                }
+
                 Log.i(
                     AppConstants.TAG,
-                    "TCP mode: opened the classic ADB port ${ShizukuSettings.getTcpPort()}"
+                    if (readBack == wanted) {
+                        "TCP mode: the classic ADB port $wanted is listening"
+                    } else {
+                        "TCP mode: adbd was asked for port $wanted and reads " +
+                            if (readBack <= 0) "nothing" else "$readBack"
+                    }
                 )
             }
 
@@ -479,6 +498,10 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
          * both see it through rather than being cut off with the attempt.
          */
         private const val FORCED_DISCOVERY_TIMEOUT_MS = 130_000L
+
+        /** How long to give adbd to come back in TCP mode before saying what the port reads. */
+        private const val TCP_PORT_READBACK_TIMEOUT_MS = 3000L
+        private const val TCP_PORT_READBACK_INTERVAL_MS = 200L
 
         fun enqueue(
             context: Context,
