@@ -75,3 +75,49 @@ jobs:
           commit_message: 'chore(i18n): new translations from Crowdin'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  merge:
+    # In the same workflow as the pull request it merges, and not in a workflow of its own
+    # reacting to the pull request event: GitHub does not start runs for events caused by
+    # GITHUB_TOKEN, so a pull request opened by the step above can never trigger one. It sat
+    # open forever while a separate workflow waited for an event that was never coming.
+    needs: download
+    if: github.event_name != 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Find the pull request the download opened
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          number=$(gh pr list --head l10n --state open --json number -q '.[0].number')
+          if [ -z "$number" ]; then
+            echo "nothing to merge"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+          gh pr diff "$number" --name-only | sed '/^$/d' > changed.txt
+          git fetch --depth=1 origin l10n
+
+      - name: Check it before merging it
+        if: steps.pr.outputs.skip != 'true'
+        run: python3 ci/check-translations.py changed.txt origin/l10n origin/master
+
+      - name: Merge it
+        if: steps.pr.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr merge ${{ steps.pr.outputs.number }} \
+            --squash --delete-branch \
+            --subject 'chore(i18n): new translations from Crowdin' \
+            --body 'Merged automatically: only translated strings.xml files changed.'
