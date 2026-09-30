@@ -3,6 +3,17 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!--
+    The hiding lists ask the package manager which apps could be holding a VPN tunnel. Since
+    Android 11 an app sees only the packages it asks about, so the question has to be declared
+    here or the answer is always nothing.
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.net.VpnService" />
+        </intent>
+    </queries>
+
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.INTERNET" />
@@ -19,6 +30,24 @@
     <!-- Needed to receive mDNS multicast for wireless ADB service discovery. -->
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!--
+    The two grants the hiding watch needs, both declared so they can be given at all.
+    A permission an app has not declared cannot be granted to it, which is why the same
+    commands run by hand appeared to do nothing before these lines existed.
+
+    PACKAGE_USAGE_STATS backs "which app is in front" and DUMP backs "did the user close
+    it". Both are AppOps-and-pm-grant territory rather than runtime permissions, so
+    neither can be asked for with a dialog: they are given once by Shizuku, and they
+    survive until the app is reinstalled. That is what lets the watch keep working while
+    Shizuku is down - and while the very setting it is hiding is the one carrying Shizuku.
+    -->
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission
+        android:name="android.permission.DUMP"
+        tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
@@ -231,6 +260,20 @@
                     device unlock. It uses minimal battery and device resources." />
         </service>
 
+        <!-- The watch that hides settings while a listed app is in front. It has to keep
+             running while the user is in another app, which is the whole of its job, and a
+             process the platform may kill between two polls would leave the device hidden with
+             nothing left to notice the app is gone. Its notification is also the way back. -->
+        <service
+            android:name=".service.HidingWatchService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Watches which app is in the foreground so that the settings a listed app objects to are hidden while it is open, and restored when it leaves. The user turns this on by adding an app to a hiding list, and the ongoing notification it posts is where the settings can be restored." />
+        </service>
+
         <receiver
             android:name=".receiver.BinderRequestReceiver"
             android:directBootAware="true"
@@ -292,6 +335,7 @@
         <receiver android:name=".receiver.NotifAttemptReceiver" />
         <receiver android:name=".receiver.NotifCancelReceiver" />
         <receiver android:name=".receiver.NotifRestoreReceiver" />
+        <receiver android:name=".receiver.HidingRestoreReceiver" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

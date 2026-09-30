@@ -104,6 +104,26 @@ fun LabsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                     onClick = { onOpenDetail(Detail.AUTOSTART) }
                 )
             }
+
+            // One list per setting, and a tile each, so that hiding developer options is a
+            // question about developer options and nothing else.
+            listOf(
+                Detail.HIDE_DEVELOPER_OPTIONS,
+                Detail.HIDE_USB_DEBUGGING,
+                Detail.HIDE_WIRELESS_DEBUGGING,
+                Detail.HIDE_ACCESSIBILITY,
+                Detail.HIDE_PRIVATE_DNS,
+                Detail.HIDE_VPN
+            ).forEach { detail ->
+                val feature = requireNotNull(detail.feature)
+                item {
+                    LabTile(
+                        icon = feature.icon,
+                        label = stringResource(feature.titleRes),
+                        onClick = { onOpenDetail(detail) }
+                    )
+                }
+            }
         }
     }
 }

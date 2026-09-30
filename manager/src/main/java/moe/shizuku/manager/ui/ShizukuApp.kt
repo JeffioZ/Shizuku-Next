@@ -105,7 +105,25 @@ import moe.shizuku.manager.ui.theme.ShizukuTheme
  * the bar spent its whole width on five icons while the two screens behind two of them were
  * mostly empty when you arrived.
  */
-enum class Detail { APP_OPS, SHELL, FIREWALL, AUTOSTART, STEALTH, TERMINAL, INTENTS, PERMISSIONS }
+enum class Detail(
+    /** The list this screen opens, for the six that are one list with one switch per app. */
+    val feature: AppToggleFeature? = null
+) {
+    APP_OPS,
+    SHELL,
+    FIREWALL(AppToggleFeature.FIREWALL),
+    AUTOSTART(AppToggleFeature.AUTOSTART),
+    HIDE_DEVELOPER_OPTIONS(AppToggleFeature.HIDE_DEVELOPER_OPTIONS),
+    HIDE_USB_DEBUGGING(AppToggleFeature.HIDE_USB_DEBUGGING),
+    HIDE_WIRELESS_DEBUGGING(AppToggleFeature.HIDE_WIRELESS_DEBUGGING),
+    HIDE_ACCESSIBILITY(AppToggleFeature.HIDE_ACCESSIBILITY),
+    HIDE_PRIVATE_DNS(AppToggleFeature.HIDE_PRIVATE_DNS),
+    HIDE_VPN(AppToggleFeature.HIDE_VPN),
+    STEALTH,
+    TERMINAL,
+    INTENTS,
+    PERMISSIONS
+}
 
 /**
  * On wide windows (tablets, foldables, desktop mode, mirrored displays) a
@@ -182,14 +200,17 @@ fun ShizukuApp() {
                             )
 
                             Detail.SHELL -> ShellScreen(bottomPadding = 0.dp, onBack = { detail = null })
-                            Detail.FIREWALL -> LabsToggleScreen(
-                                feature = AppToggleFeature.FIREWALL,
-                                bottomPadding = 0.dp,
-                                onBack = { detail = null }
-                            )
-
-                            Detail.AUTOSTART -> LabsToggleScreen(
-                                feature = AppToggleFeature.AUTOSTART,
+                            Detail.FIREWALL,
+                            Detail.AUTOSTART,
+                            Detail.HIDE_DEVELOPER_OPTIONS,
+                            Detail.HIDE_USB_DEBUGGING,
+                            Detail.HIDE_WIRELESS_DEBUGGING,
+                            Detail.HIDE_ACCESSIBILITY,
+                            Detail.HIDE_PRIVATE_DNS,
+                            Detail.HIDE_VPN -> LabsToggleScreen(
+                                // These six are the same screen with a different question, so
+                                // the list comes with the screen rather than beside it.
+                                feature = requireNotNull(current.feature),
                                 bottomPadding = 0.dp,
                                 onBack = { detail = null }
                             )

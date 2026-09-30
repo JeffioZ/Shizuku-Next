@@ -5,6 +5,7 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.util.Log
 import androidx.annotation.StringRes
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,9 +22,17 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.AccessibilityNew
+import androidx.compose.material.icons.outlined.DeveloperMode
+import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.RestartAlt
 import androidx.compose.material.icons.outlined.Shield
+import androidx.compose.material.icons.outlined.Usb
+import androidx.compose.material.icons.outlined.VpnKey
+import androidx.compose.material.icons.outlined.WifiOff
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,7 +41,9 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -58,7 +69,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import moe.shizuku.manager.AppConstants
 import moe.shizuku.manager.R
+import moe.shizuku.manager.manage.Hiding
 import moe.shizuku.manager.manage.PackageTools
+import moe.shizuku.manager.manage.Signal
+import moe.shizuku.manager.service.HidingWatchService
 import moe.shizuku.manager.ui.component.AppFilterChip
 import moe.shizuku.manager.ui.component.AppIcon
 import moe.shizuku.manager.ui.component.AppListSkeleton
@@ -85,10 +99,47 @@ import moe.shizuku.manager.utils.ShizukuStateMachine
  */
 enum class AppToggleFeature(
     @StringRes val titleRes: Int,
-    val icon: ImageVector
+    val icon: ImageVector,
+    /** The setting this list hides, or null for the two lists that are about an app op. */
+    val signal: Signal? = null
 ) {
     FIREWALL(R.string.tab_firewall, Icons.Outlined.Shield),
-    AUTOSTART(R.string.tab_autostart, Icons.Outlined.RestartAlt);
+    AUTOSTART(R.string.tab_autostart, Icons.Outlined.RestartAlt),
+    HIDE_DEVELOPER_OPTIONS(
+        R.string.tab_hide_developer_options,
+        Icons.Outlined.DeveloperMode,
+        Signal.DEVELOPER_OPTIONS
+    ),
+
+    HIDE_USB_DEBUGGING(
+        R.string.tab_hide_usb_debugging,
+        Icons.Outlined.Usb,
+        Signal.USB_DEBUGGING
+    ),
+
+    HIDE_WIRELESS_DEBUGGING(
+        R.string.tab_hide_wireless_debugging,
+        Icons.Outlined.WifiOff,
+        Signal.WIRELESS_DEBUGGING
+    ),
+
+    HIDE_ACCESSIBILITY(
+        R.string.tab_hide_accessibility,
+        Icons.Outlined.AccessibilityNew,
+        Signal.ACCESSIBILITY
+    ),
+
+    HIDE_PRIVATE_DNS(
+        R.string.tab_hide_private_dns,
+        Icons.Outlined.Dns,
+        Signal.PRIVATE_DNS
+    ),
+
+    HIDE_VPN(
+        R.string.tab_hide_vpn,
+        Icons.Outlined.VpnKey,
+        Signal.VPN
+    );
 
     /**
      * The op behind Autostart. The firewall's bit is not an app op at all, so nothing reads
@@ -96,6 +147,47 @@ enum class AppToggleFeature(
      */
     val op: String
         get() = "RUN_ANY_IN_BACKGROUND"
+
+    /** What the count under the title is called: the hiding lists count apps, not blocked ones. */
+    @get:StringRes
+    val countRes: Int
+        get() = if (signal != null) R.string.hiding_hidden_count else R.string.labs_blocked_count
+
+    @get:StringRes
+    val emptyRes: Int
+        get() = if (signal != null) R.string.hiding_filter_empty else R.string.labs_blocked_empty
+
+    @get:StringRes
+    val onLabelRes: Int
+        get() = if (signal != null) R.string.hiding_filter_hidden else R.string.labs_filter_blocked
+
+    @get:StringRes
+    val offLabelRes: Int
+        get() = if (signal != null) R.string.hiding_filter_shown else R.string.labs_filter_allowed
+
+    /**
+     * The sentence the list needs under its name, which for a hiding list is what the setting is
+     * and what turning it back on does.
+     */
+    @get:StringRes
+    val noteRes: Int?
+        get() = when {
+            signal != null -> signal.noteRes
+            this == FIREWALL -> R.string.labs_firewall_note
+            else -> null
+        }
+
+    /**
+     * Whether the list is only about apps somebody installed.
+     *
+     * A setting like this is not one a system app asks about: the packages that read developer
+     * options to decide whether to run are the ones you installed, and six hundred system
+     * packages listed against a question they never ask would bury the six that do.
+     */
+    val userAppsOnly: Boolean get() = signal != null
+
+    /** Whether the list cannot do anything at all without the shell. */
+    val needsShell: Boolean get() = signal != null || this == AUTOSTART
 }
 
 /**
@@ -125,6 +217,15 @@ fun LabsToggleScreen(
     var kind by remember { mutableStateOf(ManageFilter.ALL) }
     var version by remember { mutableIntStateOf(0) }
     var running by remember { mutableStateOf(ShizukuStateMachine.isRunning()) }
+    var vpnClient by remember { mutableStateOf(Hiding.chosenVpnClient()) }
+    // The name rather than the package, with the package as the fallback: what a person chose is
+    // PairVPN, and "com.pairvpn" is the answer to a different question.
+    val vpnClientLabel = vpnClient
+        ?.let { chosen ->
+            apps.firstOrNull { it.packageName == chosen }?.let { appLabel(pm, it) } ?: chosen
+        }
+        ?: stringResource(R.string.hiding_vpn_client_none)
+    var pickingVpn by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(version) {
@@ -136,6 +237,13 @@ fun LabsToggleScreen(
         }
         blocked = withContext(Dispatchers.IO) { readBlocked(feature, context) }
         running = ShizukuStateMachine.isRunning()
+        // Opening a list is as good a reason as any to make sure the watch is up: it may have
+        // stood itself down while Shizuku was away, and a list that does nothing would look
+        // like a broken switch.
+        if (feature.signal != null && Hiding.hasAnyApp() && !Hiding.isPaused()) {
+            withContext(Dispatchers.IO) { HidingWatchService.refresh(context) }
+        }
+        vpnClient = Hiding.chosenVpnClient()
         loading = false
     }
 
@@ -149,20 +257,35 @@ fun LabsToggleScreen(
     fun toggle(packageName: String, shouldBlock: Boolean) {
         scope.launch {
             val applied = withContext(Dispatchers.IO) {
-                when (feature) {
-                    AppToggleFeature.AUTOSTART ->
+                val signal = feature.signal
+                when {
+                    // A hiding list is a rule about an app and not a state: what it writes down
+                    // is that this app objects, and whether anything is hidden right now is a
+                    // question for the watch, which is told to look again.
+                    signal != null ->
+                        Hiding.setOnList(signal, packageName, shouldBlock)
+
+                    feature == AppToggleFeature.AUTOSTART ->
                         PackageTools.setOpBlocked(context, packageName, feature.op, shouldBlock)
 
-                    AppToggleFeature.FIREWALL ->
+                    else ->
                         PackageTools.setNetworkBlocked(context, packageName, shouldBlock)
                 }
             }
             if (!applied) {
                 Log.w(AppConstants.TAG, "${feature.name}: $packageName would not change")
             }
+            if (feature.signal != null) {
+                withContext(Dispatchers.IO) { HidingWatchService.refresh(context) }
+            }
             blocked = withContext(Dispatchers.IO) { readBlocked(feature, context) }
         }
     }
+
+    // The one list that cannot be applied: the setting hides, and takes the shell that hid it
+    // with it, so nothing is left to notice the app is gone. Saying so beats a switch that
+    // appears to work and an app that dies on it.
+    val carriesSession = feature.signal?.let { Hiding.carriesSession(it) } == true
 
     // What "hidden" means here as well: installed, and never in the app drawer. Asked of the
     // package manager once per app, off the main thread, which is why it is worked out once per
@@ -203,7 +326,9 @@ fun LabsToggleScreen(
     }
 
     val shown = remember(apps, blocked, launcherless, systemPackages, userPackages, disabledPackages, query, filter, kind) {
-        val byKind = when (kind) {
+        val byKind = if (feature.userAppsOnly) {
+            apps.filter { it.packageName in userPackages }
+        } else when (kind) {
             ManageFilter.ALL -> apps
             ManageFilter.USER -> apps.filter { it.packageName in userPackages }
             ManageFilter.SYSTEM -> apps.filter { it.packageName in systemPackages }
@@ -227,6 +352,48 @@ fun LabsToggleScreen(
         searched.sortedBy { appLabel(pm, it).lowercase() }
     }
 
+    if (pickingVpn) {
+        val candidates = remember(apps) { Hiding.vpnCandidates() }
+        AlertDialog(
+            onDismissRequest = { pickingVpn = false },
+            title = { Text(stringResource(R.string.hiding_vpn_client)) },
+            text = {
+                LazyColumn {
+                    items(
+                        candidates.mapNotNull { pkg ->
+                            apps.firstOrNull { it.packageName == pkg }
+                        },
+                        key = { it.packageName }
+                    ) { pi ->
+                        ListItem(
+                            modifier = Modifier.clickable {
+                                Hiding.chooseVpnClient(pi.packageName)
+                                vpnClient = pi.packageName
+                                pickingVpn = false
+                                version++
+                            },
+                            leadingContent = { AppIcon(pi) },
+                            headlineContent = { Text(appLabel(pm, pi)) },
+                            supportingContent = { Text(pi.packageName) },
+                            trailingContent = {
+                                RadioButton(
+                                    selected = pi.packageName == vpnClient,
+                                    onClick = null
+                                )
+                            },
+                            colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { pickingVpn = false }) {
+                    Text(stringResource(android.R.string.cancel))
+                }
+            }
+        )
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
             title = {
@@ -235,7 +402,7 @@ fun LabsToggleScreen(
                     // How many are blocked, next to the name: the list's filters can say it,
                     // but the count is the thing somebody opens this screen to see.
                     Text(
-                        text = stringResource(R.string.labs_blocked_count, blocked.size),
+                        text = stringResource(feature.countRes, blocked.size),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -253,6 +420,30 @@ fun LabsToggleScreen(
         // what kind of app this is, and whether it is blocked. Five kind labels do not fit on a
         // phone, so that row scrolls like the app-ops list's does; the state row is two chips
         // and fits, and leaves room for the next kind to be added without moving anything.
+        // The one list that has to be told what to act on, because a tunnel does not say whose
+        // it is: eight apps on this device answer VpnService, and stopping the wrong one leaves a
+        // VPN down that nothing knows how to bring back.
+        //
+        // A sibling of the chip rows and not inside one. It was inside the kind row, which
+        // scrolls horizontally - and a scrolling row hands its children an unbounded width, so
+        // a card that asked to fill the width hugged its own text and changed size with the
+        // length of a package name.
+        if (feature.signal == Signal.VPN) {
+            SegmentedCard(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+            ) {
+                ListItem(
+                    modifier = Modifier.clickable { pickingVpn = true },
+                    headlineContent = { Text(stringResource(R.string.hiding_vpn_client)) },
+                    supportingContent = { Text(vpnClientLabel) },
+                    trailingContent = {
+                        Icon(Icons.Filled.ChevronRight, contentDescription = null)
+                    },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                )
+            }
+        }
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -260,7 +451,9 @@ fun LabsToggleScreen(
                 .padding(horizontal = 16.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            ManageFilter.entries.forEach { option ->
+            // Not on a hiding list: everything on one is an app somebody installed, so there
+            // is no second kind of app to tell it apart from.
+            if (!feature.userAppsOnly) ManageFilter.entries.forEach { option ->
                 val count = when (option) {
                     ManageFilter.ALL -> apps.size
                     ManageFilter.USER -> userPackages.size
@@ -296,7 +489,7 @@ fun LabsToggleScreen(
         ) {
             AppFilterChip(
                 modifier = Modifier.weight(1f),
-                label = stringResource(R.string.labs_filter_allowed),
+                label = stringResource(feature.offLabelRes),
                 count = apps.count { it.packageName !in blocked },
                 selected = filter == ToggleFilter.ALLOWED,
                 // Tapping the chosen one again lets go of it: with no filter the list shows
@@ -307,7 +500,7 @@ fun LabsToggleScreen(
             )
             AppFilterChip(
                 modifier = Modifier.weight(1f),
-                label = stringResource(R.string.labs_filter_blocked),
+                label = stringResource(feature.onLabelRes),
                 count = apps.count { it.packageName in blocked },
                 selected = filter == ToggleFilter.BLOCKED,
                 onClick = {
@@ -355,10 +548,29 @@ fun LabsToggleScreen(
             ) {
                 // Said here rather than in one setting somewhere: the firewall's list is this
                 // app's own record, and the app's page is where the platform is asked.
-                if (feature == AppToggleFeature.FIREWALL) {
+                if (carriesSession) {
                     item {
                         Text(
-                            text = stringResource(R.string.labs_firewall_note),
+                            text = stringResource(
+                                if (feature == AppToggleFeature.HIDE_WIRELESS_DEBUGGING) {
+                                    R.string.hiding_carries_session_wireless
+                                } else {
+                                    R.string.hiding_carries_session_usb
+                                }
+                            ),
+                            modifier = Modifier
+                                .padding(horizontal = 4.dp)
+                                .padding(bottom = 4.dp),
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+
+                feature.noteRes?.let { note ->
+                    item {
+                        Text(
+                            text = stringResource(note),
                             modifier = Modifier
                                 .padding(horizontal = 4.dp)
                                 .padding(bottom = 4.dp),
@@ -391,7 +603,7 @@ fun LabsToggleScreen(
                                     AppStatusChips(pi, hidden = pi.packageName in launcherless)
                                     ExpressiveSwitch(
                                         checked = isBlocked,
-                                        enabled = feature != AppToggleFeature.AUTOSTART || running,
+                                        enabled = (!feature.needsShell || running) && !carriesSession,
                                         onCheckedChange = { checked ->
                                             blocked = if (checked) blocked + pi.packageName
                                             else blocked - pi.packageName
@@ -412,7 +624,7 @@ fun LabsToggleScreen(
                 } else {
                     CenteredMessage {
                         when {
-                            !running && feature == AppToggleFeature.AUTOSTART -> Text(
+                            !running && feature.needsShell -> Text(
                                 text = stringResource(R.string.apps_needs_shizuku),
                                 style = MaterialTheme.typography.bodyMedium,
                                 textAlign = TextAlign.Center
@@ -425,7 +637,7 @@ fun LabsToggleScreen(
                             )
 
                             filter == ToggleFilter.BLOCKED -> Text(
-                                text = stringResource(R.string.labs_blocked_empty),
+                                text = stringResource(feature.emptyRes),
                                 style = MaterialTheme.typography.bodyMedium,
                                 textAlign = TextAlign.Center
                             )
@@ -453,9 +665,12 @@ fun LabsToggleScreen(
 private suspend fun readBlocked(
     feature: AppToggleFeature,
     context: android.content.Context
-): Set<String> = when (feature) {
+): Set<String> = when {
+    // This app's own record, one list per setting: the platform can be asked about a setting
+    // but not about which apps asked for it to be hidden.
+    feature.signal != null -> Hiding.appsFor(feature.signal)
     // One command for every app in the mode.
-    AppToggleFeature.AUTOSTART -> PackageTools.readOpDenied(feature.op)
+    feature == AppToggleFeature.AUTOSTART -> PackageTools.readOpDenied(feature.op)
     // This app's own record; the platform cannot be asked for the list.
-    AppToggleFeature.FIREWALL -> PackageTools.readFirewallBlocked(context)
+    else -> PackageTools.readFirewallBlocked(context)
 }

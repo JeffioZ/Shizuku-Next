@@ -22,6 +22,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import moe.shizuku.manager.R
 import moe.shizuku.manager.MainActivity
@@ -98,6 +99,9 @@ class WatchdogService : Service() {
      * a fresh restart. Crash-time restart attempts frequently fail (mDNS / wireless
      * debugging don't work with the screen off) and WorkManager then accumulates
      * exponential backoff, making the restart indefinitely slow.
+     *
+     * One of two triggers now, and it was the only one: see [startRecoveryLoop] for what
+     * happened to every server that died while the phone was already awake.
      */
     private val screenOnReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -117,10 +121,10 @@ class WatchdogService : Service() {
      * Event-based crash detection alone is not enough: the CRASHED transition is
      * lost if the manager process was dead when the server died, and the state
      * machine boots as STOPPED after every process restart. So whenever the
-     * watchdog (re)starts and on screen unlock probe whether the server is
-     * actually running and restart it if not, unless the user stopped it on
-     * purpose (manual stop sets the suppression flag; any start request or a
-     * confirmed RUNNING state clears it).
+     * watchdog (re)starts, on screen unlock, and on the recovery loop's own timer,
+     * probe whether the server is actually running and restart it if not, unless the
+     * user stopped it on purpose (manual stop sets the suppression flag; any start
+     * request or a confirmed RUNNING state clears it).
      */
     private fun checkServerAndRestartIfDead() {
         serviceScope.launch {
@@ -146,6 +150,36 @@ class WatchdogService : Service() {
             if (ShizukuStateMachine.update() != ShizukuStateMachine.State.RUNNING) {
                 Log.d(TAG, "Server not running while watchdog active attempting restart")
                 attemptRestart()
+            }
+        }
+    }
+
+    /**
+     * The recovery that does not wait for an unlock, and the reason it exists.
+     *
+     * The unlock trigger is a real signal - mDNS and wireless debugging genuinely do not work
+     * with the screen off - but it was the only retry there was, and that is not enough. A
+     * server that dies while the phone is in the user's hand, being used, is never unlocked, so
+     * nothing retried it and Shizuku stayed down until the app was opened; the start-up probe
+     * inside this service is what made opening the app look like the only cure.
+     *
+     * Reported from the device and reproduced: with the manager open and the server killed, the
+     * watchdog's own attempt collapsed and the log said only "leaving the retry armed", waiting
+     * for an unlock that was never going to come.
+     *
+     * So the same probe runs on a timer for as long as the watchdog is up. It is cheap - one
+     * binder ping - it skips everything a deliberate stop or an in-flight replacement skips, and
+     * [attemptRestart] keeps its own cooldown, so a server that cannot come back yet is retried
+     * rather than nagged.
+     */
+    private fun startRecoveryLoop() {
+        serviceScope.launch {
+            while (isActive) {
+                delay(RECOVERY_POLL_MS)
+                if (ShizukuSettings.getManuallyStopped()) continue
+                // The local answer first because it is free; the probe below asks the binder.
+                if (ShizukuStateMachine.isRunning()) continue
+                checkServerAndRestartIfDead()
             }
         }
     }
@@ -201,8 +235,7 @@ class WatchdogService : Service() {
 
             // A start reports success as soon as the binder appears, and the interesting case
             // is the one that appears and then goes away again, so the restart is checked
-            // rather than trusted: until the server is actually there, the screen-on retry
-            // stays armed.
+            // rather than trusted: until the server is actually there, the retry stays armed.
             delay(RECOVERY_CHECK_MS)
             ShizukuStateMachine.update()
             if (ShizukuStateMachine.isRunning()) {
@@ -224,6 +257,7 @@ class WatchdogService : Service() {
         Log.i(TAG, "Watchdog started, server is ${ShizukuStateMachine.get()}")
         ShizukuStateMachine.addListener(stateListener)
         registerReceiver(screenOnReceiver, IntentFilter(Intent.ACTION_USER_PRESENT))
+        startRecoveryLoop()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -402,6 +436,15 @@ class WatchdogService : Service() {
 
         /** Two restarts within this are the same outage, not two. */
         private const val RESTART_COOLDOWN_MS = 15_000L
+
+        /**
+         * How often a server that is down and not coming back is tried again.
+         *
+         * Half a minute: long enough that a start which needs something the device does not
+         * have yet is not asked for constantly, short enough that it lands while the user is
+         * still the one who noticed.
+         */
+        private const val RECOVERY_POLL_MS = 30_000L
         private const val NOTIFICATION_ID_WATCHDOG = 1001
         private const val NOTIFICATION_ID_CRASH = 1002
         private const val NOTIFICATION_ID_RECOVERY = 1003

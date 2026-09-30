@@ -7,12 +7,15 @@ import android.util.Log
 import androidx.appcompat.app.AppCompatDelegate
 import com.topjohnwu.superuser.Shell
 import moe.shizuku.manager.ktx.logd
+import moe.shizuku.manager.manage.Hiding
+import moe.shizuku.manager.service.HidingWatchService
 import moe.shizuku.manager.service.WatchdogService
 import moe.shizuku.manager.utils.ShizukuStateMachine
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 import rikka.core.util.BuildUtils.atLeast30
 import rikka.material.app.LocaleDelegate
 import rikka.shizuku.Shizuku
+import kotlin.concurrent.thread
 
 class ShizukuApplication : Application() {
 
@@ -55,6 +58,15 @@ class ShizukuApplication : Application() {
         AppCompatDelegate.setDefaultNightMode(ShizukuSettings.getNightMode())
 
         if(ShizukuSettings.getWatchdog()) WatchdogService.start(context)
+
+        // The watch is the thing that puts the settings back, so a process that died while
+        // something was hidden starts it again rather than leaving the device lying with nothing
+        // left to notice the app it was hiding for is gone. Off the main thread, because it asks
+        // the shell, and the platform may refuse a foreground service started from the
+        // background - which is what the start it does is for.
+        if (Hiding.hasAnyApp() && !Hiding.isPaused()) {
+            thread(name = "hiding-watch-restart") { HidingWatchService.refresh(context) }
+        }
     }
 
     override fun onCreate() {

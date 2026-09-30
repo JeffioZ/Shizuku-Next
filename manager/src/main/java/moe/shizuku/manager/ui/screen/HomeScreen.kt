@@ -86,6 +86,7 @@ import moe.shizuku.manager.receiver.ShizukuReceiverStarter
 import moe.shizuku.manager.start.StartFailureKind
 import moe.shizuku.manager.start.StartStatus
 import moe.shizuku.manager.start.StartStatusReporter
+import moe.shizuku.manager.service.HidingWatchService
 import moe.shizuku.manager.start.isDeveloperOptionsEnabled
 import moe.shizuku.manager.start.isPermissionPermanentlyDenied
 import moe.shizuku.manager.start.restoreDeveloperOptions
@@ -129,6 +130,7 @@ fun HomeScreen(bottomPadding: Dp) {
     var rooted by remember { mutableStateOf(false) }
     var startMethod by remember { mutableStateOf(ShizukuSettings.getStartMethod()) }
     var developerOptionsOn by remember { mutableStateOf(context.isDeveloperOptionsEnabled()) }
+    var hidingActive by remember { mutableStateOf(false) }
     var selinuxRes by remember { mutableStateOf<Int?>(null) }
     var seccompRes by remember { mutableStateOf<Int?>(null) }
     val startStatus by StartStatusReporter.status.collectAsState()
@@ -184,6 +186,7 @@ fun HomeScreen(bottomPadding: Dp) {
         running = ShizukuStateMachine.isRunning()
         batteryIgnored = SettingsHelper.isIgnoringBatteryOptimizations(context)
         developerOptionsOn = context.isDeveloperOptionsEnabled()
+        hidingActive = HidingWatchService.isRunning()
         // Root can be gone since the method was chosen; the card would otherwise keep
         // promising a start the device can no longer run.
         startMethod = StartMethodGuard.resolve()
@@ -456,6 +459,33 @@ fun HomeScreen(bottomPadding: Dp) {
                                     )
                                 ) { Text(stringResource(R.string.snackbar_action_fix)) }
                             }
+                        }
+                    }
+                }
+            }
+
+            // Said here rather than only on the lists, because this is the screen somebody
+            // looks at when Shizuku is not running and they want to know why. While hiding is
+            // live, a server that dies on its own, and comes back on its own, is the expected
+            // behaviour - and an app that hides the connection it runs on cannot avoid it.
+            if (hidingActive) {
+                item {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.tertiaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                        shape = MaterialTheme.shapes.large
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = stringResource(R.string.home_hiding_active_title),
+                                style = MaterialTheme.typography.titleSmall
+                            )
+                            Text(
+                                text = stringResource(R.string.home_hiding_active_note),
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
                         }
                     }
                 }
