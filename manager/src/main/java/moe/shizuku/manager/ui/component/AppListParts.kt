@@ -28,6 +28,7 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
@@ -35,6 +36,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
@@ -165,15 +167,43 @@ fun CountBadge(count: Int, selected: Boolean) {
  */
 /** How much a chip wants to be noticed. */
 enum class ChipEmphasis {
-    /** A fact about the app: it came with the system. */
+    /** A line that says something else entirely, in the theme's neutral. */
     NONE,
 
     /** A state worth seeing disabled, suspended without shouting it. */
     SOFT,
 
     /** Something is wrong: the app is not installed any more. */
-    WARN
+    WARN,
+
+    /** Came with the system. */
+    SYSTEM,
+
+    /** Installed by somebody. */
+    USER,
+
+    /** No launcher entry, so nothing on the home screen opens it. */
+    HIDDEN
 }
+
+/*
+ * Three colours the scheme does not have. It has an error red, which means "something is wrong"
+ * rather than "this came with the device", and no green or brown at all - and these three chips
+ * are facts about an app, not the app being unhappy, so borrowing the error role for one of them
+ * would say the wrong thing.
+ *
+ * Alpha in the literal rather than a colour faded at the call site, so the tint sits over whatever
+ * is behind the chip - a card, a sheet, a pressed row - instead of over its own layer. Five
+ * parts in ten of the colour and a near-white label, because the first attempt used a low alpha
+ * with the same hue as the text: brown at a quarter over a dark card came out as rgb(75,73,75),
+ * which is grey, and the label on it could not be read either.
+ */
+private val ChipRedSurface = Color(0x4DFF5252)
+private val ChipRedLabel = Color(0xFFFFDAD6)
+private val ChipGreenSurface = Color(0x4D2E7D32)
+private val ChipGreenLabel = Color(0xFFD7F5D9)
+private val ChipBrownSurface = Color(0x4DD7A87E)
+private val ChipBrownLabel = Color(0xFFF2DCC8)
 
 @Composable
 fun StatusChip(
@@ -185,11 +215,17 @@ fun StatusChip(
         ChipEmphasis.NONE -> MaterialTheme.colorScheme.surfaceContainerHighest
         ChipEmphasis.SOFT -> MaterialTheme.colorScheme.secondaryContainer
         ChipEmphasis.WARN -> MaterialTheme.colorScheme.errorContainer
+        ChipEmphasis.SYSTEM -> ChipRedSurface
+        ChipEmphasis.USER -> ChipGreenSurface
+        ChipEmphasis.HIDDEN -> ChipBrownSurface
     }
     val content = when (emphasis) {
         ChipEmphasis.NONE -> MaterialTheme.colorScheme.onSurfaceVariant
         ChipEmphasis.SOFT -> MaterialTheme.colorScheme.onSecondaryContainer
         ChipEmphasis.WARN -> MaterialTheme.colorScheme.onErrorContainer
+        ChipEmphasis.SYSTEM -> ChipRedLabel
+        ChipEmphasis.USER -> ChipGreenLabel
+        ChipEmphasis.HIDDEN -> ChipBrownLabel
     }
     Text(
         text = text,
@@ -221,9 +257,10 @@ fun appStatusChips(
         return listOf(R.string.manage_status_removed to ChipEmphasis.WARN)
     }
 
+    val system = ai.flags and ApplicationInfo.FLAG_SYSTEM != 0
     val chips = mutableListOf(
-        (if (ai.flags and ApplicationInfo.FLAG_SYSTEM != 0) R.string.manage_status_system
-        else R.string.manage_status_user) to ChipEmphasis.NONE
+        (if (system) R.string.manage_status_system else R.string.manage_status_user) to
+            if (system) ChipEmphasis.SYSTEM else ChipEmphasis.USER
     )
     val flags = ai.flags
     when {
@@ -232,7 +269,7 @@ fun appStatusChips(
 
         !ai.enabled -> chips += R.string.manage_status_disabled to ChipEmphasis.SOFT
 
-        hidden -> chips += R.string.manage_status_hidden to ChipEmphasis.NONE
+        hidden -> chips += R.string.manage_status_hidden to ChipEmphasis.HIDDEN
     }
     return chips
 }
@@ -252,15 +289,42 @@ fun AppStatusChips(
     removed: Boolean = false,
     modifier: Modifier = Modifier
 ) {
+    val chips = appStatusChips(pi, hidden, removed)
+
+    // Three slots, always: an empty one, the kind chip, and then the status chip or another empty
+    // one. That is what puts the kind chip on the row's centre line - the block is centred as a
+    // whole, so a two-slot block would leave its kind chip half a chip high and a one-slot block
+    // half a chip low, and the chips would not line up from one row to the next. With three, the
+    // kind chip is always in the middle slot, whatever hangs under it.
+    //
+    // The cost is height: three slots are taller than a name and a package, so a row grows to
+    // fit. That is the trade for the chips being in line down the whole list.
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.End,
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+        verticalArrangement = Arrangement.spacedBy(ChipGap)
     ) {
-        appStatusChips(pi, hidden, removed).forEach { (label, emphasis) ->
+        EmptyChip()
+        chips.forEach { (label, emphasis) ->
             StatusChip(stringResource(label), emphasis = emphasis)
         }
+        if (chips.size < 2) EmptyChip()
     }
+}
+
+/** The gap between two chips in a row's trailing stack. */
+private val ChipGap = 4.dp
+
+/** The space a chip would take, with nothing in it. */
+@Composable
+private fun EmptyChip() {
+    StatusChip(
+        text = "",
+        emphasis = ChipEmphasis.NONE,
+        modifier = Modifier
+            .alpha(0f)
+            .clearAndSetSemantics { }
+    )
 }
 
 /** Centred content for the states that aren't a list. */
