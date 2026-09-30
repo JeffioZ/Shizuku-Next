@@ -282,6 +282,20 @@ static std::string package_from_path(const char *path) {
     if (app == std::string::npos) return "";
 
     size_t start = app + strlen("/data/app/");
+
+    // Android 11 and later give each install a directory of its own, so the application
+    // directory is one level further down than it used to be:
+    //   /data/app/~~<token>/<package>-<hash>/...
+    // Reading only the first level produced a "package" of "~~<token>", which described a
+    // directory that does not exist and cannot be created. The log then fell through to the
+    // /data/local/tmp fallback, which the system uid cannot write and the app cannot read,
+    // so a system start left nothing behind at all.
+    if (value.compare(start, 2, "~~") == 0) {
+        size_t level = value.find('/', start);
+        if (level == std::string::npos) return "";
+        start = level + 1;
+    }
+
     size_t end = value.find('/', start);
     std::string dir = value.substr(start, end == std::string::npos ? std::string::npos : end - start);
 
@@ -311,31 +325,41 @@ static void open_manager_log(const char *manager_path) {
     strncat(dir, "/files", sizeof(dir) - strlen(dir) - 1);
     mkdir(dir, 0775);
 
-    char path[PATH_MAX];
-    snprintf(path, sizeof(path), "%s/starter.log", dir);
+    char fallback[PATH_MAX];
+    snprintf(fallback, sizeof(fallback), "/data/local/tmp/shizuku_starter.log");
 
-    s_manager_log = fopen(path, "w");
-    if (s_manager_log == nullptr) {
-        // The app's media directory as well, because the two fail for different reasons: the
-        // files directory is the natural place to put this, but another app's Android/data is
-        // exactly what the storage layer and SELinux are built to deny, and a system start
-        // arrives here from another app's process. Android/media/<package> exists to be
-        // reachable from outside the app, so it is the one that survives that.
-        char media[PATH_MAX];
-        snprintf(media, sizeof(media), "/storage/emulated/0/Android/media/%s",
-                 package.c_str());
-        mkdir(media, 0775);
-        strncat(media, "/starter.log", sizeof(media) - strlen(media) - 1);
-        s_manager_log = fopen(media, "w");
+    char candidates[2][PATH_MAX];
+    snprintf(candidates[0], sizeof(candidates[0]), "%s/starter.log", dir);
+
+    // The app's media directory as well, because the two fail for different reasons: the
+    // files directory is the natural place to put this, but another app's Android/data is
+    // exactly what the storage layer and SELinux are built to deny, and a system start
+    // arrives here from another app's process. Android/media/<package> exists to be
+    // reachable from outside the app, so it is the one that survives that.
+    char media_dir[PATH_MAX];
+    snprintf(media_dir, sizeof(media_dir), "/storage/emulated/0/Android/media/%s",
+             package.c_str());
+    mkdir(media_dir, 0775);
+    snprintf(candidates[1], sizeof(candidates[1]), "%s/starter.log", media_dir);
+
+    const char *chosen = nullptr;
+    for (int i = 0; i < 2 && chosen == nullptr; i++) {
+        s_manager_log = fopen(candidates[i], "w");
+        if (s_manager_log != nullptr) chosen = candidates[i];
     }
-    if (s_manager_log == nullptr) {
+    if (chosen == nullptr) {
         // Writabe for root and for the adb shell, not for the system uid: /data/local/tmp is
         // group shell, and "other" may only traverse it. Kept because the root and adb paths
         // can use it, and because it is readable over adb when the app's own directory is not.
-        s_manager_log = fopen("/data/local/tmp/shizuku_starter.log", "w");
+        s_manager_log = fopen(fallback, "w");
+        if (s_manager_log != nullptr) chosen = fallback;
     }
     if (s_manager_log == nullptr) {
         perrorf("warn: no writable place for the starter's log in %s\n", dir);
+    } else {
+        // Which of them it was, in the log itself: a start whose account lands somewhere the
+        // manager cannot read looks the same from the outside as one that never ran.
+        info("info: starter log is %s\n", chosen);
     }
 }
 
