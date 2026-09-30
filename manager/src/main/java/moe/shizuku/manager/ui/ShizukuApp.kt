@@ -32,10 +32,12 @@ import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material.icons.outlined.AdminPanelSettings
 import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Terminal
 import androidx.compose.material.icons.outlined.Terminal
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingToolbarDefaults
@@ -79,7 +81,7 @@ import moe.shizuku.manager.ui.theme.LocalAmoledTheme
 import moe.shizuku.manager.ui.theme.ShizukuTheme
 
 /** A secondary screen shown on top of the tab pager. */
-enum class Detail { STEALTH, TERMINAL, INTENTS, PERMISSIONS, SHELL }
+enum class Detail { STEALTH, TERMINAL, INTENTS, PERMISSIONS }
 
 /**
  * On wide windows (tablets, foldables, desktop mode, mirrored displays) a
@@ -97,15 +99,17 @@ private data class Tab(
     val unselectedIcon: ImageVector
 )
 
-/** The tab the shell button stands before, counted in tabs: [tabs] is Home, Apps, Manage, Settings. */
-private const val SHELL_BEFORE_TAB = 3
-
 private val tabs = listOf(
     Tab(R.string.tab_home, Icons.Filled.Home, Icons.Outlined.Home),
     Tab(R.string.tab_apps, Icons.Filled.Apps, Icons.Outlined.Apps),
     // Apps answers "which apps may use Shizuku"; Manage answers "what may they do on the
     // device", so they belong next to each other rather than either side of Settings.
     Tab(R.string.tab_manage, Icons.Filled.AdminPanelSettings, Icons.Outlined.AdminPanelSettings),
+    // The shell is a tab like the others. It was a place you opened over them and came back
+    // from, on the grounds that a page has to keep a session and its output alive behind the
+    // other pages, which turns out to be what you want from a shell: leave it, come back, and
+    // what you ran is still there.
+    Tab(R.string.tab_shell, Icons.Filled.Terminal, Icons.Outlined.Terminal),
     Tab(R.string.tab_settings, Icons.Filled.Settings, Icons.Outlined.Settings),
 )
 
@@ -152,7 +156,6 @@ fun ShizukuApp() {
                             Detail.TERMINAL -> TerminalScreen(onBack = { detail = null })
                             Detail.INTENTS -> IntentsScreen(onBack = { detail = null })
                             Detail.PERMISSIONS -> PermissionsScreen(onBack = { detail = null })
-                            Detail.SHELL -> ShellScreen(onBack = { detail = null })
                         }
                     }
                 } else {
@@ -247,7 +250,8 @@ private fun MainTabs(
                     0 -> HomeScreen(bottomPadding = bottomPadding)
                     1 -> AppsScreen(bottomPadding = bottomPadding)
                     2 -> ManageScreen(bottomPadding = bottomPadding)
-                    3 -> SettingsScreen(bottomPadding = bottomPadding, onOpenDetail = onOpenDetail)
+                    3 -> ShellScreen(bottomPadding = bottomPadding)
+                    4 -> SettingsScreen(bottomPadding = bottomPadding, onOpenDetail = onOpenDetail)
                 }
             }
         }
@@ -313,14 +317,6 @@ private fun MainTabs(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         tabs.forEachIndexed { index, tab ->
-                            // The shell is not a tab: it is a place you go and come back from, so
-                            // it opens over the tabs rather than becoming a fifth page, which
-                            // would have to keep a session and its output alive behind the
-                            // others. It sits before Settings, where it is looked for.
-                            if (index == SHELL_BEFORE_TAB) {
-                                ShellBarButton { onOpenDetail(Detail.SHELL) }
-                            }
-
                             val selected = pagerState.currentPage == index
                             ToggleButton(
                                 checked = selected,

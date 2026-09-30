@@ -105,6 +105,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -181,7 +182,7 @@ private val BARE_SU = Regex("""^su(?:\s+-\s*)?$""")
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ShellScreen(onBack: () -> Unit) {
+fun ShellScreen(bottomPadding: Dp = 0.dp) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val clipboard = LocalClipboardManager.current
@@ -507,6 +508,11 @@ fun ShellScreen(onBack: () -> Unit) {
             // The keyboard covers the input otherwise, and a shell without its input line is
             // just a log.
             .imePadding()
+            // The input line is the last thing on this screen and the navigation bar floats
+            // over the bottom of every page, so the page has to end above it: without this the
+            // field and the Run button sit under the bar, which is the one control a shell
+            // cannot do without.
+            .padding(bottom = bottomPadding)
     ) {
         if (searching) {
             // The search takes the bar rather than a row of its own: the title says nothing
@@ -583,11 +589,7 @@ fun ShellScreen(onBack: () -> Unit) {
                     }
                 },
                 windowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                    }
-                },
+                // No back arrow: this is a tab, and the bar below is how you leave it.
                 actions = {
                     // Always offered, because the most common thing to do with a shell is run
                     // something copied from somewhere else, and that is the first thing you
