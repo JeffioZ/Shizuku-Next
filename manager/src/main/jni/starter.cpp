@@ -70,6 +70,9 @@ static void log_to_manager(const char *fmt, ...) {
 /** How long the parent watches the forked server before it reports success, and how often. */
 #define SERVER_WATCH_ATTEMPTS 15
 #define SERVER_WATCH_INTERVAL_US 200000
+
+/** How large the manager's copy of the starter's log may grow before it is started over. */
+#define MANAGER_LOG_MAX_SIZE (256 * 1024)
 #define SERVER_CLASS_PATH "rikka.shizuku.server.ShizukuService"
 
 #if defined(__arm__)
@@ -350,6 +353,17 @@ static std::string package_from_path(const char *path) {
  * be needed to find out what happened. Best effort: with no writable place, logcat is still
  * told everything.
  */
+/** Opens one candidate log for appending, starting it over when it has grown too large. */
+static bool open_log(const char *path, bool append) {
+    struct stat st;
+    if (stat(path, &st) == 0 && st.st_size > MANAGER_LOG_MAX_SIZE) {
+        append = false;
+    }
+
+    s_manager_log = fopen(path, append ? "a" : "w");
+    return s_manager_log != nullptr;
+}
+
 static void open_manager_log(const char *manager_path) {
     std::string package = package_from_path(manager_path);
     if (package.empty()) return;
@@ -379,23 +393,26 @@ static void open_manager_log(const char *manager_path) {
     mkdir(media_dir, 0775);
     snprintf(candidates[1], sizeof(candidates[1]), "%s/starter.log", media_dir);
 
+    // Appended, not rewritten. A system start asks the agent to run the payload several
+    // times, so truncating on every run meant the account that survived was always the last
+    // one, and the first attempt which is the one that says what actually went wrong was
+    // thrown away by the second. Started over when it grows past a sane size instead.
     const char *chosen = nullptr;
     for (int i = 0; i < 2 && chosen == nullptr; i++) {
-        s_manager_log = fopen(candidates[i], "w");
-        if (s_manager_log != nullptr) chosen = candidates[i];
+        chosen = open_log(candidates[i], true) ? candidates[i] : nullptr;
     }
     if (chosen == nullptr) {
         // Writabe for root and for the adb shell, not for the system uid: /data/local/tmp is
         // group shell, and "other" may only traverse it. Kept because the root and adb paths
         // can use it, and because it is readable over adb when the app's own directory is not.
-        s_manager_log = fopen(fallback, "w");
-        if (s_manager_log != nullptr) chosen = fallback;
+        chosen = open_log(fallback, true) ? fallback : nullptr;
     }
     if (s_manager_log == nullptr) {
         perrorf("warn: no writable place for the starter's log in %s\n", dir);
     } else {
         // Which of them it was, in the log itself: a start whose account lands somewhere the
         // manager cannot read looks the same from the outside as one that never ran.
+        info("info: ---- start ----\n");
         info("info: starter log is %s\n", chosen);
     }
 }
