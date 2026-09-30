@@ -1,6 +1,11 @@
 package moe.shizuku.manager.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -53,6 +58,7 @@ import androidx.compose.material3.ToggleButtonShapes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -61,10 +67,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.boundsInParent
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
@@ -330,6 +343,29 @@ private fun MainTabs(
                 modifier = Modifier.fillMaxWidth().clipToBounds(),
                 contentAlignment = Alignment.Center
             ) {
+                // Where each tab sits on the bar, so the selected pill can be drawn between
+                // them: one shape that travels reads as a move, where a container colour that
+                // appears on the new tab and leaves the old one reads as a flicker. The pill
+                // is measured from the tab itself, so it is the tab's own size wherever the
+                // bar's padding puts it.
+                val tabBounds = remember { mutableStateMapOf<Int, Rect>() }
+                val selectedBounds = tabBounds[pagerState.currentPage]
+                val pillSpec = spring<Float>(
+                    dampingRatio = Spring.DampingRatioLowBouncy,
+                    stiffness = Spring.StiffnessLow
+                )
+                val pillLeft by animateFloatAsState(
+                    targetValue = selectedBounds?.left ?: 0f,
+                    animationSpec = pillSpec,
+                    label = "tabPillLeft"
+                )
+                val pillWidth by animateFloatAsState(
+                    targetValue = selectedBounds?.width ?: 0f,
+                    animationSpec = pillSpec,
+                    label = "tabPillWidth"
+                )
+                val pillColor = MaterialTheme.colorScheme.secondaryContainer
+
                 HorizontalFloatingToolbar(
                     expanded = true,
                     modifier = Modifier,
@@ -350,14 +386,46 @@ private fun MainTabs(
                                     Modifier
                                 }
                             )
-                            .padding(FloatingToolbarDefaults.ContentPadding),
+                            .padding(FloatingToolbarDefaults.ContentPadding)
+                            // Last in the chain on purpose: the padding sits outside the Row, so
+                            // drawing here happens in the same space the tabs are placed in, and
+                            // their measured bounds can be used as they are.
+                            .drawWithContent {
+                                val bounds = selectedBounds
+                                if (bounds != null && pillWidth > 0f) {
+                                    drawRoundRect(
+                                        color = pillColor,
+                                        topLeft = Offset(pillLeft, bounds.top),
+                                        size = Size(pillWidth, bounds.height),
+                                        cornerRadius = CornerRadius(bounds.height / 2f)
+                                    )
+                                }
+                                drawContent()
+                            },
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         tabs.forEachIndexed { index, tab ->
                             val selected = pagerState.currentPage == index
+                            // The icon's colour is animated rather than handed to the button's
+                            // checked state, because the pill behind it is still travelling when
+                            // the state flips: a flip would leave the icon dark on a pill that has
+                            // not arrived yet.
+                            val iconColor by animateColorAsState(
+                                targetValue = if (selected) {
+                                    MaterialTheme.colorScheme.onSecondaryContainer
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                },
+                                animationSpec = MaterialTheme.motionScheme
+                                    .defaultEffectsSpec<Color>(),
+                                label = "tabIconColor"
+                            )
                             ToggleButton(
                                 checked = selected,
+                                modifier = Modifier.onGloballyPositioned {
+                                    tabBounds[index] = it.boundsInParent()
+                                },
                             onCheckedChange = {
                                 // Straight to the page, not through the ones between: the pager
                                 // composes what it scrolls past, so going from Settings to Home
@@ -371,20 +439,30 @@ private fun MainTabs(
                                     checkedShape = CircleShape
                                 ),
                                 colors = ToggleButtonDefaults.toggleButtonColors(
+                                    // Transparent either way: the pill is drawn by the bar, so the
+                                    // button must not draw a second one under it.
                                     containerColor = Color.Transparent,
-                                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    checkedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                    checkedContentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                                    contentColor = iconColor,
+                                    checkedContainerColor = Color.Transparent,
+                                    checkedContentColor = iconColor
                                 )
                             ) {
                                 // Icons only, with the name kept for anyone reading it aloud: a
                                 // label that grows out of the selected tab makes the bar wider
                                 // and taller, and the pages under it move. The filled pill says
-                                // which tab is current.
-                                Icon(
-                                    if (selected) tab.selectedIcon else tab.unselectedIcon,
-                                    contentDescription = stringResource(tab.label)
-                                )
+                                // which tab is current, and the outlined icon resolving into the
+                                // filled one says the pill has arrived.
+                                Crossfade(
+                                    targetState = selected,
+                                    animationSpec = MaterialTheme.motionScheme
+                                        .defaultEffectsSpec<Float>(),
+                                    label = "tabIcon"
+                                ) { isSelected ->
+                                    Icon(
+                                        if (isSelected) tab.selectedIcon else tab.unselectedIcon,
+                                        contentDescription = stringResource(tab.label)
+                                    )
+                                }
                             }
                         }
                     }
