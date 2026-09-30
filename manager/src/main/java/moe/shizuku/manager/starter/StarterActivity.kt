@@ -70,6 +70,9 @@ private const val FOTA_ATTEMPT_INTERVAL_MS = 700L
  * earlier and with no file involved at all: if the first of these never arrives, the agent
  * never ran the command, and nothing else about the attempt matters.
  */
+/** Written by the starter at the top of every run it records. */
+private const val STARTER_LOG_DIVIDER = "---- start ----"
+
 private const val STAGE_ACTION = "moe.shizuku.privileged.api.action.SYSTEM_START_STAGE"
 private const val STAGE_EXTRA = "stage"
 private const val STAGE_AT_SHELL = "payload_reached_the_shell"
@@ -240,7 +243,12 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
             val text = runCatching {
                 if (file.exists()) file.readText().trim() else null
             }.getOrNull()
-            if (!text.isNullOrEmpty()) return file to text
+            if (text.isNullOrEmpty()) continue
+
+            // The file keeps every run now, so show the one that just happened: the accounts
+            // of earlier attempts are still there but they are not what this timeout is about.
+            val last = text.substringAfterLast(STARTER_LOG_DIVIDER).trim()
+            return file to last.ifEmpty { text }
         }
         return null
     }

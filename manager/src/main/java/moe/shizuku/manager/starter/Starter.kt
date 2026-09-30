@@ -1,5 +1,6 @@
 package moe.shizuku.manager.starter
 
+import android.util.Log
 import androidx.lifecycle.asFlow
 import java.io.File
 import java.util.concurrent.TimeoutException
@@ -10,8 +11,10 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.TimeoutCancellationException
+import moe.shizuku.manager.AppConstants
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ShizukuApplication
+import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.start.StartStatusReporter
 import moe.shizuku.manager.utils.ShizukuStateMachine
 
@@ -49,11 +52,30 @@ object Starter {
             delay(10_000)
             ShizukuStateMachine.update()
 
-            if (ShizukuStateMachine.isRunning()) {
-                log?.invoke("\nThe service is still running.\n")
-            } else {
-                log?.invoke("\nThe service started and then went away again.\n")
-                StartStatusReporter.failed(app.getString(R.string.start_failed_binder_went_away))
+            when {
+                ShizukuStateMachine.isRunning() ->
+                    log?.invoke("\nThe service is still running.\n")
+
+                // Stopped on purpose is not a service that went away, and the card already
+                // says so: this is the state every deliberate Stop leaves behind.
+                ShizukuSettings.getManuallyStopped() ->
+                    log?.invoke("\nThe service was stopped again.\n")
+
+                // A background start (boot, the watchdog, an app asking for the binder) has
+                // no screen to report on, and the watchdog is what acts on a service that
+                // stops by itself: saying it on the home card there would be an alarm about
+                // something nobody asked about.
+                log == null -> Log.i(
+                    AppConstants.TAG,
+                    "The service started and then went away again"
+                )
+
+                else -> {
+                    log.invoke("\nThe service started and then went away again.\n")
+                    StartStatusReporter.failed(
+                        app.getString(R.string.start_failed_binder_went_away)
+                    )
+                }
             }
         }
     }
