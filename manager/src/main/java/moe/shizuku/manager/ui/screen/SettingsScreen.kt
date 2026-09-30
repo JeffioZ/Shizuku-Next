@@ -203,8 +203,9 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                     item {
                         SegmentedListItem(
                             headlineContent = { Text(stringResource(R.string.settings_start_on_boot)) },
-                            trailingContent = {
-                                ExpressiveSwitch(checked = startOnBoot, onCheckedChange = { checked ->
+                            switchState = startOnBoot,
+                            onSwitchChange =
+                                { checked ->
                                     if (checked && needsBatteryPrompt(context)) {
                                         batteryPrompt = {
                                             ShizukuSettings.setStartOnBoot(context, true)
@@ -215,16 +216,16 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                                         ShizukuSettings.setStartOnBoot(context, checked)
                                         startOnBoot = ShizukuSettings.getStartOnBoot(context)
                                     }
-                                })
-                            }
+                                }
                         )
                     }
                     item {
                         SegmentedListItem(
                             headlineContent = { Text(stringResource(R.string.settings_watchdog)) },
                             supportingContent = { Text(stringResource(R.string.settings_watchdog_summary)) },
-                            trailingContent = {
-                                ExpressiveSwitch(checked = watchdog, onCheckedChange = { checked ->
+                            switchState = watchdog,
+                            onSwitchChange =
+                                { checked ->
                                     if (checked && needsBatteryPrompt(context)) {
                                         batteryPrompt = {
                                             ShizukuSettings.setWatchdog(context, true)
@@ -234,21 +235,20 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                                         ShizukuSettings.setWatchdog(context, checked)
                                         watchdog = checked
                                     }
-                                })
-                            }
+                                }
                         )
                     }
                     item {
                         SegmentedListItem(
                             headlineContent = { Text(stringResource(R.string.settings_auto_disable_usb_debugging)) },
                             supportingContent = { Text(stringResource(R.string.settings_auto_disable_usb_debugging_summary)) },
-                            trailingContent = {
-                                ExpressiveSwitch(checked = autoDisableUsb, onCheckedChange = {
+                            switchState = autoDisableUsb,
+                            onSwitchChange =
+                                {
                                     ShizukuSettings.getPreferences().edit()
                                         .putBoolean(ShizukuSettings.Keys.KEY_AUTO_DISABLE_USB_DEBUGGING, it).apply()
                                     autoDisableUsb = it
-                                })
-                            }
+                                }
                         )
                     }
                     item {
@@ -262,21 +262,17 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                                     )
                                 )
                             },
-                            trailingContent = {
-                                ExpressiveSwitch(
-                                    checked = autoDisableWireless && !forceWireless,
-                                    // Turning wireless debugging off when Shizuku stops is
-                                    // the one thing the experiment cannot survive, so this
-                                    // row is not offered while it is on rather than
-                                    // flipped and then flipped back by hand.
-                                    enabled = !forceWireless,
-                                    onCheckedChange = {
-                                        ShizukuSettings.getPreferences().edit()
-                                            .putBoolean(ShizukuSettings.Keys.KEY_AUTO_DISABLE_WIRELESS_DEBUGGING, it).apply()
-                                        autoDisableWireless = it
-                                    }
-                                )
-                            }
+                            // Turning wireless debugging off when Shizuku stops is the one
+                            // thing the experiment cannot survive, so this row is not offered
+                            // while it is on rather than flipped and then flipped back.
+                            switchState = autoDisableWireless && !forceWireless,
+                            switchEnabled = !forceWireless,
+                            onSwitchChange =
+                                {
+                                    ShizukuSettings.getPreferences().edit()
+                                        .putBoolean(ShizukuSettings.Keys.KEY_AUTO_DISABLE_WIRELESS_DEBUGGING, it).apply()
+                                    autoDisableWireless = it
+                                }
                         )
                     }
                     item {
@@ -306,22 +302,19 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                             supportingContent = {
                                 Text(stringResource(R.string.settings_adb_without_developer_options_summary))
                             },
-                            trailingContent = {
-                                ExpressiveSwitch(
-                                    checked = adbWithoutDeveloperOptions,
-                                    onCheckedChange = { checked ->
-                                        // Hiding Developer options is not something to do to
-                                        // someone on a stray tap, so it asks first, with what
-                                        // it costs spelled out. Putting it back is the safe
-                                        // direction and needs no ceremony.
-                                        if (checked) {
-                                            adbWithoutDeveloperOptionsPrompt = true
-                                        } else {
-                                            setAdbWithoutDeveloperOptions(false)
-                                        }
+                            switchState = adbWithoutDeveloperOptions,
+                            onSwitchChange =
+                                { checked ->
+                                    // Hiding Developer options is not something to do to
+                                    // someone on a stray tap, so it asks first, with what
+                                    // it costs spelled out. Putting it back is the safe
+                                    // direction and needs no ceremony.
+                                    if (checked) {
+                                        adbWithoutDeveloperOptionsPrompt = true
+                                    } else {
+                                        setAdbWithoutDeveloperOptions(false)
                                     }
-                                )
-                            }
+                                }
                         )
                     }
                     item {
@@ -335,19 +328,15 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                                     )
                                 )
                             },
-                            trailingContent = {
-                                ExpressiveSwitch(
-                                    checked = waitForWifi && !forceWireless,
-                                    // Waiting for a network is what the experiment starts
-                                    // without, so asking for both at once is not a state
-                                    // worth offering.
-                                    enabled = !forceWireless,
-                                    onCheckedChange = {
-                                        ShizukuSettings.setWaitForWifi(it)
-                                        waitForWifi = it
-                                    }
-                                )
-                            }
+                            // Waiting for a network is what the experiment starts without,
+                            // so asking for both at once is not a state worth offering.
+                            switchState = waitForWifi && !forceWireless,
+                            switchEnabled = !forceWireless,
+                            onSwitchChange =
+                                {
+                                    ShizukuSettings.setWaitForWifi(it)
+                                    waitForWifi = it
+                                }
                         )
                     }
                     item {
@@ -356,8 +345,9 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                             supportingContent = {
                                 Text(stringResource(R.string.settings_force_wireless_debugging_summary))
                             },
-                            trailingContent = {
-                                ExpressiveSwitch(checked = forceWireless, onCheckedChange = { checked ->
+                            switchState = forceWireless,
+                            onSwitchChange =
+                                { checked ->
                                     // The two settings this one cannot work with are turned
                                     // off along with it, and both are rows in this same
                                     // list, so nothing moves out of sight: waiting for a
@@ -376,8 +366,7 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                                     }
                                     ShizukuSettings.setForceWirelessDebugging(checked)
                                     forceWireless = checked
-                                })
-                            }
+                                }
                         )
                     }
                     item {
@@ -410,8 +399,9 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                         SegmentedListItem(
                             headlineContent = { Text(stringResource(R.string.settings_tcp_mode)) },
                             supportingContent = { Text(stringResource(R.string.settings_tcp_mode_summary)) },
-                            trailingContent = {
-                                ExpressiveSwitch(checked = tcpMode, onCheckedChange = { checked ->
+                            switchState = tcpMode,
+                            onSwitchChange =
+                                { checked ->
                                     when {
                                         !checked && EnvironmentUtils.getAdbTcpPort() > 0 ->
                                             closeTcpDialog = true
@@ -430,8 +420,7 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                                             tcpMode = checked
                                         }
                                     }
-                                })
-                            }
+                                }
                         )
                     }
                     if (persistAdbPort || canPersistAdbPort) item {
@@ -440,8 +429,9 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                             supportingContent = {
                                 Text(stringResource(R.string.settings_persist_adb_port_summary))
                             },
-                            trailingContent = {
-                                ExpressiveSwitch(checked = persistAdbPort, onCheckedChange = { checked ->
+                            switchState = persistAdbPort,
+                            onSwitchChange =
+                                { checked ->
                                     // The write is the platform's to allow or refuse, so the
                                     // switch follows what actually happened rather than
                                     // what was asked for.
@@ -463,8 +453,7 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                                         }
                                         Toast.makeText(context, message, Toast.LENGTH_LONG).show()
                                     }
-                                })
-                            }
+                                }
                         )
                     }
                     item {
@@ -481,13 +470,13 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                         SegmentedListItem(
                             headlineContent = { Text(stringResource(R.string.settings_legacy_pairing)) },
                             supportingContent = { Text(stringResource(R.string.settings_legacy_pairing_summary)) },
-                            trailingContent = {
-                                ExpressiveSwitch(checked = legacyPairing, onCheckedChange = {
+                            switchState = legacyPairing,
+                            onSwitchChange =
+                                {
                                     ShizukuSettings.getPreferences().edit()
                                         .putBoolean(ShizukuSettings.Keys.KEY_LEGACY_PAIRING, it).apply()
                                     legacyPairing = it
-                                })
-                            }
+                                }
                         )
                     }
                 }
@@ -569,28 +558,28 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                     item {
                         SegmentedListItem(
                             headlineContent = { Text(stringResource(R.string.settings_use_system_color)) },
-                            trailingContent = {
-                                ExpressiveSwitch(checked = useSystemColor, onCheckedChange = {
+                            switchState = useSystemColor,
+                            onSwitchChange =
+                                {
                                     ShizukuSettings.getPreferences().edit()
                                         .putBoolean(ShizukuSettings.Keys.KEY_USE_SYSTEM_COLOR, it).apply()
                                     useSystemColor = it
                                     ThemeState.refresh()
-                                })
-                            }
+                                }
                         )
                     }
                     item {
                         SegmentedListItem(
                             headlineContent = { Text(stringResource(R.string.settings_black_night_theme)) },
                             supportingContent = { Text(stringResource(R.string.settings_black_night_theme_summary)) },
-                            trailingContent = {
-                                ExpressiveSwitch(checked = blackNight, onCheckedChange = {
+                            switchState = blackNight,
+                            onSwitchChange =
+                                {
                                     ShizukuSettings.getPreferences().edit()
                                         .putBoolean(ShizukuSettings.Keys.KEY_BLACK_NIGHT_THEME, it).apply()
                                     blackNight = it
                                     ThemeState.refresh()
-                                })
-                            }
+                                }
                         )
                     }
                     item {

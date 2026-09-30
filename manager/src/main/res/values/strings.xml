@@ -241,6 +241,8 @@
     <string name="settings_unavailable_while_forcing_wireless">Unavailable while Start without Wi-Fi is on.</string>
     <string name="settings_force_wireless_debugging">Start without Wi-Fi (experimental)</string>
     <string name="settings_force_wireless_debugging_summary">Tries to start Shizuku without Wi-Fi or USB debugging. This also turns off the Wi-Fi wait and automatic wireless debugging.</string>
+    <string name="state_on">On</string>
+    <string name="state_off">Off</string>
     <string name="settings_persist_adb_port">Keep the ADB port after reboot</string>
     <string name="settings_persist_adb_port_summary">Keeps the ADB port open after every reboot, so Shizuku can start without Wi-Fi or a hotspot.</string>
     <string name="settings_persist_adb_port_ok">The ADB port will stay open after reboot</string>
