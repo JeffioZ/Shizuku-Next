@@ -21,6 +21,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 import moe.shizuku.manager.AppConstants
 import moe.shizuku.manager.MainActivity
 import moe.shizuku.manager.R
@@ -103,6 +104,22 @@ class HidingWatchService : Service() {
         @JvmStatic
         fun isRunning(): Boolean = running.get()
 
+        /**
+         * The app a list is hiding for right now, or null.
+         *
+         * Read from outside this service because the rest of the app has to be told about it:
+         * a start cannot work while the debugging toggle is being held off, and the attempt does
+         * not merely fail - it writes the toggle back on, undoing the hide it could not use.
+         */
+        @JvmStatic
+        fun holdingFor(): String? = holding.get()
+
+        /** Whether hiding is holding a toggle off, and a restart attempt would therefore fight it. */
+        @JvmStatic
+        fun holding(): Boolean = running.get() && holding.get() != null
+
+        private val holding = AtomicReference<String?>(null)
+
         private val running = AtomicBoolean(false)
     }
 
@@ -152,6 +169,7 @@ class HidingWatchService : Service() {
 
     override fun onDestroy() {
         running.set(false)
+        holding.set(null)
         scope.cancel()
         super.onDestroy()
     }
@@ -161,6 +179,7 @@ class HidingWatchService : Service() {
 
         while (scope.isActive) {
             if (!Hiding.hasAnyApp()) {
+                holding.set(null)
                 Hiding.restoreAll()
                 notify(notification(hidingFor = null, paused = false))
                 stopSelf()
@@ -185,6 +204,7 @@ class HidingWatchService : Service() {
                 // Restored once on the way in, not once a second: hiding is suspended, so there
                 // is nothing to look at until somebody resumes it.
                 if (!paused) {
+                    holding.set(null)
                     Hiding.restoreAll()
                     notify(notification(hidingFor = null, paused = true))
                     paused = true
@@ -197,6 +217,7 @@ class HidingWatchService : Service() {
             val hidingFor = runCatching { Hiding.reconcile() }
                 .onFailure { Log.w(TAG, "the hiding pass failed", it) }
                 .getOrNull()
+            holding.set(hidingFor)
             notify(notification(hidingFor, paused = false))
             logState(hidingFor)
             askForTheServerBack(hidingFor)

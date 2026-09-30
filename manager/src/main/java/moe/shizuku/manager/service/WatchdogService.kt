@@ -190,6 +190,16 @@ class WatchdogService : Service() {
             return
         }
 
+        // A list is holding the debugging toggle off for an app the user has open. A start could
+        // not work - it needs that very toggle - and the attempt would write the toggle back on,
+        // which is the opposite of what the list is for. Waited out rather than tried: the watch
+        // asks for a start itself the moment nothing is hidden any more.
+        if (HidingWatchService.holding()) {
+            Log.d(TAG, "Restart attempt skipped: hiding is holding the debugging toggle off")
+            pendingRestart = true
+            return
+        }
+
         // The binder listener and the unlock probe can land here for the same outage, and a
         // restart that keeps failing must not turn into a start every few seconds.
         val now = SystemClock.elapsedRealtime()

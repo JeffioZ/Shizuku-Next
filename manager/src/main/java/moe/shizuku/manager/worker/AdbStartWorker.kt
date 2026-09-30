@@ -15,6 +15,7 @@ import android.content.pm.ServiceInfo
 import android.os.Build
 import android.provider.Settings
 import android.util.Log
+import moe.shizuku.manager.service.HidingWatchService
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.asFlow
 import androidx.work.*
@@ -62,6 +63,15 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
         ShizukuReceiverStarter.updateNotification(applicationContext, state, requestedMethod)
 
     override suspend fun doWork(): Result {
+        // A hiding list is holding a debugging toggle off for an app the user has open. Every
+        // path below that needs one writes it back on if it finds it off, so an attempt now is
+        // not a start that fails - it is a start that undoes the hide and then fails. Deferred
+        // instead: the watch asks for a start itself once nothing is hidden.
+        if (HidingWatchService.holding()) {
+            Log.i(AppConstants.TAG, "Start deferred: hiding is holding the debugging toggle off")
+            return Result.success()
+        }
+
         try {
             return startServer()
         } finally {
