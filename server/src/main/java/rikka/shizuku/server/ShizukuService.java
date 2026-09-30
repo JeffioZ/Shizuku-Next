@@ -563,6 +563,23 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                 ? "the manager took the binder"
                 : "the manager did not take the binder: retrying, which force stops it first");
         if (!success) {
+            // Nothing to retry in a user the manager is not installed in, and the retry force
+            // stops it: on a device with a work profile that is a force stop, on every start,
+            // of an app that was never in that user. Only the missing app is skipped, which
+            // is exactly the case where the retry could not have worked anyway.
+            boolean installed;
+            try {
+                installed = Android17Compat.getApplicationInfo(MANAGER_APPLICATION_ID, 0, userId) != null;
+            } catch (Throwable tr) {
+                // Not certain it is absent, so keep the retry rather than skip a user that
+                // needs it.
+                installed = true;
+            }
+            if (!installed) {
+                ServerLog.mark("not retrying in user " + userId + ": the manager is not installed there");
+                return;
+            }
+
             // For unknown reason, sometimes this could happens
             // Kill Shizuku app and try again could work
             try {
