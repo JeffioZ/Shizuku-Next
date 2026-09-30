@@ -40,7 +40,12 @@ fun ExpressiveCard(
     modifier: Modifier = Modifier,
     body: String? = null,
     enabled: Boolean = true,
-    onClick: (() -> Unit)? = null
+    onClick: (() -> Unit)? = null,
+    /**
+     * Something to the right of the text, for a card that has more to say about itself than it
+     * says: the chevron on a card that opens and closes, and nothing else so far.
+     */
+    trailing: (@Composable () -> Unit)? = null
 ) {
     Surface(
         modifier = modifier
@@ -108,6 +113,8 @@ fun ExpressiveCard(
                     )
                 }
             }
+
+            trailing?.invoke()
         }
     }
 }

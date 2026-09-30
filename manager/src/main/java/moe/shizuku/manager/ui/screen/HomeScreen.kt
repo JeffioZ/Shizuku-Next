@@ -12,6 +12,7 @@ import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -37,6 +38,8 @@ import androidx.compose.material.icons.rounded.Computer
 import androidx.compose.material.icons.rounded.Numbers
 import androidx.compose.material.icons.rounded.StopCircle
 import androidx.compose.material.icons.rounded.Usb
+import androidx.compose.material.icons.rounded.ExpandMore
+import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material.icons.rounded.Wifi
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -46,6 +49,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.draw.rotate
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -131,6 +136,8 @@ fun HomeScreen(bottomPadding: Dp) {
     var startMethod by remember { mutableStateOf(ShizukuSettings.getStartMethod()) }
     var developerOptionsOn by remember { mutableStateOf(context.isDeveloperOptionsEnabled()) }
     var hidingActive by remember { mutableStateOf(false) }
+    // Saved, so the section somebody opened is still open after a rotation.
+    var otherMethodsOpen by rememberSaveable { mutableStateOf(false) }
     var selinuxRes by remember { mutableStateOf<Int?>(null) }
     var seccompRes by remember { mutableStateOf<Int?>(null) }
     val startStatus by StartStatusReporter.status.collectAsState()
@@ -534,105 +541,130 @@ fun HomeScreen(bottomPadding: Dp) {
                 // a reason attached, so it gets an icon to be recognised by and a body that
                 // says the trade. The start options are disabled while Shizuku is running,
                 // because starting again does nothing and Restart is how you relaunch it.
+                //
+                // Folded away by default behind one card. The button above already starts with
+                // whichever method is set, so these are the ones you go looking for rarely, and
+                // four cards of explanation for them is most of the home screen when what
+                // somebody came to look at is whether Shizuku is running.
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     ExpressiveCard(
-                        icon = Icons.Rounded.Wifi,
-                        title = stringResource(R.string.home_wireless_adb_title),
-                        // A start with the experiment on can spend two minutes asking before it
-                        // either starts or gives up, and a card that only spins for that long
-                        // reads as stuck.
-                        body = if (startStatus is StartStatus.Starting &&
-                            ShizukuSettings.getForceWirelessDebugging()
-                        ) {
-                            stringResource(R.string.home_wireless_adb_starting_without_wifi)
-                        } else {
-                            stringResource(R.string.home_wireless_adb_summary)
-                        },
-                        enabled = !running,
-                        onClick = {
-                            startWithLocalNetworkPermission(ShizukuSettings.StartMethod.WIRELESS) {
+                        icon = Icons.Rounded.MoreHoriz,
+                        title = stringResource(R.string.home_other_methods),
+                        onClick = { otherMethodsOpen = !otherMethodsOpen },
+                        trailing = {
+                            val turn by animateFloatAsState(
+                                targetValue = if (otherMethodsOpen) 180f else 0f,
+                                label = "otherMethodsChevron"
+                            )
+                            Icon(
+                                Icons.Rounded.ExpandMore,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.rotate(turn)
+                            )
+                        }
+                    )
+
+                    if (otherMethodsOpen) {
+                        ExpressiveCard(
+                            icon = Icons.Rounded.Wifi,
+                            title = stringResource(R.string.home_wireless_adb_title),
+                            // A start with the experiment on can spend two minutes asking before it
+                            // either starts or gives up, and a card that only spins for that long
+                            // reads as stuck.
+                            body = if (startStatus is StartStatus.Starting &&
+                                ShizukuSettings.getForceWirelessDebugging()
+                            ) {
+                                stringResource(R.string.home_wireless_adb_starting_without_wifi)
+                            } else {
+                                stringResource(R.string.home_wireless_adb_summary)
+                            },
+                            enabled = !running,
+                            onClick = {
+                                startWithLocalNetworkPermission(ShizukuSettings.StartMethod.WIRELESS) {
+                                    ShizukuReceiverStarter.start(
+                                        context,
+                                        userInitiated = true,
+                                        startMethod = ShizukuSettings.StartMethod.WIRELESS
+                                    )
+                                }
+                            }
+                        )
+                        ExpressiveCard(
+                            icon = Icons.Rounded.Usb,
+                            title = stringResource(R.string.home_usb_adb_title),
+                            // A USB start needs the classic port, and with no network and no port
+                            // there is nothing it can do. It says so here rather than sliding over
+                            // to wireless: starting without a network is a method of its own, and
+                            // the card that does it is the one above this.
+                            body = if (!EnvironmentUtils.isWifiConnected() &&
+                                EnvironmentUtils.getAdbTcpPort() <= 0
+                            ) {
+                                stringResource(R.string.home_usb_adb_needs_network)
+                            } else {
+                                stringResource(R.string.home_usb_adb_summary).stripHtmlTags()
+                            },
+                            enabled = !running,
+                            onClick = {
                                 ShizukuReceiverStarter.start(
                                     context,
                                     userInitiated = true,
-                                    startMethod = ShizukuSettings.StartMethod.WIRELESS
-                                )
-                            }
-                        }
-                    )
-                    ExpressiveCard(
-                        icon = Icons.Rounded.Usb,
-                        title = stringResource(R.string.home_usb_adb_title),
-                        // A USB start needs the classic port, and with no network and no port
-                        // there is nothing it can do. It says so here rather than sliding over
-                        // to wireless: starting without a network is a method of its own, and
-                        // the card that does it is the one above this.
-                        body = if (!EnvironmentUtils.isWifiConnected() &&
-                            EnvironmentUtils.getAdbTcpPort() <= 0
-                        ) {
-                            stringResource(R.string.home_usb_adb_needs_network)
-                        } else {
-                            stringResource(R.string.home_usb_adb_summary).stripHtmlTags()
-                        },
-                        enabled = !running,
-                        onClick = {
-                            ShizukuReceiverStarter.start(
-                                context,
-                                userInitiated = true,
-                                startMethod = ShizukuSettings.StartMethod.USB
-                            )
-                        }
-                    )
-                    if (rooted) {
-                        val rootDescription = stringResource(
-                            R.string.home_root_description,
-                            "<b><a href=\"${Helps.SUI.get()}\">Sui</a></b>",
-                            "Sui"
-                        ).stripHtmlTags()
-
-                        // Always says what it does: start over root. It used to flip to
-                        // "Restart" once a root server was running, which just duplicated the
-                        // Restart button above (and hid the fact that this card starts over
-                        // root whatever the start method is set to).
-                        ExpressiveCard(
-                            // A hash, which is what a root shell is: the same mark the shell's
-                            // own prompt uses.
-                            icon = Icons.Rounded.Numbers,
-                            title = stringResource(R.string.home_root_title),
-                            body = rootDescription,
-                            enabled = !running,
-                            onClick = {
-                                context.startActivity(
-                                    Intent(context, StarterActivity::class.java)
-                                        .putExtra(StarterActivity.EXTRA_IS_ROOT, true)
+                                    startMethod = ShizukuSettings.StartMethod.USB
                                 )
                             }
                         )
-                    }
-                    ExpressiveCard(
-                        icon = Icons.Rounded.AdminPanelSettings,
-                        title = stringResource(R.string.home_system_title),
-                        body = stringResource(R.string.home_system_summary),
-                        enabled = !running,
-                        onClick = {
-                            ShizukuReceiverStarter.start(
-                                context,
-                                userInitiated = true,
-                                startMethod = ShizukuSettings.StartMethod.SYSTEM
+                        if (rooted) {
+                            val rootDescription = stringResource(
+                                R.string.home_root_description,
+                                "<b><a href=\"${Helps.SUI.get()}\">Sui</a></b>",
+                                "Sui"
+                            ).stripHtmlTags()
+
+                            // Always says what it does: start over root. It used to flip to
+                            // "Restart" once a root server was running, which just duplicated the
+                            // Restart button above (and hid the fact that this card starts over
+                            // root whatever the start method is set to).
+                            ExpressiveCard(
+                                // A hash, which is what a root shell is: the same mark the shell's
+                                // own prompt uses.
+                                icon = Icons.Rounded.Numbers,
+                                title = stringResource(R.string.home_root_title),
+                                body = rootDescription,
+                                enabled = !running,
+                                onClick = {
+                                    context.startActivity(
+                                        Intent(context, StarterActivity::class.java)
+                                            .putExtra(StarterActivity.EXTRA_IS_ROOT, true)
+                                    )
+                                }
                             )
                         }
-                    )
+                        ExpressiveCard(
+                            icon = Icons.Rounded.AdminPanelSettings,
+                            title = stringResource(R.string.home_system_title),
+                            body = stringResource(R.string.home_system_summary),
+                            enabled = !running,
+                            onClick = {
+                                ShizukuReceiverStarter.start(
+                                    context,
+                                    userInitiated = true,
+                                    startMethod = ShizukuSettings.StartMethod.SYSTEM
+                                )
+                            }
+                        )
 
-                    // Starting from a computer is the same kind of decision as the rest, so it
-                    // is a card as well: as a row underneath them it read as something else.
-                    ExpressiveCard(
-                        icon = Icons.Rounded.Computer,
-                        title = stringResource(R.string.intents_adb_command),
-                        // The command itself is long enough to swamp a card; it lives in the
-                        // dialog this opens, where it can be copied.
-                        body = stringResource(R.string.home_adb_command_summary),
-                        enabled = !running,
-                        onClick = { showAdbCommand = true }
-                    )
+                        // Starting from a computer is the same kind of decision as the rest, so it
+                        // is a card as well: as a row underneath them it read as something else.
+                        ExpressiveCard(
+                            icon = Icons.Rounded.Computer,
+                            title = stringResource(R.string.intents_adb_command),
+                            // The command itself is long enough to swamp a card; it lives in the
+                            // dialog this opens, where it can be copied.
+                            body = stringResource(R.string.home_adb_command_summary),
+                            enabled = !running,
+                            onClick = { showAdbCommand = true }
+                        )
+                    }
                 }
             }
 
