@@ -31,8 +31,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.AdminPanelSettings
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.Computer
+import androidx.compose.material.icons.rounded.Numbers
 import androidx.compose.material.icons.rounded.StopCircle
-import androidx.compose.material.icons.rounded.Terminal
 import androidx.compose.material.icons.rounded.Usb
 import androidx.compose.material.icons.rounded.Wifi
 import androidx.compose.material3.AlertDialog
@@ -571,7 +572,9 @@ fun HomeScreen(bottomPadding: Dp) {
                         // Restart button above (and hid the fact that this card starts over
                         // root whatever the start method is set to).
                         ExpressiveCard(
-                            icon = Icons.Rounded.Terminal,
+                            // A hash, which is what a root shell is: the same mark the shell's
+                            // own prompt uses.
+                            icon = Icons.Rounded.Numbers,
                             title = stringResource(R.string.home_root_title),
                             body = rootDescription,
                             enabled = !running,
@@ -596,26 +599,18 @@ fun HomeScreen(bottomPadding: Dp) {
                             )
                         }
                     )
-                }
-            }
 
-            item {
-                SegmentedColumn(modifier = Modifier.fillMaxWidth()) {
-                    item {
-                        SegmentedListItem(
-                            // This row is how you start Shizuku from a computer, so it is
-                            // disabled while running like the other start methods.
-                            enabled = !running,
-                            headlineContent = { Text(stringResource(R.string.intents_adb_command)) },
-                            // The command itself is long enough to swamp the row; it is in
-                            // the dialog this opens, where it can be copied.
-                            supportingContent = { Text(stringResource(R.string.home_adb_command_summary)) },
-                            trailingContent = {
-                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
-                            },
-                            onClick = { showAdbCommand = true }
-                        )
-                    }
+                    // Starting from a computer is the same kind of decision as the rest, so it
+                    // is a card as well: as a row underneath them it read as something else.
+                    ExpressiveCard(
+                        icon = Icons.Rounded.Computer,
+                        title = stringResource(R.string.intents_adb_command),
+                        // The command itself is long enough to swamp a card; it lives in the
+                        // dialog this opens, where it can be copied.
+                        body = stringResource(R.string.home_adb_command_summary),
+                        enabled = !running,
+                        onClick = { showAdbCommand = true }
+                    )
                 }
             }
 

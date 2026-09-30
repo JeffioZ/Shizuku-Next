@@ -69,7 +69,11 @@ fun ExpressiveCard(
     ) {
         Row(
             modifier = Modifier.padding(18.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            // Centred against the whole card, not its first line: the body can run to
+            // several lines, and an icon pinned to the top reads as belonging to that line
+            // rather than to the action.
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Surface(
                 modifier = Modifier.size(44.dp),
