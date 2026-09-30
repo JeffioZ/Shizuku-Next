@@ -24,7 +24,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.rounded.KeyboardDoubleArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.PlayArrow
@@ -45,6 +47,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
@@ -61,6 +64,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -424,6 +429,31 @@ fun ShellScreen(onBack: () -> Unit) {
         )
     }
 
+    /**
+     * Puts whatever is on the clipboard in the input.
+     *
+     * The clipboard is read on the tap rather than watched, so the button never reports the
+     * state of something else, and a multi-line copy is joined: a shell runs one line, and
+     * pasting three lines into the field would only look like three commands.
+     */
+    fun pasteFromClipboard() {
+        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+        val text = clipboard?.primaryClip
+            ?.takeIf { it.itemCount > 0 }
+            ?.getItemAt(0)
+            ?.coerceToText(context)
+            ?.toString()
+            ?.trim()
+
+        if (text.isNullOrEmpty()) {
+            scope.launch { feedback.showSnackbar(context.getString(R.string.shell_paste_empty)) }
+            return
+        }
+
+        val single = text.lineSequence().firstOrNull { it.isNotBlank() }?.trim().orEmpty()
+        fill(single)
+    }
+
     fun saveBookmark(command: String, name: String) {
         if (command.isBlank()) return
         bookmarks = listOf(ShellBookmarks.add(context, name, command)) + bookmarks
@@ -539,6 +569,15 @@ fun ShellScreen(onBack: () -> Unit) {
                     }
                 },
                 actions = {
+                    // Always offered, because the most common thing to do with a shell is run
+                    // something copied from somewhere else, and that is the first thing you
+                    // want on an empty screen as much as on a full one.
+                    IconButton(onClick = { pasteFromClipboard() }) {
+                        Icon(
+                            Icons.Filled.ContentPaste,
+                            contentDescription = stringResource(R.string.shell_paste)
+                        )
+                    }
                     if (field.text.isNotBlank()) {
                         IconButton(onClick = { naming = NameRequest(command = field.text.trim()) }) {
                             Icon(
@@ -686,6 +725,27 @@ fun ShellScreen(onBack: () -> Unit) {
                     }
                 }
             }
+            // Only while the log has run on past what is on screen: a button in the corner
+            // that is almost always doing nothing is a button that should not be there. New
+            // output scrolls the log itself, so this is for coming back after reading back.
+            if (listState.canScrollForward) {
+                SmallFloatingActionButton(
+                    onClick = {
+                        scope.launch {
+                            if (lines.isNotEmpty()) listState.animateScrollToItem(lines.lastIndex)
+                        }
+                    },
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(16.dp)
+                ) {
+                    Icon(
+                        Icons.Rounded.KeyboardDoubleArrowDown,
+                        contentDescription = stringResource(R.string.shell_jump_to_newest)
+                    )
+                }
+            }
+
             // At the bottom of the log rather than the screen: the input row and the keyboard
             // are both down there, and a message about a bookmark does not need to sit on them.
             SnackbarHost(

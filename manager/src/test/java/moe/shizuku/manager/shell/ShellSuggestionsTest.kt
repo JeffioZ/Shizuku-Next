@@ -74,6 +74,18 @@ class ShellSuggestionsTest {
     }
 
     @Test
+    fun `a bare shell prefix is dropped too`() {
+        // The other half of the same habit: on a computer it is `adb shell ps`, and either
+        // half gets typed alone. Left alone, `shell ps` would be answered with
+        // "shell: not found" by a shell that has no such command.
+        assertEquals("ps -A", ShellSuggestions.withoutAdbPrefix("shell ps -A"))
+        assertEquals("", ShellSuggestions.withoutAdbPrefix("shell"))
+
+        // Not a prefix when it is part of the command's own name.
+        assertNull(ShellSuggestions.withoutAdbPrefix("shellcheck script.sh"))
+    }
+
+    @Test
     fun `adb commands that are not the shell are left alone`() {
         assertNull(ShellSuggestions.withoutAdbPrefix("adb tcpip 5555"))
         assertNull(ShellSuggestions.withoutAdbPrefix("ls"))

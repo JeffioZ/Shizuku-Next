@@ -57,6 +57,14 @@ object ShellSuggestions {
      */
     fun withoutAdbPrefix(input: String): String? {
         val trimmed = input.trim()
+
+        // `shell ps` is the other half of the same habit: the whole thing is `adb shell ps` on
+        // a computer, and either half gets typed on its own often enough to be worth dropping
+        // rather than failing with "shell: not found".
+        if (trimmed == "shell" || trimmed.startsWith("shell ")) {
+            return trimmed.removePrefix("shell").trimStart()
+        }
+
         if (!trimmed.startsWith("adb ")) return null
         val rest = trimmed.removePrefix("adb ").trimStart()
         val sub = rest.substringBefore(' ')

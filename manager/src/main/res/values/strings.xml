@@ -432,7 +432,10 @@
     <string name="shell_quick_revoke">Revoke permission</string>
     <string name="shell_quick_app_ops">App op</string>
     <string name="shell_quick_force_stop">Force stop</string>
-    <string name="shell_adb_prefix_dropped">Ran on the device: the adb prefix is what you would type on a computer.</string>
+    <string name="shell_adb_prefix_dropped">Ran on the device: the adb shell prefix is what you would type on a computer.</string>
+    <string name="shell_paste">Paste a command</string>
+    <string name="shell_paste_empty">Nothing on the clipboard to paste.</string>
+    <string name="shell_jump_to_newest">Jump to the newest output</string>
     <string name="shell_su_needs_root">Running su by itself waits for root permission, but there is no prompt in this terminal. Use the Root backend, or use su -c followed by the command.</string>
     <string name="shell_exit_note">There is no shell to exit because each command runs separately. Your current folder and environment variables are kept.</string>
     <string name="shell_input_hint">Command</string>
