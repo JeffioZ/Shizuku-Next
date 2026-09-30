@@ -29,8 +29,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.rounded.AdminPanelSettings
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.StopCircle
+import androidx.compose.material.icons.rounded.Terminal
+import androidx.compose.material.icons.rounded.Usb
+import androidx.compose.material.icons.rounded.Wifi
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -91,6 +95,7 @@ import moe.shizuku.manager.start.runningStartMethodLabelRes
 import moe.shizuku.manager.start.startMethodLabelRes
 import moe.shizuku.manager.starter.Starter
 import moe.shizuku.manager.starter.StarterActivity
+import moe.shizuku.manager.ui.component.ExpressiveCard
 import moe.shizuku.manager.ui.component.SegmentedColumn
 import moe.shizuku.manager.ui.theme.LocalAmoledTheme
 import moe.shizuku.manager.ui.component.SegmentedListItem
@@ -496,79 +501,64 @@ fun HomeScreen(bottomPadding: Dp) {
             }
 
             item {
-                SegmentedColumn(modifier = Modifier.fillMaxWidth()) {
-                    item {
-                        SegmentedListItem(
-                            // The start options are disabled while Shizuku is running: starting
-                            // again does nothing, so say that instead of ignoring the tap.
-                            // Restart is how you relaunch it.
-                            enabled = !running,
-                            headlineContent = { Text(stringResource(R.string.home_wireless_adb_title)) },
-                            supportingContent = {
-                                // A start with the experiment on can spend two minutes asking
-                                // before it either starts or gives up, and a card that only
-                                // spins for that long reads as stuck.
-                                Text(
-                                    if (startStatus is StartStatus.Starting &&
-                                        ShizukuSettings.getForceWirelessDebugging()
-                                    ) {
-                                        stringResource(R.string.home_wireless_adb_starting_without_wifi)
-                                    } else {
-                                        stringResource(R.string.home_wireless_adb_summary)
-                                    }
-                                )
-                            },
-                            trailingContent = {
-                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
-                            },
-                            onClick = {
-                                startWithLocalNetworkPermission(ShizukuSettings.StartMethod.WIRELESS) {
-                                    ShizukuReceiverStarter.start(
-                                        context,
-                                        userInitiated = true,
-                                        startMethod = ShizukuSettings.StartMethod.WIRELESS
-                                    )
-                                }
-                            }
-                        )
-                    }
-                    item {
-                        SegmentedListItem(
-                            enabled = !running,
-                            headlineContent = { Text(stringResource(R.string.home_usb_adb_title)) },
-                            supportingContent = {
-                                // A USB start needs the classic port, and with no network and
-                                // no port there is nothing it can do. With the experiment on
-                                // that is no longer a failure: the start carries on over
-                                // wireless, so the card says so instead of warning.
-                                Text(
-                                    if (!EnvironmentUtils.isWifiConnected() &&
-                                        EnvironmentUtils.getAdbTcpPort() <= 0
-                                    ) {
-                                        stringResource(
-                                            if (ShizukuSettings.getForceWirelessDebugging()) {
-                                                R.string.home_usb_adb_falls_back_to_wireless
-                                            } else {
-                                                R.string.home_usb_adb_needs_network
-                                            }
-                                        )
-                                    } else {
-                                        stringResource(R.string.home_usb_adb_summary).stripHtmlTags()
-                                    }
-                                )
-                            },
-                            trailingContent = {
-                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
-                            },
-                            onClick = {
+                // The ways to start, as cards rather than rows: each one is a decision with
+                // a reason attached, so it gets an icon to be recognised by and a body that
+                // says the trade. The start options are disabled while Shizuku is running,
+                // because starting again does nothing and Restart is how you relaunch it.
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    ExpressiveCard(
+                        icon = Icons.Rounded.Wifi,
+                        title = stringResource(R.string.home_wireless_adb_title),
+                        // A start with the experiment on can spend two minutes asking before it
+                        // either starts or gives up, and a card that only spins for that long
+                        // reads as stuck.
+                        body = if (startStatus is StartStatus.Starting &&
+                            ShizukuSettings.getForceWirelessDebugging()
+                        ) {
+                            stringResource(R.string.home_wireless_adb_starting_without_wifi)
+                        } else {
+                            stringResource(R.string.home_wireless_adb_summary)
+                        },
+                        enabled = !running,
+                        onClick = {
+                            startWithLocalNetworkPermission(ShizukuSettings.StartMethod.WIRELESS) {
                                 ShizukuReceiverStarter.start(
                                     context,
                                     userInitiated = true,
-                                    startMethod = ShizukuSettings.StartMethod.USB
+                                    startMethod = ShizukuSettings.StartMethod.WIRELESS
                                 )
                             }
-                        )
-                    }
+                        }
+                    )
+                    ExpressiveCard(
+                        icon = Icons.Rounded.Usb,
+                        title = stringResource(R.string.home_usb_adb_title),
+                        // A USB start needs the classic port, and with no network and no port
+                        // there is nothing it can do. With the experiment on that is no longer
+                        // a failure: the start carries on over wireless, so the card says so
+                        // instead of warning.
+                        body = if (!EnvironmentUtils.isWifiConnected() &&
+                            EnvironmentUtils.getAdbTcpPort() <= 0
+                        ) {
+                            stringResource(
+                                if (ShizukuSettings.getForceWirelessDebugging()) {
+                                    R.string.home_usb_adb_falls_back_to_wireless
+                                } else {
+                                    R.string.home_usb_adb_needs_network
+                                }
+                            )
+                        } else {
+                            stringResource(R.string.home_usb_adb_summary).stripHtmlTags()
+                        },
+                        enabled = !running,
+                        onClick = {
+                            ShizukuReceiverStarter.start(
+                                context,
+                                userInitiated = true,
+                                startMethod = ShizukuSettings.StartMethod.USB
+                            )
+                        }
+                    )
                     if (rooted) {
                         val rootDescription = stringResource(
                             R.string.home_root_description,
@@ -576,46 +566,41 @@ fun HomeScreen(bottomPadding: Dp) {
                             "Sui"
                         ).stripHtmlTags()
 
-                        item {
-                            SegmentedListItem(
-                                // Always says what it does: start over root. It used to
-                                // flip to "Restart" once a root server was running, which
-                                // just duplicated the Restart button above (and hid the
-                                // fact that this row starts over root whatever the start
-                                // method is set to).
-                                enabled = !running,
-                                headlineContent = { Text(stringResource(R.string.home_root_title)) },
-                                supportingContent = { Text(rootDescription) },
-                                trailingContent = {
-                                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
-                                },
-                                onClick = {
-                                    context.startActivity(
-                                        Intent(context, StarterActivity::class.java)
-                                            .putExtra(StarterActivity.EXTRA_IS_ROOT, true)
-                                    )
-                                }
-                            )
-                        }
-                    }
-                    item {
-                        SegmentedListItem(
-                            // Disabled while running, like the other start options.
+                        // Always says what it does: start over root. It used to flip to
+                        // "Restart" once a root server was running, which just duplicated the
+                        // Restart button above (and hid the fact that this card starts over
+                        // root whatever the start method is set to).
+                        ExpressiveCard(
+                            icon = Icons.Rounded.Terminal,
+                            title = stringResource(R.string.home_root_title),
+                            body = rootDescription,
                             enabled = !running,
-                            headlineContent = { Text(stringResource(R.string.home_system_title)) },
-                            supportingContent = { Text(stringResource(R.string.home_system_summary)) },
-                            trailingContent = {
-                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
-                            },
                             onClick = {
-                                ShizukuReceiverStarter.start(
-                                    context,
-                                    userInitiated = true,
-                                    startMethod = ShizukuSettings.StartMethod.SYSTEM
+                                context.startActivity(
+                                    Intent(context, StarterActivity::class.java)
+                                        .putExtra(StarterActivity.EXTRA_IS_ROOT, true)
                                 )
                             }
                         )
                     }
+                    ExpressiveCard(
+                        icon = Icons.Rounded.AdminPanelSettings,
+                        title = stringResource(R.string.home_system_title),
+                        body = stringResource(R.string.home_system_summary),
+                        enabled = !running,
+                        onClick = {
+                            ShizukuReceiverStarter.start(
+                                context,
+                                userInitiated = true,
+                                startMethod = ShizukuSettings.StartMethod.SYSTEM
+                            )
+                        }
+                    )
+                }
+            }
+
+            item {
+                SegmentedColumn(modifier = Modifier.fillMaxWidth()) {
                     item {
                         SegmentedListItem(
                             // This row is how you start Shizuku from a computer, so it is
