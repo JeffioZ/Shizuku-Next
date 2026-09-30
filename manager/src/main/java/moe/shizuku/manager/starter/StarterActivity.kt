@@ -2,10 +2,12 @@ package moe.shizuku.manager.starter
 
 import android.app.Application
 import android.content.ActivityNotFoundException
+import android.content.BroadcastReceiver
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -57,6 +59,21 @@ private const val FOTA_AGENT_PACKAGE = "com.sdet.fotaagent"
 /** How many times the agent is told to run the payload, and how far apart. */
 private const val FOTA_ATTEMPTS = 6
 private const val FOTA_ATTEMPT_INTERVAL_MS = 700L
+
+/**
+ * How the system start asks the payload to report how far it got.
+ *
+ * The starter leaves a log, but only from the moment it runs, and its absence cannot say
+ * why: a payload that never executed, a process that could not write either of the two
+ * directories, and one that wrote where the app cannot read all look identical from here.
+ * The command handed to the agent is ours, so it reports to this app as it goes, one step
+ * earlier and with no file involved at all: if the first of these never arrives, the agent
+ * never ran the command, and nothing else about the attempt matters.
+ */
+private const val STAGE_ACTION = "moe.shizuku.privileged.api.action.SYSTEM_START_STAGE"
+private const val STAGE_EXTRA = "stage"
+private const val STAGE_AT_SHELL = "payload_reached_the_shell"
+private const val STAGE_AFTER_STARTER = "the_starter_returned"
 
 class StarterActivity : AppBarActivity() {
 
@@ -122,6 +139,35 @@ class StarterActivity : AppBarActivity() {
         }
 
         viewModel.agentStopped = { agentWasStopped }
+
+        // The payload's own report, while this screen is the one waiting for it. Exported
+        // because the sender is another app's process, and filtered to one action so nothing
+        // else of this app's traffic is in scope. Registered the platform way rather than
+        // through ContextCompat, whose flagged form needs a newer androidx than this app
+        // builds against.
+        val stageReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                val stage = intent.getStringExtra(STAGE_EXTRA) ?: return
+                viewModel.reportPayloadStage(stage)
+            }
+        }
+        val stageFilter = IntentFilter(STAGE_ACTION)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(stageReceiver, stageFilter, Context.RECEIVER_EXPORTED)
+        } else {
+            @Suppress("UnspecifiedRegisterReceiverFlag")
+            registerReceiver(stageReceiver, stageFilter)
+        }
+        payloadStageReceiver = stageReceiver
+    }
+
+    /** The payload's report arrives only while a system start is waiting. */
+    private var payloadStageReceiver: BroadcastReceiver? = null
+
+    override fun onDestroy() {
+        payloadStageReceiver?.let { runCatching { unregisterReceiver(it) } }
+        payloadStageReceiver = null
+        super.onDestroy()
     }
 
     private var hasStarted = false
@@ -312,11 +358,19 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
                     }
                 )
 
+                // Both stages come before the starter that they bracket, and the force stop
+                // stays last: it is the reason the later sends of this command find no
+                // receiver, and it has to run after everything this attempt wants to say.
+                fun stage(value: String) =
+                    "am broadcast -a $STAGE_ACTION --es $STAGE_EXTRA $value"
+
                 val exploit = Intent("$FOTA_AGENT_PACKAGE.intent.CP_FILE").apply {
                     putExtra("CP_FILE", "/data")
                     putExtra(
                         "CP_LOC",
-                        "; " + appContext.applicationInfo.nativeLibraryDir + "/libshizuku.so" +
+                        "; ${stage(STAGE_AT_SHELL)}" +
+                            "; " + appContext.applicationInfo.nativeLibraryDir + "/libshizuku.so" +
+                            "; ${stage(STAGE_AFTER_STARTER)}" +
                             "; am force-stop com.sdet.fotaagent"
                     )
                 }
@@ -328,11 +382,21 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
                 // with nothing to show for it. Repeats cost nothing when the first lands
                 // because the payload stops the agent as its last step, which leaves the
                 // later sends without a receiver.
-                repeat(FOTA_ATTEMPTS) { attempt ->
+                for (attempt in 0 until FOTA_ATTEMPTS) {
                     if (attempt > 0) delay(FOTA_ATTEMPT_INTERVAL_MS)
                     appContext.sendBroadcast(exploit)
                     exploitSent = true
                     log("sent the agent command (attempt ${attempt + 1} of $FOTA_ATTEMPTS)\n")
+
+                    // And stop as soon as the agent has acted. Every further send runs the
+                    // payload again, and every run stops the server the previous one started,
+                    // so a manager can be handed a binder and have it taken away again before
+                    // it notices: the repeats are only there for the race against the agent's
+                    // receiver being registered, and that race is over the moment it answers.
+                    if (payloadSeen) {
+                        log("the agent acted, so no further commands are sent\n")
+                        break
+                    }
                 }
                 true
             } catch (e: ActivityNotFoundException) {
@@ -390,6 +454,21 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
         return "P=\$(pm path $packageName" +
             " | sed -E 's|^package:(.*/)[^/]+\\.apk\$|\\1|')" +
             " && \${P}lib/arm64/libshizuku.so"
+    }
+
+    /** Set as soon as the payload's shell reports anything at all. */
+    @Volatile
+    var payloadSeen = false
+        private set
+
+    /**
+     * A stage the payload's own shell reported. Which of these arrived, and which was last,
+     * says how far the command we handed the agent got, without depending on a log file that
+     * may be missing for reasons on either side of the process boundary.
+     */
+    fun reportPayloadStage(stage: String) {
+        payloadSeen = true
+        log("the payload's shell reached: $stage\n")
     }
 
     private fun log(line: String? = null, error: Throwable? = null) {
