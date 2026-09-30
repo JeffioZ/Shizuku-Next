@@ -215,6 +215,32 @@ static int check_selinux(const char *s, const char *t, const char *c, const char
     return res;
 }
 
+/**
+ * The cgroup this process is in, one line per hierarchy.
+ *
+ * A server left in the cgroup of the app it was launched from can be taken down with that
+ * app, and the device exploits stop the app they borrow once the payload has run, so where
+ * this process lands decides whether there is a server at the end of it. Printed either
+ * side of the switch, because "can't switch cgroup" on its own does not say where it
+ * stayed, and this is the only output a system start can be judged by afterwards.
+ */
+static void log_cgroup(const char *when) {
+    FILE *file = fopen("/proc/self/cgroup", "r");
+    if (file == nullptr) {
+        info("info: cgroup %s: can't read /proc/self/cgroup (%d: %s)\n", when, errno,
+             strerror(errno));
+        return;
+    }
+
+    char line[256];
+    while (fgets(line, sizeof(line), file) != nullptr) {
+        size_t length = strlen(line);
+        if (length > 0 && line[length - 1] == '\n') line[length - 1] = '\0';
+        info("info: cgroup %s: %s\n", when, line);
+    }
+    fclose(file);
+}
+
 static int switch_cgroup() {
     int pid = getpid();
     if (cgroup::switch_cgroup("/acct", pid)) {
@@ -334,7 +360,9 @@ int main(int argc, char *argv[]) {
     // killed as one, and a system process that cannot see the init mount namespace cannot
     // reach what it was started to reach.
     if (uid == 0 || uid == 1000) {
+        log_cgroup("before switch");
         switch_cgroup();
+        log_cgroup("after switch");
 
         if (android_get_device_api_level() >= 29) {
             printf("info: switching mount namespace to init...\n");
