@@ -506,7 +506,7 @@
     <string name="manage_status_removed">Removed, data kept</string>
     <string name="manage_status_disabled">Disabled</string>
     <string name="manage_status_suspended">Suspended</string>
-    <string name="manage_status_hidden">No icon</string>
+    <string name="manage_status_hidden">Hidden</string>
 
     <!-- One app, and what it may do on the device -->
     <string name="app_detail_missing">This app is no longer installed.</string>
