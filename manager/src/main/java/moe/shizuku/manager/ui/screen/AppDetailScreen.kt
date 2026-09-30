@@ -1,5 +1,3 @@
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
-
 package moe.shizuku.manager.ui.screen
 
 import android.content.Context
@@ -26,7 +24,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.LoadingIndicator
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -187,7 +185,7 @@ fun AppDetailScreen(
 
         if (loaded == null) {
             if (loading) {
-                CenteredMessage { LoadingIndicator() }
+                CenteredMessage { CircularProgressIndicator() }
             } else {
                 CenteredMessage {
                     Text(
