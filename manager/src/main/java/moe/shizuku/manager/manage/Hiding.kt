@@ -63,30 +63,25 @@ data class SettingKey(
  */
 enum class Signal(
     @StringRes val labelRes: Int,
-    @StringRes val noteRes: Int,
     val keys: List<SettingKey>
 ) {
     DEVELOPER_OPTIONS(
         R.string.hiding_signal_developer_options,
-        R.string.hiding_signal_developer_options_note,
         listOf(SettingKey("global", "development_settings_enabled", "0", visible = "1"))
     ),
 
     USB_DEBUGGING(
         R.string.hiding_signal_usb_debugging,
-        R.string.hiding_signal_usb_debugging_note,
         listOf(SettingKey("global", "adb_enabled", "0", visible = "1"))
     ),
 
     WIRELESS_DEBUGGING(
         R.string.hiding_signal_wireless_debugging,
-        R.string.hiding_signal_wireless_debugging_note,
         listOf(SettingKey("global", "adb_wifi_enabled", "0", visible = "1"))
     ),
 
     ACCESSIBILITY(
         R.string.hiding_signal_accessibility,
-        R.string.hiding_signal_accessibility_note,
         listOf(
             SettingKey("secure", "accessibility_enabled", "0", visible = "1"),
             SettingKey("secure", "enabled_accessibility_services", "")
@@ -101,7 +96,6 @@ enum class Signal(
      */
     PRIVATE_DNS(
         R.string.hiding_signal_private_dns,
-        R.string.hiding_signal_private_dns_note,
         listOf(
             SettingKey("global", "private_dns_mode", "off"),
             SettingKey("global", "private_dns_specifier", "")
@@ -117,12 +111,10 @@ enum class Signal(
      * the tunnel and has to be started again, which is why it carries no keys and answers
      * [isHidden] from the platform instead.
      *
-     * Its own note says the rest: a tunnel is the device's, so this is the device's VPN going
-     * down, not one app being lied to.
+     * A tunnel is the device's, so this is the device's VPN going down, not one app being lied to.
      */
     VPN(
         R.string.hiding_signal_vpn,
-        R.string.hiding_signal_vpn_note,
         emptyList()
     )
 }

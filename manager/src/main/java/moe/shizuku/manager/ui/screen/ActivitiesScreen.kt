@@ -315,10 +315,6 @@ fun ActivitiesScreen(bottomPadding: Dp, onBack: () -> Unit) {
                     ),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    item {
-                        Note(stringResource(R.string.activities_note))
-                    }
-
                     items(shownApps, key = { it.packageName }) { pi ->
                         SegmentedCard {
                             ListItem(

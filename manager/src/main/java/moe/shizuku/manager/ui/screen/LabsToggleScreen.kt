@@ -167,18 +167,6 @@ enum class AppToggleFeature(
         get() = if (signal != null) R.string.hiding_filter_shown else R.string.labs_filter_allowed
 
     /**
-     * The sentence the list needs under its name, which for a hiding list is what the setting is
-     * and what turning it back on does.
-     */
-    @get:StringRes
-    val noteRes: Int?
-        get() = when {
-            signal != null -> signal.noteRes
-            this == FIREWALL -> R.string.labs_firewall_note
-            else -> null
-        }
-
-    /**
      * Whether the list is only about apps somebody installed.
      *
      * A setting like this is not one a system app asks about: the packages that read developer
@@ -631,19 +619,6 @@ fun LabsToggleScreen(
                                 .padding(bottom = 4.dp),
                             style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
                             color = MaterialTheme.colorScheme.error
-                        )
-                    }
-                }
-
-                feature.noteRes?.let { note ->
-                    item {
-                        Text(
-                            text = stringResource(note),
-                            modifier = Modifier
-                                .padding(horizontal = 4.dp)
-                                .padding(bottom = 4.dp),
-                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }

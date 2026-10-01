@@ -210,9 +210,6 @@ fun ForceDarkScreen(bottomPadding: Dp, onBack: () -> Unit) {
         SegmentedCard(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
             ListItem(
                 headlineContent = { Text(stringResource(R.string.force_dark_system_theme)) },
-                supportingContent = {
-                    Text(stringResource(R.string.force_dark_system_theme_note))
-                },
                 trailingContent = {
                     ExpressiveSwitch(
                         checked = systemTheme,
@@ -295,17 +292,6 @@ fun ForceDarkScreen(bottomPadding: Dp, onBack: () -> Unit) {
                 ),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                item {
-                    Text(
-                        text = stringResource(R.string.force_dark_note),
-                        modifier = Modifier
-                            .padding(horizontal = 4.dp)
-                            .padding(bottom = 4.dp),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
                 items(shown, key = { it.packageName }) { pi ->
                     val isForced = pi.packageName in forced
                     SegmentedCard {

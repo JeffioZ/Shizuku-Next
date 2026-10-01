@@ -107,7 +107,6 @@
     <string name="labs_filter_blocked">Blocked</string>
     <string name="labs_blocked_count">%1$d blocked</string>
     <string name="labs_blocked_empty">Nothing is blocked.</string>
-    <string name="labs_firewall_note">This list is the record this app keeps of what it blocked. The platform can only be asked about one package at a time, which is why an app detail page is where its network state is read back.</string>
 
     <!-- Hiding: what apps can read about this device -->
     <string name="tab_hide_developer_options">Hide developer options</string>
@@ -126,19 +125,14 @@
     <string name="hiding_restore">Restore</string>
 
     <string name="hiding_signal_developer_options">Developer options</string>
-    <string name="hiding_signal_developer_options_note">Turns off Developer options when the hidden app is open and restores them afterwards when closed.</string>
 
     <string name="hiding_signal_usb_debugging">USB debugging</string>
-    <string name="hiding_signal_usb_debugging_note">Turns off USB debugging when the hidden app is open and restores them afterwards when closed..</string>
 
     <string name="hiding_signal_wireless_debugging">Wireless debugging</string>
-    <string name="hiding_signal_wireless_debugging_note">Turns off wireless debugging when the hidden app is open and restores it afterwards when closed.</string>
 
     <string name="hiding_signal_accessibility">Accessibility services</string>
-    <string name="hiding_signal_accessibility_note">Turns off all accessibility services and restores them afterwards when the hidden app is closed.</string>
 
     <string name="hiding_signal_private_dns">Private DNS</string>
-    <string name="hiding_signal_private_dns_note">Turns off Private DNS and restores its previous settings afterwards when the hidden app is closed.</string>
 
     <string name="hiding_signal_vpn">VPN</string>
     <string name="hiding_vpn_client">VPN client to Hide</string>
@@ -150,9 +144,7 @@
     <string name="force_dark_filter_forced">Forced</string>
     <string name="force_dark_filter_not">Not forced</string>
     <string name="force_dark_empty">Nothing is forced dark.</string>
-    <string name="force_dark_note">Keeps force dark on while a listed app is open, then restores it. On newer Android versions, most apps ignore force dark, so this may not work. Use the system theme option below instead.</string>
     <string name="force_dark_system_theme">Switch the system theme instead</string>
-    <string name="force_dark_system_theme_note">Turns on dark mode for the whole phone while a listed app is open, then restores your previous theme when it closes.</string>
     <string name="force_dark_toggled">Forced closed the app</string>
     <string name="force_dark_notification_title">Force dark mode is on</string>
     <string name="force_dark_notification_text">An app on the force dark mode list is open</string>
@@ -161,7 +153,6 @@
     <string name="tab_activities">Activities Launcher</string>
     <string name="activities_apps_count">%1$d apps</string>
     <string name="activities_count">%1$d activities</string>
-    <string name="activities_note">Lists every activity an app has, including hidden ones. Activities that cannot be started by other apps are opened through the system instead. The assistant opens it briefly, presses the assist key, then restores the assistant to its previous state.</string>
     <string name="activities_launcher">Launcher</string>
     <string name="activities_exported">Exported</string>
     <string name="activities_not_exported">Not exported</string>
@@ -289,7 +280,6 @@
     <string name="home_hiding_active_note">Shizuku may stop while a hidden app is opened because hiding might turn off the debugging connection. Shizuku starts again when the app is closed.</string>
 
     <string name="hiding_vpn_client_none">Not chosen: select the VPN app</string>
-    <string name="hiding_signal_vpn_note">Stops the VPN while a listed app is open and restores it afterwards if it was running. VPNs apply to the whole device, so they cannot be hidden from just one app.</string>
 
     <string name="hiding_notification_channel">Hiding</string>
     <string name="hiding_notification_title">Settings are hidden</string>
