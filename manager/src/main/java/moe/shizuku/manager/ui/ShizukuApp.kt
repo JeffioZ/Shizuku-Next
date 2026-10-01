@@ -211,20 +211,20 @@ fun ShizukuApp() {
                             Detail.HIDE_WIRELESS_DEBUGGING,
                             Detail.HIDE_ACCESSIBILITY,
                             Detail.HIDE_PRIVATE_DNS,
+                            Detail.HIDE_VPN -> LabsToggleScreen(
+                                // Every one of these is a list with a switch per app, so the
+                                // feature comes with the screen rather than beside it.
+                                feature = requireNotNull(current.feature),
+                                bottomPadding = 0.dp,
+                                onBack = { detail = null }
+                            )
+
                             Detail.DEVICE_INFO -> DeviceInfoScreen(
                                 bottomPadding = 0.dp,
                                 onBack = { detail = null }
                             )
 
                             Detail.LOG -> LogScreen(
-                                bottomPadding = 0.dp,
-                                onBack = { detail = null }
-                            )
-
-                            Detail.HIDE_VPN -> LabsToggleScreen(
-                                // These six are the same screen with a different question, so
-                                // the list comes with the screen rather than beside it.
-                                feature = requireNotNull(current.feature),
                                 bottomPadding = 0.dp,
                                 onBack = { detail = null }
                             )
