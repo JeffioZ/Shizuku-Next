@@ -98,7 +98,18 @@ object Activities {
             packageManager.getLaunchIntentForPackage(info.packageName)?.component?.className
         }.getOrNull()
 
-        return order(info.activities.orEmpty().map { declared -> activity(packageManager, declared, launcher) })
+        // What the app calls itself. An activity with no label of its own is given the app's, and
+        // inside one app's list a row headed by the app's own name says nothing at all - which is
+        // what every row said before this. Dropped, so the row is headed by the class name instead.
+        val appLabel = runCatching {
+            info.applicationInfo?.let { packageManager.getApplicationLabel(it)?.toString() }
+        }.getOrNull()
+
+        return order(
+            info.activities.orEmpty().map { declared ->
+                activity(packageManager, declared, launcher, appLabel)
+            }
+        )
     }
 
     /**
@@ -121,15 +132,16 @@ object Activities {
     private fun activity(
         packageManager: PackageManager,
         declared: ActivityInfo,
-        launcher: String?
+        launcher: String?,
+        appLabel: String?
     ): Activity = Activity(
         packageName = declared.packageName ?: "",
         name = declared.name ?: "",
-        // The label falls back to the app's own name, which is not more informative than the
-        // class name beside it - so a label that only repeats the app is dropped.
+        // Only a label the activity declares for itself: one that repeats the class name or the
+        // app name is not a name, it is the absence of one.
         label = runCatching { declared.loadLabel(packageManager)?.toString() }
             .getOrNull()
-            ?.takeIf { it.isNotBlank() && it != declared.name },
+            ?.takeIf { it.isNotBlank() && it != declared.name && it != appLabel },
         exported = declared.exported,
         launcher = declared.name == launcher
     )

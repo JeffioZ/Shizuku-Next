@@ -166,6 +166,13 @@
     <string name="activities_empty">This app declares no activities.</string>
     <string name="activities_needs_shizuku">Shizuku is not running, and only it can start an activity the app kept to itself.</string>
     <string name="activities_refused">The activity could not be started.</string>
+    <string name="activities_long_press">Long press a row to see the whole name.</string>
+    <string name="activities_detail_package">Package</string>
+    <string name="activities_detail_activity">Activity</string>
+    <string name="activities_detail_state">State</string>
+    <string name="activities_open">Open</string>
+    <string name="activities_copy">Copy</string>
+    <string name="activities_copied">Copied</string>
 
     <string name="tab_device_info">Device info</string>
     <string name="device_refresh">Refresh</string>

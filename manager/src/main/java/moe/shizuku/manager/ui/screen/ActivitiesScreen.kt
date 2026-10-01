@@ -1,8 +1,11 @@
 package moe.shizuku.manager.ui.screen
 
 import android.content.pm.PackageInfo
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +22,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -29,6 +33,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -58,6 +63,7 @@ import moe.shizuku.manager.ui.component.ChipEmphasis
 import moe.shizuku.manager.ui.component.SegmentedCard
 import moe.shizuku.manager.ui.component.StatusChip
 import moe.shizuku.manager.ui.component.appLabel
+import rikka.core.util.ClipboardUtils
 
 /**
  * Two lists: the apps, then the activities one of them declares.
@@ -69,7 +75,7 @@ import moe.shizuku.manager.ui.component.appLabel
  * reason this screen exists: it is an activity the app never meant anybody else to open, and it is
  * the one that cannot be started the ordinary way.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun ActivitiesScreen(bottomPadding: Dp, onBack: () -> Unit) {
     val context = LocalContext.current
@@ -83,6 +89,10 @@ fun ActivitiesScreen(bottomPadding: Dp, onBack: () -> Unit) {
     var activitiesLoading by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
     var message by remember { mutableStateOf<Int?>(null) }
+    // The activity whose whole name is being shown. A row has one line for a package and a class,
+    // which is not enough for either of them, and the name is the thing needed to find the
+    // activity anywhere else - in a manifest, in another log, in a bug report.
+    var details by remember { mutableStateOf<Activities.Activity?>(null) }
     var version by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(version) {
@@ -110,6 +120,13 @@ fun ActivitiesScreen(bottomPadding: Dp, onBack: () -> Unit) {
         chosen = null
         query = ""
         message = null
+    }
+
+    fun copy(text: String) {
+        if (ClipboardUtils.put(context, text)) {
+            Toast.makeText(context, context.getString(R.string.activities_copied), Toast.LENGTH_SHORT)
+                .show()
+        }
     }
 
     fun start(activity: Activities.Activity) {
@@ -286,10 +303,15 @@ fun ActivitiesScreen(bottomPadding: Dp, onBack: () -> Unit) {
                         item { Note(stringResource(text), error = true) }
                     }
 
+                    item { Note(stringResource(R.string.activities_long_press)) }
+
                     items(shownActivities, key = { it.name }) { activity ->
                         SegmentedCard {
                             ListItem(
-                                modifier = Modifier.clickable { start(activity) },
+                                modifier = Modifier.combinedClickable(
+                                    onClick = { start(activity) },
+                                    onLongClick = { details = activity }
+                                ),
                                 headlineContent = { Text(activity.title) },
                                 supportingContent = {
                                     Text(
@@ -350,6 +372,76 @@ fun ActivitiesScreen(bottomPadding: Dp, onBack: () -> Unit) {
                 }
             }
         }
+    }
+
+    details?.let { activity ->
+        ActivityDetailsDialog(
+            activity = activity,
+            onOpen = {
+                details = null
+                start(activity)
+            },
+            onCopy = { copy(activity.name) },
+            onDismiss = { details = null }
+        )
+    }
+}
+
+/**
+ * The whole of one activity: the names that do not fit on a row, and the two things worth doing
+ * with them.
+ *
+ * The class name is the point of it. A row can only ever show the front of a package name, and the
+ * full one is what identifies the activity - it is what goes in `am start -n`, what a manifest is
+ * searched for, and what somebody pasting this into a bug report needs.
+ */
+@Composable
+private fun ActivityDetailsDialog(
+    activity: Activities.Activity,
+    onOpen: () -> Unit,
+    onCopy: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(activity.title) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                DetailLine(stringResource(R.string.activities_detail_package), activity.packageName)
+                DetailLine(stringResource(R.string.activities_detail_activity), activity.name)
+                DetailLine(
+                    stringResource(R.string.activities_detail_state),
+                    stringResource(
+                        when {
+                            activity.launcher -> R.string.activities_launcher
+                            activity.exported -> R.string.activities_exported
+                            else -> R.string.activities_not_exported
+                        }
+                    )
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onOpen) { Text(stringResource(R.string.activities_open)) }
+        },
+        dismissButton = {
+            TextButton(onClick = { onCopy(activity.name) }) {
+                Text(stringResource(R.string.activities_copy))
+            }
+        }
+    )
+}
+
+/** One line of the dialog: what the value is, then the value, whole and wrapping. */
+@Composable
+private fun DetailLine(label: String, value: String) {
+    Column {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(value, style = MaterialTheme.typography.bodyMedium)
     }
 }
 
