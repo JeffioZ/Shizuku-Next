@@ -1,0 +1,370 @@
+package moe.shizuku.manager.ui.screen
+
+import android.content.pm.PackageInfo
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.LoadingIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import moe.shizuku.manager.R
+import moe.shizuku.manager.manage.Activities
+import moe.shizuku.manager.ui.component.AppIcon
+import moe.shizuku.manager.ui.component.CenteredMessage
+import moe.shizuku.manager.ui.component.ChipEmphasis
+import moe.shizuku.manager.ui.component.SegmentedCard
+import moe.shizuku.manager.ui.component.StatusChip
+import moe.shizuku.manager.ui.component.appLabel
+
+/**
+ * Two lists: the apps, then the activities one of them declares.
+ *
+ * A level rather than a screen of its own, because the second list means nothing without the app
+ * it belongs to, and going back should land on the picker rather than on the grid.
+ *
+ * The chips are the whole point of the second list. "Not exported" is the interesting case and the
+ * reason this screen exists: it is an activity the app never meant anybody else to open, and it is
+ * the one that cannot be started the ordinary way.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ActivitiesScreen(bottomPadding: Dp, onBack: () -> Unit) {
+    val context = LocalContext.current
+    val pm = context.packageManager
+    val scope = rememberCoroutineScope()
+
+    var apps by remember { mutableStateOf<List<PackageInfo>>(emptyList()) }
+    var chosen by remember { mutableStateOf<String?>(null) }
+    var activities by remember { mutableStateOf<List<Activities.Activity>>(emptyList()) }
+    var loading by remember { mutableStateOf(true) }
+    var activitiesLoading by remember { mutableStateOf(false) }
+    var query by remember { mutableStateOf("") }
+    var message by remember { mutableStateOf<Int?>(null) }
+    var version by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(version) {
+        loading = true
+        apps = withContext(Dispatchers.IO) {
+            runCatching { pm.getInstalledPackages(android.content.pm.PackageManager.GET_ACTIVITIES) }
+                .getOrDefault(emptyList())
+                // An app with no activities has nothing to show here, and there are a few.
+                .filter { !it.activities.isNullOrEmpty() }
+        }
+        loading = false
+    }
+
+    LaunchedEffect(chosen) {
+        val packageName = chosen ?: return@LaunchedEffect
+        activitiesLoading = true
+        message = null
+        activities = withContext(Dispatchers.IO) { Activities.of(pm, packageName) }
+        activitiesLoading = false
+    }
+
+    // Back leaves the activities before it leaves the screen, which is the order the two lists
+    // were walked in.
+    BackHandler(enabled = chosen != null) {
+        chosen = null
+        query = ""
+        message = null
+    }
+
+    fun start(activity: Activities.Activity) {
+        scope.launch {
+            val outcome = withContext(Dispatchers.IO) { Activities.launch(context, activity) }
+            message = when (outcome) {
+                Activities.Outcome.STARTED, Activities.Outcome.ELEVATED -> null
+                Activities.Outcome.NO_SHELL -> R.string.activities_needs_shizuku
+                Activities.Outcome.REFUSED -> R.string.activities_refused
+            }
+        }
+    }
+
+    val shownApps = remember(apps, query) {
+        val trimmed = query.trim()
+        val filtered = if (trimmed.isBlank()) {
+            apps
+        } else {
+            apps.filter {
+                appLabel(pm, it).contains(trimmed, ignoreCase = true) ||
+                    it.packageName.contains(trimmed, ignoreCase = true)
+            }
+        }
+        filtered.sortedBy { appLabel(pm, it).lowercase() }
+    }
+
+    val shownActivities = remember(activities, query) {
+        val trimmed = query.trim()
+        if (trimmed.isBlank()) {
+            activities
+        } else {
+            activities.filter {
+                it.title.contains(trimmed, ignoreCase = true) ||
+                    it.name.contains(trimmed, ignoreCase = true)
+            }
+        }
+    }
+
+    val packageName = chosen
+    val appLabelText = remember(packageName, apps) {
+        packageName?.let { name -> apps.firstOrNull { it.packageName == name } }
+            ?.let { appLabel(pm, it) } ?: packageName.orEmpty()
+    }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        TopAppBar(
+            title = {
+                Column {
+                    Text(
+                        if (packageName == null) {
+                            stringResource(R.string.tab_activities)
+                        } else {
+                            appLabelText
+                        },
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = if (packageName == null) {
+                            stringResource(R.string.activities_apps_count, apps.size)
+                        } else {
+                            stringResource(R.string.activities_count, activities.size)
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            windowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
+            navigationIcon = {
+                IconButton(
+                    onClick = {
+                        if (packageName == null) {
+                            onBack()
+                        } else {
+                            chosen = null
+                            query = ""
+                            message = null
+                        }
+                    }
+                ) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                }
+            }
+        )
+
+        OutlinedTextField(
+            value = query,
+            onValueChange = { query = it },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            placeholder = { Text(stringResource(R.string.app_management_search_hint)) },
+            leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+            trailingIcon = {
+                if (query.isNotEmpty()) {
+                    IconButton(onClick = { query = "" }) {
+                        Icon(
+                            Icons.Filled.Close,
+                            contentDescription = stringResource(android.R.string.cancel)
+                        )
+                    }
+                }
+            },
+            singleLine = true,
+            shape = MaterialTheme.shapes.extraLarge,
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                focusedBorderColor = MaterialTheme.colorScheme.primary
+            )
+        )
+
+        Box(modifier = Modifier.fillMaxSize()) {
+            if (packageName == null) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(
+                        start = 16.dp,
+                        top = 4.dp,
+                        end = 16.dp,
+                        bottom = bottomPadding
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    item {
+                        Note(stringResource(R.string.activities_note))
+                    }
+
+                    items(shownApps, key = { it.packageName }) { pi ->
+                        SegmentedCard {
+                            ListItem(
+                                modifier = Modifier.clickable {
+                                    query = ""
+                                    message = null
+                                    chosen = pi.packageName
+                                },
+                                leadingContent = { AppIcon(pi) },
+                                headlineContent = { Text(appLabel(pm, pi)) },
+                                supportingContent = {
+                                    Text(
+                                        pi.packageName,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                },
+                                trailingContent = {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        StatusChip(
+                                            text = (pi.activities?.size ?: 0).toString()
+                                        )
+                                        Icon(Icons.Filled.ChevronRight, contentDescription = null)
+                                    }
+                                },
+                                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                            )
+                        }
+                    }
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(
+                        start = 16.dp,
+                        top = 4.dp,
+                        end = 16.dp,
+                        bottom = bottomPadding
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    message?.let { text ->
+                        item { Note(stringResource(text), error = true) }
+                    }
+
+                    items(shownActivities, key = { it.name }) { activity ->
+                        SegmentedCard {
+                            ListItem(
+                                modifier = Modifier.clickable { start(activity) },
+                                headlineContent = { Text(activity.title) },
+                                supportingContent = {
+                                    Text(
+                                        activity.name,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                },
+                                trailingContent = {
+                                    StatusChip(
+                                        text = stringResource(
+                                            when {
+                                                activity.launcher -> R.string.activities_launcher
+                                                activity.exported -> R.string.activities_exported
+                                                else -> R.string.activities_not_exported
+                                            }
+                                        ),
+                                        emphasis = if (activity.launcher || !activity.exported) {
+                                            ChipEmphasis.SOFT
+                                        } else {
+                                            ChipEmphasis.NONE
+                                        }
+                                    )
+                                },
+                                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                            )
+                        }
+                    }
+                }
+            }
+
+            val busy = if (packageName == null) loading else activitiesLoading
+            if (busy || (if (packageName == null) shownApps.isEmpty() else shownActivities.isEmpty())) {
+                if (busy) {
+                    CenteredMessage { LoadingIndicator() }
+                } else {
+                    CenteredMessage {
+                        when {
+                            query.isNotBlank() -> Text(
+                                text = stringResource(R.string.apps_no_match),
+                                style = MaterialTheme.typography.bodyMedium,
+                                textAlign = TextAlign.Center
+                            )
+
+                            packageName == null -> Text(
+                                text = stringResource(R.string.apps_empty),
+                                style = MaterialTheme.typography.bodyMedium,
+                                textAlign = TextAlign.Center
+                            )
+
+                            else -> Text(
+                                text = stringResource(R.string.activities_empty),
+                                style = MaterialTheme.typography.bodyMedium,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun Note(text: String, error: Boolean = false) {
+    Text(
+        text = text,
+        modifier = Modifier
+            .padding(horizontal = 4.dp)
+            .padding(bottom = 4.dp),
+        style = MaterialTheme.typography.bodySmall,
+        color = if (error) {
+            MaterialTheme.colorScheme.error
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        }
+    )
+}

@@ -83,6 +83,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ui.screen.AppsScreen
+import moe.shizuku.manager.ui.screen.ActivitiesScreen
 import moe.shizuku.manager.ui.screen.ForceDarkScreen
 import moe.shizuku.manager.ui.screen.HomeScreen
 import moe.shizuku.manager.ui.screen.AppToggleFeature
@@ -125,6 +126,7 @@ enum class Detail(
     LOG,
     DEVICE_INFO,
     FORCE_DARK,
+    ACTIVITIES,
     STEALTH,
     TERMINAL,
     INTENTS,
@@ -227,6 +229,11 @@ fun ShizukuApp() {
                             )
 
                             Detail.FORCE_DARK -> ForceDarkScreen(
+                                bottomPadding = 0.dp,
+                                onBack = { detail = null }
+                            )
+
+                            Detail.ACTIVITIES -> ActivitiesScreen(
                                 bottomPadding = 0.dp,
                                 onBack = { detail = null }
                             )

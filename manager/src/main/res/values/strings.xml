@@ -156,6 +156,17 @@
     <string name="force_dark_notification_title">Force dark mode is on</string>
     <string name="force_dark_notification_text">An app on the force dark mode list is open</string>
 
+    <string name="tab_activities">Activities</string>
+    <string name="activities_apps_count">%1$d apps</string>
+    <string name="activities_count">%1$d activities</string>
+    <string name="activities_note">Lists every activity an app has, including hidden ones. Activities that cannot be started by other apps are opened through the system instead. The assistant opens it briefly, presses the assist key, then restores the assistant to its previous state.</string>
+    <string name="activities_launcher">Launcher</string>
+    <string name="activities_exported">Exported</string>
+    <string name="activities_not_exported">Not exported</string>
+    <string name="activities_empty">This app declares no activities.</string>
+    <string name="activities_needs_shizuku">Shizuku is not running, and only it can start an activity the app kept to itself.</string>
+    <string name="activities_refused">The activity could not be started.</string>
+
     <string name="tab_device_info">Device info</string>
     <string name="device_refresh">Refresh</string>
     <string name="device_battery">Battery</string>

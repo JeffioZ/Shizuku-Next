@@ -7,6 +7,7 @@ import android.util.Log
 import androidx.appcompat.app.AppCompatDelegate
 import com.topjohnwu.superuser.Shell
 import moe.shizuku.manager.ktx.logd
+import moe.shizuku.manager.manage.Activities
 import moe.shizuku.manager.manage.Hiding
 import moe.shizuku.manager.service.HidingWatchService
 import moe.shizuku.manager.service.WatchdogService
@@ -67,6 +68,12 @@ class ShizukuApplication : Application() {
         if (Hiding.hasAnyApp() && !Hiding.isPaused()) {
             thread(name = "hiding-watch-restart") { HidingWatchService.refresh(context) }
         }
+
+        // An activity launched through the assistant is swapped out and swapped back within a
+        // couple of seconds, and the only way that goes wrong for good is the process dying in
+        // between. The backup is on disk for exactly that, and this is the only thing that reads
+        // it: leaving somebody without an assistant is far worse than not launching the activity.
+        thread(name = "activities-assistant-restore") { Activities.restorePending() }
     }
 
     override fun onCreate() {

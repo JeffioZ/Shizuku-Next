@@ -23,6 +23,7 @@ import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material.icons.outlined.ReceiptLong
 import androidx.compose.material.icons.outlined.Terminal
+import androidx.compose.material.icons.outlined.Widgets
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -145,7 +146,8 @@ fun LabsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
         ),
         LabEntry(R.string.tab_log, Icons.Outlined.ReceiptLong, Detail.LOG),
         LabEntry(R.string.tab_device_info, Icons.Outlined.PhoneAndroid, Detail.DEVICE_INFO),
-        LabEntry(R.string.tab_force_dark, Icons.Outlined.DarkMode, Detail.FORCE_DARK)
+        LabEntry(R.string.tab_force_dark, Icons.Outlined.DarkMode, Detail.FORCE_DARK),
+        LabEntry(R.string.tab_activities, Icons.Outlined.Widgets, Detail.ACTIVITIES)
     )
 
     // By name, not by the order these features arrived in. The grid is a list, and a list is read
