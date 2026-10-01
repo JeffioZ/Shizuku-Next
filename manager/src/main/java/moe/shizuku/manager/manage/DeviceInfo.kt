@@ -151,8 +151,11 @@ object DeviceInfo {
         val dump = dumpText ?: runShellCommand("dumpsys batterystats") ?: return Usage(null, null, null, null)
 
         // The figures sit before the parenthesised percentage: "8s 609ms (100.0%) 0x, ...".
+        //
+        // The colon is load-bearing: "Screen on" also begins the discharge line "Screen on
+        // discharge: 0 mAh", and matching that first read the counter as an empty charge figure.
         fun span(label: String): String? = dump.lineSequence()
-            .firstOrNull { it.startsWith("  $label") }
+            .firstOrNull { it.startsWith("  $label:") }
             ?.substringAfter(':')?.trim()
             ?.substringBefore('(')?.trim()
             ?.takeIf { it.isNotEmpty() }
