@@ -371,6 +371,7 @@
     <!-- Settings -->
     <string name="settings_start_on_boot">Start on boot</string>
     <string name="settings_use_system_color">Use System theme color</string>
+    <string name="settings_use_system_color_summary">Follow the system palette</string>
     <string name="settings_watchdog">Watchdog</string>
     <string name="settings_watchdog_summary">Restart Shizuku automatically if it crashes</string>
     <string name="settings_auto_disable_wireless_debugging">Disable wireless debugging</string>

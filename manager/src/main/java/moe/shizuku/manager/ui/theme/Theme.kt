@@ -60,25 +60,33 @@ fun ShizukuTheme(content: @Composable () -> Unit) {
         else -> isSystemInDarkTheme()
     }
 
-    val useSystemColor = prefs.getBoolean(ShizukuSettings.Keys.KEY_USE_SYSTEM_COLOR, false)
+    // On by default: the system palette is the one another app can replace, and replacing it is
+    // the whole point of ColorBlendr and the apps like it - they push an overlay that rewrites
+    // the system's own colour roles, and a screen that reads those roles follows.
+    val useSystemColor = prefs.getBoolean(ShizukuSettings.Keys.KEY_USE_SYSTEM_COLOR, true) &&
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
     val amoled = darkTheme && prefs.getBoolean(ShizukuSettings.Keys.KEY_BLACK_NIGHT_THEME, false)
 
-    // Like KernelSU: keep the chosen key color by default, only follow the
-    // wallpaper when the user enables system color. A fixed seed avoids a
-    // washed-out grey palette on desaturated wallpapers.
-    val seed = if (useSystemColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        (if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)).primary
+    // The system's scheme taken whole, not re-derived from one of its colours.
+    //
+    // This was `seed = dynamicScheme(context).primary` fed back into material-kolor, which is a
+    // Material 3 palette but not the one the system is showing: it regenerates from a single
+    // seed and throws away the secondary, the tertiary, the neutral tones and every per-shade
+    // override - exactly the parts a ColorBlendr theme sets. Reading the roles themselves is
+    // what makes the app match the colours the user picked rather than merely resemble them.
+    val baseScheme = if (useSystemColor) {
+        if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
     } else {
-        BrandColor
+        // The brand seed, for when the system palette is not wanted: a fixed seed avoids a
+        // washed-out grey palette on a desaturated wallpaper.
+        rememberDynamicColorScheme(
+            seedColor = BrandColor,
+            isDark = darkTheme,
+            isAmoled = amoled,
+            style = PaletteStyle.TonalSpot,
+            specVersion = ColorSpec.SpecVersion.SPEC_2021,
+        )
     }
-
-    val baseScheme = rememberDynamicColorScheme(
-        seedColor = seed,
-        isDark = darkTheme,
-        isAmoled = amoled,
-        style = PaletteStyle.TonalSpot,
-        specVersion = ColorSpec.SpecVersion.SPEC_2021,
-    )
 
     // The AMOLED switch only repaints the base surface roles, while the container
     // roles that the cards and the navigation bar actually use kept the standard

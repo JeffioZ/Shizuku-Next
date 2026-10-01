@@ -125,7 +125,7 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
     var nightMode by remember { mutableStateOf(ShizukuSettings.getNightMode()) }
     var themeDialog by remember { mutableStateOf(false) }
     var useSystemColor by remember {
-        mutableStateOf(ShizukuSettings.getPreferences().getBoolean(ShizukuSettings.Keys.KEY_USE_SYSTEM_COLOR, false))
+        mutableStateOf(ShizukuSettings.getPreferences().getBoolean(ShizukuSettings.Keys.KEY_USE_SYSTEM_COLOR, true))
     }
     var blackNight by remember {
         mutableStateOf(ShizukuSettings.getPreferences().getBoolean(ShizukuSettings.Keys.KEY_BLACK_NIGHT_THEME, false))
@@ -646,6 +646,9 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                             centerSlots = true,
                             leadingContent = { SettingsIcon(Icons.Outlined.Palette) },
                             headlineContent = { Text(stringResource(R.string.settings_use_system_color)) },
+                            supportingContent = {
+                                Text(stringResource(R.string.settings_use_system_color_summary))
+                            },
                             switchState = useSystemColor,
                             onSwitchChange =
                                 {
