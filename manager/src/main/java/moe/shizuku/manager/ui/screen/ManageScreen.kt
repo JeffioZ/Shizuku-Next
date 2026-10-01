@@ -62,6 +62,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import moe.shizuku.manager.R
+import moe.shizuku.manager.manage.InstalledPackages
 import moe.shizuku.manager.ui.component.AppFilterChip
 import moe.shizuku.manager.ui.component.appLabel
 import moe.shizuku.manager.ui.component.AppIcon
@@ -150,8 +151,7 @@ fun ManageScreen(
         Log.d(AppConstants.TAG, "Manage: reading the installed packages")
         apps = withContext(Dispatchers.IO) {
             @Suppress("DEPRECATION")
-            runCatching { pm.getInstalledPackages(PackageManager.MATCH_UNINSTALLED_PACKAGES) }
-                .getOrDefault(emptyList())
+            InstalledPackages.all(context, PackageManager.MATCH_UNINSTALLED_PACKAGES)
         }
         loadedFor = version
         loading = false
@@ -189,17 +189,7 @@ fun ManageScreen(
         }
         if (derivedFor == version) return@LaunchedEffect
         launcherless = withContext(Dispatchers.IO) {
-            apps.filterNot { pi ->
-                runCatching {
-                    pm.getLaunchIntentForPackage(pi.packageName) != null ||
-                        pm.queryIntentActivities(
-                            Intent(Intent.ACTION_MAIN)
-                                .addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER)
-                                .setPackage(pi.packageName),
-                            0
-                        ).isNotEmpty()
-                }.getOrDefault(true)
-            }.map { it.packageName }.toSet()
+            InstalledPackages.launcherless(context, apps)
         }
         derivedFor = version
     }

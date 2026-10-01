@@ -72,6 +72,7 @@ import moe.shizuku.manager.AppConstants
 import moe.shizuku.manager.R
 import moe.shizuku.manager.manage.Hiding
 import moe.shizuku.manager.manage.HidingGrants
+import moe.shizuku.manager.manage.InstalledPackages
 import moe.shizuku.manager.manage.PackageTools
 import moe.shizuku.manager.manage.Signal
 import moe.shizuku.manager.service.HidingWatchService
@@ -225,7 +226,7 @@ fun LabsToggleScreen(
         Log.d(AppConstants.TAG, "${feature.name}: reading the apps and their state")
 
         apps = withContext(Dispatchers.IO) {
-            runCatching { pm.getInstalledPackages(0) }.getOrDefault(emptyList())
+            InstalledPackages.all(context, 0)
         }
         blocked = withContext(Dispatchers.IO) { readBlocked(feature, context) }
         running = ShizukuStateMachine.isRunning()
@@ -309,17 +310,7 @@ fun LabsToggleScreen(
             emptySet()
         } else {
             withContext(Dispatchers.IO) {
-                apps.filterNot { pi ->
-                    runCatching {
-                        pm.getLaunchIntentForPackage(pi.packageName) != null ||
-                            pm.queryIntentActivities(
-                                Intent(Intent.ACTION_MAIN)
-                                    .addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER)
-                                    .setPackage(pi.packageName),
-                                0
-                            ).isNotEmpty()
-                    }.getOrDefault(true)
-                }.map { it.packageName }.toSet()
+                InstalledPackages.launcherless(context, apps)
             }
         }
     }

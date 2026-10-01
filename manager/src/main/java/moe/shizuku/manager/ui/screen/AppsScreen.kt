@@ -75,6 +75,7 @@ import kotlinx.coroutines.withContext
 import moe.shizuku.manager.Helps
 import moe.shizuku.manager.R
 import moe.shizuku.manager.authorization.AuthorizationManager
+import moe.shizuku.manager.manage.InstalledPackages
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter
 import moe.shizuku.manager.ui.component.AppFilterChip
 import moe.shizuku.manager.ui.component.AppIcon
@@ -195,17 +196,7 @@ fun AppsScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = fals
 
             // An app with no launcher entry is what "hidden" means: it is in the list, but
             // never in the app drawer. The leanback category counts as an entry on TV.
-            val withoutLauncher = all.filterNot { pi ->
-                runCatching {
-                    pm.getLaunchIntentForPackage(pi.packageName) != null ||
-                        pm.queryIntentActivities(
-                            Intent(Intent.ACTION_MAIN)
-                                .addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER)
-                                .setPackage(pi.packageName),
-                            0
-                        ).isNotEmpty()
-                }.getOrDefault(true)
-            }.map { it.packageName }.toSet()
+            val withoutLauncher = InstalledPackages.launcherless(context, all)
 
             granted to withoutLauncher
         }

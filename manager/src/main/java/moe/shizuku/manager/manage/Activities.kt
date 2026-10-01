@@ -122,12 +122,19 @@ object Activities {
             .thenBy { it.name.lowercase() }
     )
 
-    fun of(packageManager: PackageManager, packageName: String): List<Activity> =
-        runCatching { packageManager.getPackageInfo(packageName, PackageManager.GET_ACTIVITIES) }
-            .onFailure { Diag.warn(TAG, "could not read the activities of $packageName", it) }
-            .getOrNull()
-            ?.let { of(packageManager, it) }
-            ?: emptyList()
+    /**
+     * The activities of one app, read as the shell where it can be.
+     *
+     * The manifest of a package this app cannot see is not readable either, so the list would come
+     * back empty for the same apps the package list used to leave out - and an app that is in the
+     * list but opens onto no activities reads as an app that has none.
+     */
+    fun of(context: Context, packageName: String): List<Activity> {
+        val packageManager = context.packageManager
+        val info = InstalledPackages.one(context, packageName, PackageManager.GET_ACTIVITIES)
+            ?: return emptyList()
+        return of(packageManager, info)
+    }
 
     private fun activity(
         packageManager: PackageManager,

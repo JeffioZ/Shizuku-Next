@@ -225,7 +225,10 @@ object PackageTools {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) PackageManager.GET_SIGNING_CERTIFICATES
             else PackageManager.GET_SIGNATURES
 
-        val info = runCatching { pm.getPackageInfo(packageName, flags) }.getOrNull() ?: return null
+        // Through [InstalledPackages], not this app's package manager: a package the shell listed
+        // may be one this app cannot look up, and a row that opens onto "not found" is worse than
+        // a row that was never there.
+        val info = InstalledPackages.one(context, packageName, flags) ?: return null
 
         val ai = info.applicationInfo
         val uninstalled = ai == null
@@ -427,8 +430,11 @@ object PackageTools {
     /** The permission state as the platform reports it the only answer worth trusting. */
     private fun granted(context: Context, packageName: String, permission: String): Boolean? =
         runCatching {
-            val pm = context.packageManager
-            val info = pm.getPackageInfo(packageName, PackageManager.GET_PERMISSIONS)
+            // Read as the shell, like the list that named the app: a package this app cannot see
+            // is one whose declared permissions it cannot read either, and the answer would be a
+            // null that reads as "not granted" rather than as "could not tell".
+            val info = InstalledPackages.one(context, packageName, PackageManager.GET_PERMISSIONS)
+                ?: return@runCatching null
             val declared = info.requestedPermissions ?: return@runCatching null
             val flags = info.requestedPermissionsFlags ?: return@runCatching null
             val index = declared.indexOf(permission)

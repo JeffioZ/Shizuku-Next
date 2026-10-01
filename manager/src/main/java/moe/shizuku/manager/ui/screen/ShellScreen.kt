@@ -127,6 +127,7 @@ import moe.shizuku.manager.shell.ShellSuggestion
 import moe.shizuku.manager.shell.ShellSuggestions
 import moe.shizuku.manager.ui.component.AppIcon
 import moe.shizuku.manager.ui.component.appLabel
+import moe.shizuku.manager.manage.InstalledPackages
 import moe.shizuku.manager.shell.ShellLine
 import moe.shizuku.manager.shell.ShellSession
 import moe.shizuku.manager.utils.EnvironmentUtils
@@ -301,11 +302,12 @@ fun ShellScreen(bottomPadding: Dp = 0.dp, onBack: (() -> Unit)? = null) {
         rootAvailable = withContext(Dispatchers.IO) {
             runCatching { EnvironmentUtils.isRooted() }.getOrDefault(false)
         }
+        // The suggestions are about other apps, so this has to be the shell's list rather than
+        // this app's: a permission held by a package the app cannot see is still a permission
+        // worth completing.
         installed = withContext(Dispatchers.IO) {
-            runCatching {
-                @Suppress("DEPRECATION")
-                context.packageManager.getInstalledPackages(PackageManager.GET_PERMISSIONS)
-            }.getOrDefault(emptyList())
+            @Suppress("DEPRECATION")
+            InstalledPackages.all(context, PackageManager.GET_PERMISSIONS)
         }
         uid = withContext(Dispatchers.IO) {
             runCatching { if (Shizuku.pingBinder()) Shizuku.getUid() else -1 }.getOrDefault(-1)

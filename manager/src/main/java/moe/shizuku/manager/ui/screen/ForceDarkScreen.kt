@@ -49,6 +49,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import moe.shizuku.manager.R
 import moe.shizuku.manager.manage.ForceDark
+import moe.shizuku.manager.manage.InstalledPackages
 import moe.shizuku.manager.service.HidingWatchService
 import moe.shizuku.manager.ui.component.AppFilterChip
 import moe.shizuku.manager.ui.component.AppIcon
@@ -93,12 +94,18 @@ fun ForceDarkScreen(bottomPadding: Dp, onBack: () -> Unit) {
     LaunchedEffect(version) {
         loading = true
         apps = withContext(Dispatchers.IO) {
-            runCatching {
-                pm.getInstalledPackages(0).filter {
+            // Only apps with something in the launcher: force dark applies to an app somebody
+            // opens. Which those are is asked of the shell, for the same reason the list is.
+            val all = InstalledPackages.all(context, 0)
+            val launchable = InstalledPackages.launchable()
+            if (launchable != null) {
+                all.filter { it.packageName in launchable }
+            } else {
+                all.filter {
                     runCatching { pm.getLaunchIntentForPackage(it.packageName) != null }
                         .getOrDefault(false)
                 }
-            }.getOrDefault(emptyList())
+            }
         }
         forced = withContext(Dispatchers.IO) { ForceDark.apps() }
         running = ShizukuStateMachine.isRunning()

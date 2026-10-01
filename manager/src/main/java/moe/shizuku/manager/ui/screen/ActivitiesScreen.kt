@@ -63,6 +63,7 @@ import moe.shizuku.manager.R
 import moe.shizuku.manager.manage.Activities
 import moe.shizuku.manager.ui.component.AppIcon
 import moe.shizuku.manager.ui.component.CenteredMessage
+import moe.shizuku.manager.manage.InstalledPackages
 import moe.shizuku.manager.ui.component.ChipEmphasis
 import moe.shizuku.manager.ui.component.IntentDraft
 import moe.shizuku.manager.ui.component.IntentOperation
@@ -115,8 +116,7 @@ fun ActivitiesScreen(bottomPadding: Dp, onBack: () -> Unit) {
     LaunchedEffect(version) {
         loading = true
         apps = withContext(Dispatchers.IO) {
-            runCatching { pm.getInstalledPackages(android.content.pm.PackageManager.GET_ACTIVITIES) }
-                .getOrDefault(emptyList())
+            InstalledPackages.all(context, android.content.pm.PackageManager.GET_ACTIVITIES)
                 // An app with no activities has nothing to show here, and there are a few.
                 .filter { !it.activities.isNullOrEmpty() }
         }
@@ -127,7 +127,7 @@ fun ActivitiesScreen(bottomPadding: Dp, onBack: () -> Unit) {
         val packageName = chosen ?: return@LaunchedEffect
         activitiesLoading = true
         message = null
-        activities = withContext(Dispatchers.IO) { Activities.of(pm, packageName) }
+        activities = withContext(Dispatchers.IO) { Activities.of(context, packageName) }
         activitiesLoading = false
     }
 
@@ -412,6 +412,8 @@ fun ActivitiesScreen(bottomPadding: Dp, onBack: () -> Unit) {
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
+                                        // A count, not a state: left to size to its own digits
+                                        // rather than given the status chips' width.
                                         StatusChip(
                                             text = (pi.activities?.size ?: 0).toString()
                                         )
