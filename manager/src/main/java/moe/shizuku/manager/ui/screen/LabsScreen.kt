@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AdminPanelSettings
 import androidx.compose.material.icons.outlined.DarkMode
+import androidx.compose.material.icons.outlined.Extension
 import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material.icons.outlined.ReceiptLong
 import androidx.compose.material.icons.outlined.Terminal
@@ -34,6 +35,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -42,6 +44,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ui.Detail
+import moe.shizuku.manager.utils.MoreApps
 import moe.shizuku.manager.ui.theme.LocalAmoledTheme
 
 /** Padding above, below and beside the tile's contents. */
@@ -100,6 +103,7 @@ private val LabelHeight = 40.dp
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LabsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
+    val context = LocalContext.current
     // Every tile there is, in no particular order. The order is worked out below.
     val entries = listOf(
         LabEntry(R.string.tab_manage, Icons.Outlined.AdminPanelSettings, Detail.APP_OPS),
@@ -147,7 +151,8 @@ fun LabsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
         LabEntry(R.string.tab_log, Icons.Outlined.ReceiptLong, Detail.LOG),
         LabEntry(R.string.tab_device_info, Icons.Outlined.PhoneAndroid, Detail.DEVICE_INFO),
         LabEntry(R.string.tab_force_dark, Icons.Outlined.DarkMode, Detail.FORCE_DARK),
-        LabEntry(R.string.tab_activities, Icons.Outlined.Widgets, Detail.ACTIVITIES)
+        LabEntry(R.string.tab_activities, Icons.Outlined.Widgets, Detail.ACTIVITIES),
+        LabEntry(R.string.lab_more_apps, Icons.Outlined.Extension, Detail.MORE_APPS)
     )
 
     // By name, not by the order these features arrived in. The grid is a list, and a list is read
@@ -189,7 +194,14 @@ fun LabsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                     LabTile(
                         icon = entry.icon,
                         label = label,
-                        onClick = { onOpenDetail(entry.detail) }
+                        onClick = {
+                            // The module index is somebody else's website, so it goes to the
+                            // browser when there is one, and the screen inside the app is only
+                            // for the device that has no browser to open it in.
+                            if (entry.detail != Detail.MORE_APPS || !MoreApps.openInBrowser(context)) {
+                                onOpenDetail(entry.detail)
+                            }
+                        }
                     )
                 }
             }

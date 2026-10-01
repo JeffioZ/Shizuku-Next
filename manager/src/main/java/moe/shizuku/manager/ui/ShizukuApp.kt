@@ -93,6 +93,7 @@ import moe.shizuku.manager.ui.screen.LabsScreen
 import moe.shizuku.manager.ui.screen.LogScreen
 import moe.shizuku.manager.ui.screen.LabsToggleScreen
 import moe.shizuku.manager.ui.screen.ManageScreen
+import moe.shizuku.manager.ui.screen.MoreAppsScreen
 import moe.shizuku.manager.ui.screen.PermissionsScreen
 import moe.shizuku.manager.ui.screen.SettingsScreen
 import moe.shizuku.manager.ui.screen.ShellScreen
@@ -130,7 +131,10 @@ enum class Detail(
     STEALTH,
     TERMINAL,
     INTENTS,
-    PERMISSIONS
+    PERMISSIONS,
+
+    /** The community's module index, shown here only when there was no browser to open it in. */
+    MORE_APPS
 }
 
 /**
@@ -243,6 +247,8 @@ fun ShizukuApp() {
                                 bottomPadding = 0.dp,
                                 onBack = { detail = null }
                             )
+
+                            Detail.MORE_APPS -> MoreAppsScreen(onBack = { detail = null })
 
                             Detail.STEALTH -> StealthScreen(onBack = { detail = null })
                             Detail.TERMINAL -> TerminalScreen(onBack = { detail = null })

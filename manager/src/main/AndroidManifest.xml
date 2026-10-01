@@ -117,6 +117,17 @@
 
     <queries>
         <package android:name="moe.shizuku.privileged.api" />
+
+        <!--
+            The module index is opened in the browser, and picking one means asking which
+            activities answer CATEGORY_APP_BROWSER. From Android 11 a package this app cannot
+            see is invisible to that question, so without this the answer is always "no browser"
+            and the list would open in the in-app fallback on every device.
+        -->
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.APP_BROWSER" />
+        </intent>
     </queries>
 
     <application

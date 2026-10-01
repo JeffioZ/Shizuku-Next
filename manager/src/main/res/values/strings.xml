@@ -100,6 +100,7 @@
     <string name="tab_apps">Apps</string>
     <string name="tab_shell">Shell</string>
     <string name="tab_labs">Labs</string>
+    <string name="lab_more_apps">More Apps</string>
     <string name="tab_firewall">Firewall</string>
     <string name="tab_autostart">Autostart</string>
     <string name="labs_filter_allowed">Allowed</string>
