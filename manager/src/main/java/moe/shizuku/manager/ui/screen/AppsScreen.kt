@@ -83,6 +83,7 @@ import moe.shizuku.manager.ui.component.CenteredMessage
 import moe.shizuku.manager.ui.component.ChipEmphasis
 import moe.shizuku.manager.ui.component.SegmentedCard
 import moe.shizuku.manager.ui.component.StatusChip
+import moe.shizuku.manager.ui.component.stripHtmlTags
 import moe.shizuku.manager.utils.ShizukuStateMachine
 
 enum class SortOrder {
@@ -641,7 +642,22 @@ fun AppsScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = fals
             onDismissRequest = { permissionLimited = false },
             title = { Text(stringResource(R.string.app_management_dialog_adb_is_limited_title)) },
             text = {
-                Text(stringResource(R.string.app_management_dialog_adb_is_limited_message, adbUrl))
+                // The string is written for the View UI, which parses its markup: here the tags
+                // were drawn as tags. It links the document it names, and the link is inside the
+                // markup, so the address is printed under the sentence rather than lost with it.
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        stringResource(R.string.app_management_dialog_adb_is_limited_message, adbUrl)
+                            .stripHtmlTags()
+                    )
+                    if (adbUrl.isNotEmpty()) {
+                        Text(
+                            adbUrl,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
             },
             confirmButton = {
                 TextButton(onClick = { permissionLimited = false }) {

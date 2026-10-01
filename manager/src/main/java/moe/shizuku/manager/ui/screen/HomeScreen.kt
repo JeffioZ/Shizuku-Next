@@ -313,7 +313,10 @@ fun HomeScreen(bottomPadding: Dp) {
                         // they sat shoulder-to-shoulder and read as one control.
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(
-                                text = "${stringResource(R.string.start_failed)}: ${failed.message}",
+                                // The failures that name a command to run mark it with <b>,
+                                // which used to arrive here as the tags themselves.
+                                text = "${stringResource(R.string.start_failed)}: " +
+                                    failed.message.stripHtmlTags(),
                                 style = MaterialTheme.typography.bodyMedium
                             )
 
@@ -604,7 +607,9 @@ fun HomeScreen(bottomPadding: Dp) {
                             body = if (!EnvironmentUtils.isWifiConnected() &&
                                 EnvironmentUtils.getAdbTcpPort() <= 0
                             ) {
-                                stringResource(R.string.home_usb_adb_needs_network)
+                                // The string marks the method's name with <b>, which Compose
+                                // does not parse: it was drawing the tags.
+                                stringResource(R.string.home_usb_adb_needs_network).stripHtmlTags()
                             } else {
                                 stringResource(R.string.home_usb_adb_summary).stripHtmlTags()
                             },

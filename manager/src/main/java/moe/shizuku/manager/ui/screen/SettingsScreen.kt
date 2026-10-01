@@ -79,6 +79,7 @@ import moe.shizuku.manager.ui.Detail
 import moe.shizuku.manager.ui.component.SegmentedColumn
 import moe.shizuku.manager.ui.theme.ThemeState
 import moe.shizuku.manager.ui.component.SegmentedListItem
+import moe.shizuku.manager.ui.component.stripHtmlTags
 import moe.shizuku.manager.adb.AdbStarter
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter
 import moe.shizuku.manager.start.StartMethodGuard
@@ -780,14 +781,21 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
             onDismissRequest = { restartAction = null },
             title = { Text(stringResource(R.string.settings_restart_dialog_title)) },
             text = {
-                Text(
-                    buildString {
-                        append(stringResource(R.string.settings_restart_dialog_message))
-                        if (restartWifiNote) {
-                            append(stringResource(R.string.settings_restart_dialog_message_wifi_required))
-                        }
+                // Two paragraphs, the second in bold. The string carries <br><br><b> for the
+                // View UI's sake, and Compose does not parse markup: it drew the tags and the
+                // sentence arrived glued to the one above it. The emphasis is the point of the
+                // second string, so it is put on by hand instead of being stripped, and the
+                // break between them is this column's.
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(stringResource(R.string.settings_restart_dialog_message))
+                    if (restartWifiNote) {
+                        Text(
+                            stringResource(R.string.settings_restart_dialog_message_wifi_required)
+                                .stripHtmlTags(),
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
-                )
+                }
             },
             confirmButton = {
                 TextButton(onClick = {
