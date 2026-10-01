@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.DropdownMenu
@@ -24,6 +25,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -314,7 +316,10 @@ internal fun IntentForm(draft: IntentDraft, bottomPadding: Dp, onPick: () -> Uni
                         { draft.component = it },
                         stringResource(R.string.intent_component)
                     )
-                    TextButton(onClick = onPick) {
+                    // Outlined, because it opens a picker rather than doing something on the spot:
+                    // a text button has no border and no container, so this sat under the fields
+                    // as bare words and read as a label rather than as the way to fill them.
+                    OutlinedButton(onClick = onPick) {
                         Icon(Icons.Filled.Search, contentDescription = null)
                         Text(
                             text = stringResource(R.string.intent_choose_activity),
@@ -449,8 +454,11 @@ private fun ExtraTypeMenu(selected: ExtraType, onSelect: (ExtraType) -> Unit) {
     var open by remember { mutableStateOf(false) }
 
     Box {
-        TextButton(onClick = { open = true }) {
+        // The six types are a menu, so this is drawn as something that opens one: the borders and
+        // the arrow are what say it can be changed, and neither was there before.
+        OutlinedButton(onClick = { open = true }) {
             Text(selected.name.lowercase().replaceFirstChar { it.uppercase() })
+            Icon(Icons.Filled.ArrowDropDown, contentDescription = null)
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             ExtraType.entries.forEach { candidate ->
