@@ -8,7 +8,6 @@ import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -270,15 +269,15 @@ fun ManageScreen(
             }
         )
 
-        // Five filters no longer fit as one row of equal-width chips on a phone, and
-        // shrinking the labels to make them fit is how a label ends up cut in half so
-        // this row scrolls instead, and each chip takes the width its own text needs.
+        // Each chip is as wide as its own label needs and the row spans the width: the first
+        // sits against one edge, the last against the other, and what is left over is spent
+        // between them. It used to scroll, which meant the last filter was half off the screen
+        // on a phone and the row looked like it had more in it than it did.
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
             ManageFilter.entries.forEach { option ->
                 val count = when (option) {

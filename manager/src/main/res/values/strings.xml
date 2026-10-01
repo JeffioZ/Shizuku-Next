@@ -144,7 +144,7 @@
     <string name="force_dark_filter_forced">Forced</string>
     <string name="force_dark_filter_not">Not forced</string>
     <string name="force_dark_empty">Nothing is forced dark.</string>
-    <string name="force_dark_system_theme">Switch the system theme instead</string>
+    <string name="force_dark_system_theme">Switch system theme instead</string>
     <string name="force_dark_toggled">Forced closed the app</string>
     <string name="force_dark_notification_title">Force dark mode is on</string>
     <string name="force_dark_notification_text">An app on the force dark mode list is open</string>

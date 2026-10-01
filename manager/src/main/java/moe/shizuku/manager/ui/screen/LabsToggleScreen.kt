@@ -6,7 +6,6 @@ import android.content.pm.PackageInfo
 import android.util.Log
 import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -491,12 +490,13 @@ fun LabsToggleScreen(
             }
         }
 
+        // As wide as the row is: the first filter against one edge, the last against the other,
+        // and the slack shared out between them rather than scrolled past.
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
             // Not on a hiding list: everything on one is an app somebody installed, so there
             // is no second kind of app to tell it apart from.
