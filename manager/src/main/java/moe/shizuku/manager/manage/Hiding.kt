@@ -269,6 +269,17 @@ object Hiding {
         Signal.entries.any { isSignalEnabled(it) && appsFor(it).isNotEmpty() }
 
     /**
+     * Whether hiding is doing anything: a mode is switched on, it names an app, and nobody has
+     * suspended it.
+     *
+     * Asked of the rule rather than of the process, and the difference is another feature
+     * entirely: the watch also runs for force dark, which hides nothing, and it runs for a list a
+     * mode has been switched off around, which hides nothing either. The home screen's notice is
+     * about this question and not that one.
+     */
+    fun isActive(): Boolean = hasWorkToDo() && !isPaused()
+
+    /**
      * Whether a whole mode is switched on.
      *
      * Off is stored rather than on, so that a list that existed before this switch did is on by

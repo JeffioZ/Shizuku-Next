@@ -8,6 +8,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import com.topjohnwu.superuser.Shell
 import moe.shizuku.manager.ktx.logd
 import moe.shizuku.manager.manage.Activities
+import moe.shizuku.manager.manage.ForceDark
 import moe.shizuku.manager.manage.Hiding
 import moe.shizuku.manager.service.HidingWatchService
 import moe.shizuku.manager.service.WatchdogService
@@ -60,12 +61,13 @@ class ShizukuApplication : Application() {
 
         if(ShizukuSettings.getWatchdog()) WatchdogService.start(context)
 
-        // The watch is the thing that puts the settings back, so a process that died while
-        // something was hidden starts it again rather than leaving the device lying with nothing
-        // left to notice the app it was hiding for is gone. Off the main thread, because it asks
-        // the shell, and the platform may refuse a foreground service started from the
-        // background - which is what the start it does is for.
-        if (Hiding.hasAnyApp() && !Hiding.isPaused()) {
+        // Hiding and force dark are both rules about the app in front, and the same watch holds
+        // both. A process that died while either was armed starts it again rather than leaving the
+        // device with nothing holding what it set: a setting left hidden, or the force-dark
+        // switches left on for a phone that is not showing the app they were meant for. Off the
+        // main thread, because it asks the shell, and the platform may refuse a foreground service
+        // started from the background - which is what the start it does is for.
+        if (Hiding.isActive() || ForceDark.hasWorkToDo()) {
             thread(name = "hiding-watch-restart") { HidingWatchService.refresh(context) }
         }
 

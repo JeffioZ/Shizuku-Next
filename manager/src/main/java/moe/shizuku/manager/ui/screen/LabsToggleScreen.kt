@@ -250,7 +250,7 @@ fun LabsToggleScreen(
             // has to find. Nothing is shown: there is no decision in it.
             withContext(Dispatchers.IO) { HidingGrants.ensureQuietly() }
         }
-        if (feature.signal != null && Hiding.hasAnyApp() && !Hiding.isPaused()) {
+        if (feature.signal != null && Hiding.isActive()) {
             withContext(Dispatchers.IO) { HidingWatchService.refresh(context) }
         }
         vpnClient = Hiding.chosenVpnClient()

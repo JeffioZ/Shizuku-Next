@@ -87,6 +87,7 @@ import moe.shizuku.manager.Manifest
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.home.showAccessibilityDialog
+import moe.shizuku.manager.manage.Hiding
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter
 import moe.shizuku.manager.start.StartFailureKind
 import moe.shizuku.manager.start.StartStatus
@@ -193,7 +194,10 @@ fun HomeScreen(bottomPadding: Dp) {
         running = ShizukuStateMachine.isRunning()
         batteryIgnored = SettingsHelper.isIgnoringBatteryOptimizations(context)
         developerOptionsOn = context.isDeveloperOptionsEnabled()
-        hidingActive = HidingWatchService.isRunning()
+        // Not the watch being up, which is a different question with two other answers: it is up
+        // for force dark as well, and up for a list that a mode has been switched off around.
+        // Only hiding that is armed and live makes the warning under it true.
+        hidingActive = HidingWatchService.isRunning() && Hiding.isActive()
         // Root can be gone since the method was chosen; the card would otherwise keep
         // promising a start the device can no longer run.
         startMethod = StartMethodGuard.resolve()
