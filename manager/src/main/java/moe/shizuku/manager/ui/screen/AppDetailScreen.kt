@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -31,7 +30,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import moe.shizuku.manager.ui.component.ExpressiveSwitch
@@ -50,7 +48,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -72,6 +69,7 @@ import moe.shizuku.manager.ui.component.AppIcon
 import moe.shizuku.manager.ui.component.AppStatusLabels
 import moe.shizuku.manager.ui.component.CenteredMessage
 import moe.shizuku.manager.ui.component.ChipEmphasis
+import moe.shizuku.manager.ui.component.ChoiceRow
 import moe.shizuku.manager.ui.component.SegmentedCard
 import moe.shizuku.manager.ui.component.SegmentedColumn
 import moe.shizuku.manager.ui.component.SegmentedListItem
@@ -770,21 +768,11 @@ private fun ModeDialog(
                 Text(note, style = MaterialTheme.typography.bodySmall)
                 Spacer(modifier = Modifier.height(12.dp))
                 OpMode.entries.forEach { mode ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .selectable(
-                                selected = selected == mode,
-                                role = Role.RadioButton,
-                                onClick = { selected = mode }
-                            )
-                            .padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(selected = selected == mode, onClick = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(modeLabel(mode))
-                    }
+                    ChoiceRow(
+                        selected = selected == mode,
+                        label = modeLabel(mode),
+                        onClick = { selected = mode }
+                    )
                 }
             }
         },
@@ -821,28 +809,12 @@ private fun BucketDialog(
                     Spacer(modifier = Modifier.height(12.dp))
                 }
                 options.forEach { bucket ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .selectable(
-                                selected = selected == bucket,
-                                role = Role.RadioButton,
-                                onClick = { selected = bucket }
-                            )
-                            .padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(selected = selected == bucket, onClick = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Column {
-                            Text(stringResource(bucket.label))
-                            Text(
-                                stringResource(bucket.note),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
+                    ChoiceRow(
+                        selected = selected == bucket,
+                        label = stringResource(bucket.label),
+                        supporting = stringResource(bucket.note),
+                        onClick = { selected = bucket }
+                    )
                 }
             }
         },

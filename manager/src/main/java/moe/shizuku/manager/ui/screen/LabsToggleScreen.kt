@@ -41,7 +41,6 @@ import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -79,6 +78,7 @@ import moe.shizuku.manager.ui.component.AppFilterChip
 import moe.shizuku.manager.ui.component.AppIcon
 import moe.shizuku.manager.ui.component.AppStatusChips
 import moe.shizuku.manager.ui.component.CenteredMessage
+import moe.shizuku.manager.ui.component.ChoiceRow
 import moe.shizuku.manager.ui.component.ExpressiveSwitch
 import moe.shizuku.manager.ui.component.SegmentedCard
 import moe.shizuku.manager.ui.component.appLabel
@@ -354,23 +354,20 @@ fun LabsToggleScreen(
                         },
                         key = { it.packageName }
                     ) { pi ->
-                        ListItem(
-                            modifier = Modifier.clickable {
+                        // The same row the rest of the app's single-choice lists use, with the
+                        // app's icon after the radio: which app is chosen is a choice like any
+                        // other, and the icon is only how the row is found among the rest.
+                        ChoiceRow(
+                            selected = pi.packageName == vpnClient,
+                            label = appLabel(pm, pi),
+                            supporting = pi.packageName,
+                            leading = { AppIcon(pi) },
+                            onClick = {
                                 Hiding.chooseVpnClient(pi.packageName)
                                 vpnClient = pi.packageName
                                 pickingVpn = false
                                 version++
-                            },
-                            leadingContent = { AppIcon(pi) },
-                            headlineContent = { Text(appLabel(pm, pi)) },
-                            supportingContent = { Text(pi.packageName) },
-                            trailingContent = {
-                                RadioButton(
-                                    selected = pi.packageName == vpnClient,
-                                    onClick = null
-                                )
-                            },
-                            colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                            }
                         )
                     }
                 }
