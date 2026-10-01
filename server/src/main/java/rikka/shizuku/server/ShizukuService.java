@@ -61,6 +61,7 @@ import rikka.shizuku.server.api.IContentProviderUtils;
 import rikka.shizuku.server.util.HandlerUtil;
 import rikka.shizuku.server.util.InstalledPackagesCompat;
 import rikka.shizuku.server.util.UserHandleCompat;
+import rikka.shizuku.server.util.UsersCompat;
 
 public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuClientManager, ShizukuConfigManager> {
 
@@ -479,7 +480,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         List<PackageInfo> list = new ArrayList<>();
         List<Integer> users = new ArrayList<>();
         if (userId == -1) {
-            users.addAll(UserManagerApis.getUserIdsNoThrow());
+            users.addAll(UsersCompat.getUserIdsNoThrow());
         } else {
             users.add(userId);
         }
@@ -527,7 +528,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     }
 
     void sendBinderToClient() {
-        for (int userId : UserManagerApis.getUserIdsNoThrow()) {
+        for (int userId : UsersCompat.getUserIdsNoThrow()) {
             sendBinderToClient(this, userId);
         }
     }
@@ -559,7 +560,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     }
 
     private static void sendBinderToManager(Binder binder) {
-        for (int userId : UserManagerApis.getUserIdsNoThrow()) {
+        for (int userId : UsersCompat.getUserIdsNoThrow()) {
             sendBinderToManager(binder, userId);
         }
     }
