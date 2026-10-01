@@ -65,6 +65,7 @@ import moe.shizuku.manager.ui.component.AppIcon
 import moe.shizuku.manager.ui.component.CenteredMessage
 import moe.shizuku.manager.ui.component.ChipEmphasis
 import moe.shizuku.manager.ui.component.IntentDraft
+import moe.shizuku.manager.ui.component.IntentOperation
 import moe.shizuku.manager.ui.component.IntentForm
 import moe.shizuku.manager.ui.component.SegmentedCard
 import moe.shizuku.manager.ui.component.StatusChip
@@ -106,6 +107,11 @@ fun ActivitiesScreen(bottomPadding: Dp, onBack: () -> Unit) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
     val draft = remember { IntentDraft() }
 
+    // Whether the builder has sent the list out to fetch it a component. The list is the picker:
+    // it browses and searches every activity on the device already, and a second one inside a
+    // dialog would be the same screen with less room.
+    var picking by remember { mutableStateOf(false) }
+
     LaunchedEffect(version) {
         loading = true
         apps = withContext(Dispatchers.IO) {
@@ -126,11 +132,29 @@ fun ActivitiesScreen(bottomPadding: Dp, onBack: () -> Unit) {
     }
 
     // Back leaves the activities before it leaves the screen, which is the order the two lists
-    // were walked in. On the form there is no level to leave, so the screen is what back closes.
-    BackHandler(enabled = tab == 0 && chosen != null) {
-        chosen = null
-        query = ""
-        message = null
+    // were walked in. On the form there is no level to leave, so the screen is what back closes -
+    // and a picker that was opened from the form goes back to it rather than closing it.
+    BackHandler(enabled = tab == 0 && (chosen != null || picking)) {
+        if (picking) {
+            picking = false
+            tab = 1
+        } else {
+            chosen = null
+            query = ""
+            message = null
+        }
+    }
+
+    /**
+     * Fills the builder from an activity, and goes back to it.
+     *
+     * Both halves of the component, because the class name on its own is ambiguous and the
+     * package on its own is not an activity.
+     */
+    fun prefill(activity: Activities.Activity) {
+        draft.prefill(activity.packageName, activity.name)
+        picking = false
+        tab = 1
     }
 
     fun copy(text: String) {
@@ -147,12 +171,17 @@ fun ActivitiesScreen(bottomPadding: Dp, onBack: () -> Unit) {
             return
         }
         val intent = draft.build()
+        val broadcast = draft.operation == IntentOperation.BROADCAST
         scope.launch {
-            val outcome = withContext(Dispatchers.IO) { Activities.launch(context, intent) }
+            val outcome = withContext(Dispatchers.IO) {
+                if (broadcast) Activities.broadcast(context, intent)
+                else Activities.launch(context, intent)
+            }
             draft.message = when (outcome) {
                 Activities.Outcome.STARTED, Activities.Outcome.ELEVATED -> null
                 Activities.Outcome.NO_SHELL -> R.string.activities_needs_shizuku
-                Activities.Outcome.REFUSED -> R.string.intent_refused
+                Activities.Outcome.REFUSED ->
+                    if (broadcast) R.string.intent_broadcast_refused else R.string.intent_refused
             }
         }
     }
@@ -193,6 +222,30 @@ fun ActivitiesScreen(bottomPadding: Dp, onBack: () -> Unit) {
         }
     }
 
+    // What the intent would reach, asked of the package manager rather than guessed. Keyed on the
+    // fields, because the answer only changes when one of them does.
+    val draftKey = listOf(
+        draft.operation,
+        draft.action,
+        draft.data,
+        draft.type,
+        draft.component,
+        draft.packageName,
+        draft.categories,
+        draft.flags.sorted().toString(),
+        draft.extras.joinToString { extra -> extra.key + "=" + extra.type + ":" + extra.value }
+    ).joinToString("|")
+
+    LaunchedEffect(draftKey) {
+        val intent = if (draft.sendable()) draft.build() else null
+        val broadcast = draft.operation == IntentOperation.BROADCAST
+        draft.targets = if (intent == null) {
+            emptyList()
+        } else {
+            withContext(Dispatchers.IO) { Activities.targets(context, intent, broadcast) }
+        }
+    }
+
     val packageName = chosen
     val appLabelText = remember(packageName, apps) {
         packageName?.let { name -> apps.firstOrNull { it.packageName == name } }
@@ -204,12 +257,11 @@ fun ActivitiesScreen(bottomPadding: Dp, onBack: () -> Unit) {
             title = {
                 Column {
                     Text(
-                        if (tab == 1) {
-                            stringResource(R.string.tab_intent_builder)
-                        } else if (packageName == null) {
-                            stringResource(R.string.tab_activities)
-                        } else {
-                            appLabelText
+                        when {
+                            tab == 1 -> stringResource(R.string.tab_intent_builder)
+                            picking -> stringResource(R.string.intent_choose_activity)
+                            packageName == null -> stringResource(R.string.tab_activities)
+                            else -> appLabelText
                         },
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -232,7 +284,10 @@ fun ActivitiesScreen(bottomPadding: Dp, onBack: () -> Unit) {
             navigationIcon = {
                 IconButton(
                     onClick = {
-                        if (tab == 1 || packageName == null) {
+                        if (picking) {
+                            picking = false
+                            tab = 1
+                        } else if (tab == 1 || packageName == null) {
                             onBack()
                         } else {
                             chosen = null
@@ -250,7 +305,13 @@ fun ActivitiesScreen(bottomPadding: Dp, onBack: () -> Unit) {
                     IconButton(onClick = { send() }) {
                         Icon(
                             Icons.AutoMirrored.Filled.Send,
-                            contentDescription = stringResource(R.string.intent_start)
+                            contentDescription = stringResource(
+                                if (draft.operation == IntentOperation.BROADCAST) {
+                                    R.string.intent_send_broadcast
+                                } else {
+                                    R.string.intent_start
+                                }
+                            )
                         )
                     }
                 }
@@ -267,13 +328,27 @@ fun ActivitiesScreen(bottomPadding: Dp, onBack: () -> Unit) {
             )
             Tab(
                 selected = tab == 1,
-                onClick = { tab = 1 },
+                onClick = {
+                    // Reached by hand, so the picker that may have been opened from the form is
+                    // no longer being waited on.
+                    picking = false
+                    tab = 1
+                },
                 text = { Text(stringResource(R.string.tab_intent_builder)) }
             )
         }
 
         if (tab == 1) {
-            IntentForm(draft = draft, bottomPadding = bottomPadding)
+            IntentForm(
+                draft = draft,
+                bottomPadding = bottomPadding,
+                // The list is the picker: it already browses and searches every activity on the
+                // device, and a second one inside a dialog would be the same screen with less room.
+                onPick = {
+                    picking = true
+                    tab = 0
+                }
+            )
             return@Column
         }
 
@@ -363,13 +438,25 @@ fun ActivitiesScreen(bottomPadding: Dp, onBack: () -> Unit) {
                         item { Note(stringResource(text), error = true) }
                     }
 
-                    item { Note(stringResource(R.string.activities_long_press)) }
+                    item {
+                        Note(
+                            stringResource(
+                                if (picking) R.string.intent_picking
+                                else R.string.activities_long_press
+                            )
+                        )
+                    }
 
                     items(shownActivities, key = { it.name }) { activity ->
                         SegmentedCard {
                             ListItem(
                                 modifier = Modifier.combinedClickable(
-                                    onClick = { start(activity) },
+                                    // While the builder is waiting for a component this list is
+                                    // its picker, so a tap fills the form instead of starting the
+                                    // activity: the same list answering the question that is open.
+                                    onClick = {
+                                        if (picking) prefill(activity) else start(activity)
+                                    },
                                     onLongClick = { details = activity }
                                 ),
                                 headlineContent = { Text(activity.title) },
@@ -442,6 +529,10 @@ fun ActivitiesScreen(bottomPadding: Dp, onBack: () -> Unit) {
                 start(activity)
             },
             onCopy = { copy(activity.name) },
+            onBuild = {
+                details = null
+                prefill(activity)
+            },
             onDismiss = { details = null }
         )
     }
@@ -460,6 +551,7 @@ private fun ActivityDetailsDialog(
     activity: Activities.Activity,
     onOpen: () -> Unit,
     onCopy: (String) -> Unit,
+    onBuild: () -> Unit,
     onDismiss: () -> Unit
 ) {
     AlertDialog(
@@ -485,8 +577,16 @@ private fun ActivityDetailsDialog(
             TextButton(onClick = onOpen) { Text(stringResource(R.string.activities_open)) }
         },
         dismissButton = {
-            TextButton(onClick = { onCopy(activity.name) }) {
-                Text(stringResource(R.string.activities_copy))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick = { onCopy(activity.name) }) {
+                    Text(stringResource(R.string.activities_copy))
+                }
+                // The way from here into the builder: this dialog is where the whole component
+                // name is readable, so it is where somebody decides they want to send it
+                // something rather than just open it.
+                TextButton(onClick = onBuild) {
+                    Text(stringResource(R.string.activities_edit_as_intent))
+                }
             }
         }
     )

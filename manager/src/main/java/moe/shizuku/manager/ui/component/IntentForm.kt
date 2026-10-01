@@ -17,6 +17,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
@@ -37,6 +38,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import moe.shizuku.manager.R
+import moe.shizuku.manager.manage.Activities
 
 /**
  * An intent, described by hand.
@@ -72,10 +74,30 @@ internal class IntentDraft {
     var extras by mutableStateOf<List<Extra>>(emptyList())
     var flags by mutableStateOf<Set<Int>>(emptySet())
 
+    /** Whether this is an activity to start or a broadcast to send. */
+    var operation by mutableStateOf(IntentOperation.ACTIVITY)
+
+    /** What the intent reaches, as last looked up. Empty is the answer worth seeing. */
+    var targets by mutableStateOf<List<Activities.Target>>(emptyList())
+
     /** What the last send had to say, or null when it had nothing to complain about. */
     var message by mutableStateOf<Int?>(null)
 
     private var nextId = 1
+
+    /**
+     * Fills the component from an activity the catalogue knows about.
+     *
+     * The component is the one field that cannot be guessed and the one the app has just listed
+     * a screen away, so this is the whole of the bridge between the two tabs: everything else in
+     * an intent is something a person means, and the component is something a device has.
+     */
+    fun prefill(packageName: String, name: String) {
+        this.packageName = packageName
+        component = name
+        operation = IntentOperation.ACTIVITY
+        message = null
+    }
 
     fun addExtra() {
         extras = extras + Extra("", ExtraType.STRING, "", nextId++)
@@ -186,9 +208,14 @@ internal class IntentDraft {
     }
 }
 
-/** The form itself: everything [IntentDraft] holds, one field per thing an intent can be. */
+/**
+ * The form itself: everything [IntentDraft] holds, one field per thing an intent can be.
+ *
+ * [onPick] leaves the form for the activity list, which is the only way to fill the component
+ * without knowing a class name by heart.
+ */
 @Composable
-internal fun IntentForm(draft: IntentDraft, bottomPadding: Dp) {
+internal fun IntentForm(draft: IntentDraft, bottomPadding: Dp, onPick: () -> Unit) {
     LazyColumn(
         modifier = Modifier.fillMaxWidth(),
         contentPadding = PaddingValues(
@@ -205,6 +232,54 @@ internal fun IntentForm(draft: IntentDraft, bottomPadding: Dp) {
 
         draft.message?.let { text ->
             item { FormNote(stringResource(text), error = true) }
+        }
+
+        // What is being sent, before what it is made of: the same fields describe both, so which
+        // of the two they describe is the first thing to settle.
+        item {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                IntentOperation.entries.forEach { operation ->
+                    FilterChip(
+                        selected = draft.operation == operation,
+                        onClick = { draft.operation = operation },
+                        label = {
+                            Text(
+                                stringResource(
+                                    when (operation) {
+                                        IntentOperation.ACTIVITY -> R.string.intent_operation_activity
+                                        IntentOperation.BROADCAST -> R.string.intent_operation_broadcast
+                                    }
+                                )
+                            )
+                        }
+                    )
+                }
+            }
+        }
+
+        // Said before sending rather than after: an app is never told that a broadcast reached
+        // nobody, and is only told an activity was refused once it has been. Both are questions
+        // the package manager answers in advance.
+        if (draft.sendable()) {
+            item {
+                FormNote(
+                    text = if (draft.targets.isEmpty()) {
+                        stringResource(R.string.intent_targets_none)
+                    } else {
+                        stringResource(
+                            R.string.intent_targets,
+                            draft.targets.size,
+                            draft.targets.take(3).joinToString(", ") { it.label }
+                        )
+                    },
+                    error = draft.targets.isEmpty()
+                )
+            }
         }
 
         item {
@@ -239,6 +314,13 @@ internal fun IntentForm(draft: IntentDraft, bottomPadding: Dp) {
                         { draft.component = it },
                         stringResource(R.string.intent_component)
                     )
+                    TextButton(onClick = onPick) {
+                        Icon(Icons.Filled.Search, contentDescription = null)
+                        Text(
+                            text = stringResource(R.string.intent_choose_activity),
+                            modifier = Modifier.padding(start = 8.dp)
+                        )
+                    }
                     Field(
                         draft.packageName,
                         { draft.packageName = it },
@@ -328,6 +410,15 @@ internal fun IntentForm(draft: IntentDraft, bottomPadding: Dp) {
         }
     }
 }
+
+/**
+ * Whether the form starts an activity or sends a broadcast.
+ *
+ * One form for both, because an intent is an intent: the action, the data, the categories, the
+ * extras and the flags are the same list whichever of the two carries them, and a second form
+ * would be a second copy of every field with one word changed.
+ */
+internal enum class IntentOperation { ACTIVITY, BROADCAST }
 
 /** One extra: what it is called, what type it is, and what it holds. */
 internal data class Extra(val key: String, val type: ExtraType, val value: String, val id: Int)

@@ -165,6 +165,7 @@
     <string name="activities_detail_state">State</string>
     <string name="activities_open">Open</string>
     <string name="activities_copy">Copy</string>
+    <string name="activities_edit_as_intent">Edit as intent</string>
     <string name="activities_copied">Copied</string>
 
     <string name="tab_intent_builder">Intent builder</string>
@@ -178,6 +179,14 @@
     <string name="intent_component">Component</string>
     <string name="intent_package">Package</string>
     <string name="intent_categories">Categories</string>
+    <string name="intent_operation_activity">Start an activity</string>
+    <string name="intent_operation_broadcast">Send a broadcast</string>
+    <string name="intent_choose_activity">Choose an activity</string>
+    <string name="intent_picking">Tap an activity to fill the component.</string>
+    <string name="intent_targets">Answered by %1$d %2$s</string>
+    <string name="intent_targets_none">Nothing on this device answers this intent.</string>
+    <string name="intent_send_broadcast">Send the broadcast</string>
+    <string name="intent_broadcast_refused">The broadcast could not be sent.</string>
     <string name="intent_extras">Extras</string>
     <string name="intent_extra_add">Add extra</string>
     <string name="intent_extra_remove">Remove this extra</string>

@@ -206,6 +206,120 @@ object Activities {
         return if (ShizukuStateMachine.isRunning()) Outcome.REFUSED else Outcome.NO_SHELL
     }
 
+    /**
+     * Sends [intent] as a broadcast.
+     *
+     * The shell first, and for a different reason than an activity gets: a broadcast worth sending
+     * by hand is usually addressed at a receiver that is *not* exported, because those are the
+     * ones an app cannot reach and the ones a tool like this is for. An app may not send to them at
+     * all, so `am broadcast` is the route that works and the in-process call is only what covers a
+     * phone with no Shizuku running - where the exported receivers are still reachable, which is
+     * more than nothing.
+     *
+     * There is no elevated route here the way an activity has one. The assistant swap points the
+     * system at a component to *start*; nothing about it sends a broadcast.
+     */
+    fun broadcast(context: Context, intent: Intent): Outcome {
+        if (ShizukuStateMachine.isRunning() && broadcastAsShell(intent)) {
+            Diag.info(TAG, "broadcast as the shell: ${intent.action ?: intent.component}")
+            return Outcome.STARTED
+        }
+
+        return if (runCatching { context.sendBroadcast(intent) }.isSuccess) {
+            Diag.info(TAG, "broadcast from the app: ${intent.action ?: intent.component}")
+            Outcome.STARTED
+        } else {
+            Outcome.REFUSED
+        }
+    }
+
+    /**
+     * `am broadcast`, with the whole intent written out as its command line.
+     *
+     * The marker after it, because the command answers with nothing and an empty answer is how
+     * this app spells "the shell did not run" - the same trade the assist key press makes.
+     */
+    private fun broadcastAsShell(intent: Intent): Boolean {
+        val arguments = intentArguments(intent).joinToString(" ") { it }
+        // Written down before it runs: a broadcast that does not arrive leaves nothing else
+        // behind, and the command is the only record of what was actually sent.
+        Diag.info(TAG, "am broadcast $arguments")
+        return runShellCommand("am broadcast $arguments; echo broadcast") != null
+    }
+
+    /**
+     * The `am` command line for an intent.
+     *
+     * `am` is the one place the whole of an intent can be written down: every part of it is an
+     * argument, including each extra with its type - `--es` for a string and `--ed` for a double,
+     * which is why the six types the builder offers can all be sent this way and none of them have
+     * to be dropped.
+     *
+     * Every value is quoted, because a value with a space in it is otherwise two arguments.
+     */
+    internal fun intentArguments(intent: Intent): List<String> = buildList {
+        fun pair(flag: String, value: String) {
+            add(flag)
+            add(quoted(value))
+        }
+
+        fun triple(flag: String, key: String, value: String) {
+            add(flag)
+            add(quoted(key))
+            add(quoted(value))
+        }
+
+        intent.action?.takeIf { it.isNotEmpty() }?.let { pair("-a", it) }
+        intent.dataString?.let { pair("-d", it) }
+        intent.type?.let { pair("-t", it) }
+        intent.component?.let { pair("-n", it.flattenToString()) }
+        intent.categories?.forEach { pair("-c", it) }
+        if (intent.flags != 0) pair("-f", intent.flags.toString())
+
+        intent.extras?.let { extras ->
+            extras.keySet().forEach { key ->
+                when (val value = extras.get(key)) {
+                    is String -> triple("--es", key, value)
+                    is Boolean -> triple("--ez", key, value.toString())
+                    is Int -> triple("--ei", key, value.toString())
+                    is Long -> triple("--el", key, value.toString())
+                    is Float -> triple("--ef", key, value.toString())
+                    is Double -> triple("--ed", key, value.toString())
+                }
+            }
+        }
+    }
+
+    /** Single-quoted, with a quote inside closed and reopened, which is what a shell needs. */
+    private fun quoted(value: String): String = "'" + value.replace("'", "'\\''") + "'"
+
+    /** One of the things an intent would reach, for naming it before anything is sent. */
+    data class Target(val label: String, val packageName: String)
+
+    /**
+     * What [intent] reaches on this device.
+     *
+     * An empty answer is the interesting one: it is the difference between an intent that will do
+     * something and one that will disappear, which an app is never told when it sends a broadcast
+     * and is only told after the fact when it starts an activity. So the builder asks this before
+     * sending rather than reporting the silence afterwards.
+     */
+    fun targets(context: Context, intent: Intent, broadcast: Boolean): List<Target> = runCatching {
+        val pm = context.packageManager
+        val infos = if (broadcast) {
+            pm.queryBroadcastReceivers(intent, 0).mapNotNull { it.activityInfo }
+        } else {
+            pm.queryIntentActivities(intent, 0).mapNotNull { it.activityInfo }
+        }
+
+        infos.map { info ->
+            Target(
+                label = runCatching { info.loadLabel(pm).toString() }.getOrDefault(info.name),
+                packageName = info.packageName
+            )
+        }.distinctBy { it.packageName + "/" + it.label }
+    }.getOrDefault(emptyList())
+
     private fun holdsWriteSecureSettings(): Boolean = runCatching {
         ShizukuApplication.application
             .checkSelfPermission(Manifest.permission.WRITE_SECURE_SETTINGS) ==
