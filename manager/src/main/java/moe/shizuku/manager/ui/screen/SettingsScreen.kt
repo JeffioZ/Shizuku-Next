@@ -61,6 +61,8 @@ import androidx.compose.material3.TopAppBar
 import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -198,6 +200,14 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
     var tcpPortDialog by remember { mutableStateOf(false) }
     var systemStartDialog by remember { mutableStateOf(false) }
     var updateDialog by remember { mutableStateOf(false) }
+
+    // The language can be changed without this screen: from Android 13 the system's own per-app
+    // language screen sets it too, and the framework rebuilds the activities rather than the
+    // process, so the row would go on naming the language that used to be chosen.
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        AppLocale.reconcile(context)
+        language = ShizukuSettings.getLanguageTag()
+    }
 
     // Root can be gone since the method was chosen (an OTA, root switched off in the
     // manager), and a stored Root would then never start anything. The resolver rewrites

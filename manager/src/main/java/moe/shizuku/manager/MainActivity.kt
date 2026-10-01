@@ -46,6 +46,18 @@ class MainActivity : ComponentActivity() {
         super.attachBaseContext(AppLocale.wrap(newBase))
     }
 
+    /**
+     * The chosen language is not only chosen here: from Android 13 the system settings screen
+     * changes the per-app locale too, and the framework only rebuilds the activities when it
+     * does - the process, and with it the stored copy of the choice, survives. Reconciling on
+     * the way back to the foreground is what keeps the picker and the row from reporting a
+     * language that is no longer in force.
+     */
+    override fun onResume() {
+        super.onResume()
+        AppLocale.reconcile(this)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()

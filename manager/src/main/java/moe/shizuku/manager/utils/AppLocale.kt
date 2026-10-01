@@ -87,14 +87,18 @@ object AppLocale {
      * Points `LocaleDelegate` at the language in force, at startup.
      *
      * Called once per process, so a change made while the app is alive is not seen here - which is
-     * what [select] is for.
+     * what [select] and [reconcile] are for.
      */
     fun initialize(context: Context) {
-        LocaleDelegate.defaultLocale = appliedLocale(context) ?: localeOf(current())
+        reconcile(context)
+        LocaleDelegate.defaultLocale = localeOf(current())
     }
 
-    /** The framework per-app locale, when this platform has one and one is set. */
-    private fun appliedLocale(context: Context): Locale? {
+    /**
+     * The language the platform says this app is in, or null on a release with no per-app locale
+     * and when none is set.
+     */
+    fun appliedTag(context: Context): String? {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return null
 
         return runCatching {
@@ -102,7 +106,31 @@ object AppLocale {
                 ?.applicationLocales
                 ?.takeIf { !it.isEmpty }
                 ?.get(0)
+                ?.toLanguageTag()
         }.getOrNull()
+    }
+
+    /**
+     * Brings the stored choice back in line with the platform's.
+     *
+     * From Android 13 the per-app locale is not only ours to set: the system settings screen
+     * changes it too, and the framework does not restart the process when it does - only the
+     * activities. So a change made outside the app leaves the stored copy behind, and the stored
+     * copy is what the picker ticks and what the row reports. Reconciling is done whenever the
+     * app comes back to the foreground, which is when such a change is about to be looked at.
+     *
+     * Returns whether the stored value had to change. Older releases cannot be out of step,
+     * since there the preference is the only thing that exists.
+     */
+    fun reconcile(context: Context): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return false
+
+        val applied = appliedTag(context) ?: SYSTEM
+        if (applied == ShizukuSettings.getLanguageTag()) return false
+
+        ShizukuSettings.setLanguageTag(applied)
+        LocaleDelegate.defaultLocale = localeOf(applied)
+        return true
     }
 
     /**
