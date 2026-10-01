@@ -155,6 +155,7 @@
     <string name="force_dark_toggled">Forced closed the app</string>
     <string name="force_dark_notification_title">Force dark mode is on</string>
     <string name="force_dark_notification_text">An app on the force dark mode list is open</string>
+    <string name="force_dark_notification_watching">Waiting for an app on the list to open</string>
 
     <string name="tab_activities">Activities Launcher</string>
     <string name="activities_apps_count">%1$d apps</string>

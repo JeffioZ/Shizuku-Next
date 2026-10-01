@@ -371,19 +371,30 @@ class HidingWatchService : Service() {
         // says the settings are hidden while they are not would have the user looking for a
         // problem that is not there.
         if (hidingFor == null) {
-            // Two features, one notification, because it is the same fact either way: something
-            // is being held for an app that is open, and this is how the user gets it back.
+            // Two features, one notification, because it is the same fact either way: something is
+            // being held for an app that is open, and this is how the user gets it back. Which of
+            // the two is being said, though, and not assumed: this used hiding's words whenever
+            // nothing was hidden yet, which was untrue for as long as the service was up only for
+            // force dark - and it is up for force dark whenever that list is armed, whether or not
+            // an app on it is in front.
+            //
+            // Neither armed reaches here only on the way to stopping, where the notification is
+            // taken down with the service a moment later.
+            val hiding = Hiding.isActive()
             builder
                 .setContentTitle(
                     getString(
-                        if (forcingDark) R.string.force_dark_notification_title
-                        else R.string.hiding_notification_idle_title
+                        if (hiding) R.string.hiding_notification_idle_title
+                        else R.string.force_dark_notification_title
                     )
                 )
                 .setContentText(
                     getString(
-                        if (forcingDark) R.string.force_dark_notification_text
-                        else R.string.hiding_notification_watching
+                        when {
+                            hiding -> R.string.hiding_notification_watching
+                            forcingDark -> R.string.force_dark_notification_text
+                            else -> R.string.force_dark_notification_watching
+                        }
                     )
                 )
             return builder.build()
