@@ -71,7 +71,12 @@ class AdbClient(private val host: String, private val port: Int, private val key
 
             message = read()
         } else if (message.command == A_AUTH) {
-            if (message.command != A_AUTH && message.arg0 != ADB_AUTH_TOKEN) error("not A_AUTH ADB_AUTH_TOKEN")
+            // Only the auth type is worth asking about, because the command was answered by the
+            // branch this sits in. The guard that was here asked about both, and joined them with
+            // &&: the command half could never be true inside a branch that had just matched it,
+            // so the whole test was dead and any A_AUTH reply was signed - including one whose
+            // arg0 was not the token request at all.
+            if (message.arg0 != ADB_AUTH_TOKEN) error("not A_AUTH ADB_AUTH_TOKEN")
             write(A_AUTH, ADB_AUTH_SIGNATURE, 0, key.sign(message.data))
 
             message = read()
