@@ -3,8 +3,8 @@ package moe.shizuku.manager.ui
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -161,6 +161,28 @@ private data class Tab(
  */
 private const val TAB_PAGES = "tab-pages"
 
+/**
+ * The tab bar's pill, and where the tabs it travels between sit on the bar.
+ *
+ * Both live above the switch that shows a detail screen, because the bar leaves the composition
+ * while a detail is open. Measured again from nothing on the way back, the pill began its travel
+ * at the bar's own zero - the left end, which is Home - so coming back from Intents the pill walked
+ * the width of the bar to Settings before coming to rest on the tab that had never stopped being
+ * the selected one. It is the same shape of bug as the pager's, one level down: state the way back
+ * needs was remembered by the thing that goes away.
+ *
+ * The pill is an [Animatable] rather than an `animateFloatAsState` so that the first place it is
+ * given can be given to it rather than travelled to. Only a tab actually chosen is a move.
+ */
+private class TabPill {
+    val bounds = mutableStateMapOf<Int, Rect>()
+    val left = Animatable(0f)
+    val width = Animatable(0f)
+
+    /** False until the pill has been placed once, which is the one move there is nothing to make. */
+    var placed = false
+}
+
 private val tabs = listOf(
     Tab(R.string.tab_home, Icons.Filled.Home, Icons.Outlined.Home),
     Tab(R.string.tab_apps, Icons.Filled.Apps, Icons.Outlined.Apps),
@@ -196,6 +218,7 @@ fun ShizukuApp() {
                 // neither was saveable, so a rotation dropped both and did the same thing.
                 var detail by rememberSaveable { mutableStateOf<Detail?>(null) }
                 val pagerState = rememberPagerState(pageCount = { tabs.size })
+                val pill = remember { TabPill() }
                 // The pages leave the composition while a detail is open, and where a list is
                 // scrolled to is saveable state - which is discarded when the composable holding
                 // it goes away. So going back from Intents landed at the top of Settings rather
@@ -273,7 +296,11 @@ fun ShizukuApp() {
                     }
                 } else {
                     pages.SaveableStateProvider(TAB_PAGES) {
-                        MainTabs(pagerState = pagerState, onOpenDetail = { detail = it })
+                        MainTabs(
+                            pagerState = pagerState,
+                            pill = pill,
+                            onOpenDetail = { detail = it }
+                        )
                     }
                 }
             }
@@ -307,6 +334,7 @@ private fun CenteredContent(
 @Composable
 private fun MainTabs(
     pagerState: PagerState,
+    pill: TabPill,
     onOpenDetail: (Detail) -> Unit
 ) {
     val scope = rememberCoroutineScope()
@@ -413,22 +441,24 @@ private fun MainTabs(
                 // appears on the new tab and leaves the old one reads as a flicker. The pill
                 // is measured from the tab itself, so it is the tab's own size wherever the
                 // bar's padding puts it.
-                val tabBounds = remember { mutableStateMapOf<Int, Rect>() }
-                val selectedBounds = tabBounds[pagerState.currentPage]
+                val selectedBounds = pill.bounds[pagerState.currentPage]
                 val pillSpec = spring<Float>(
                     dampingRatio = Spring.DampingRatioLowBouncy,
                     stiffness = Spring.StiffnessLow
                 )
-                val pillLeft by animateFloatAsState(
-                    targetValue = selectedBounds?.left ?: 0f,
-                    animationSpec = pillSpec,
-                    label = "tabPillLeft"
-                )
-                val pillWidth by animateFloatAsState(
-                    targetValue = selectedBounds?.width ?: 0f,
-                    animationSpec = pillSpec,
-                    label = "tabPillWidth"
-                )
+                LaunchedEffect(selectedBounds) {
+                    val bounds = selectedBounds ?: return@LaunchedEffect
+                    if (pill.placed) {
+                        // Both ends of the move at once, which is the one thing that would have
+                        // been lost to doing this by hand: a tab that grows while it slides.
+                        launch { pill.left.animateTo(bounds.left, pillSpec) }
+                        launch { pill.width.animateTo(bounds.width, pillSpec) }
+                    } else {
+                        pill.left.snapTo(bounds.left)
+                        pill.width.snapTo(bounds.width)
+                        pill.placed = true
+                    }
+                }
                 val pillColor = MaterialTheme.colorScheme.secondaryContainer
 
                 HorizontalFloatingToolbar(
@@ -457,11 +487,13 @@ private fun MainTabs(
                             // their measured bounds can be used as they are.
                             .drawWithContent {
                                 val bounds = selectedBounds
-                                if (bounds != null && pillWidth > 0f) {
+                                val left = pill.left.value
+                                val width = pill.width.value
+                                if (bounds != null && width > 0f) {
                                     drawRoundRect(
                                         color = pillColor,
-                                        topLeft = Offset(pillLeft, bounds.top),
-                                        size = Size(pillWidth, bounds.height),
+                                        topLeft = Offset(left, bounds.top),
+                                        size = Size(width, bounds.height),
                                         cornerRadius = CornerRadius(bounds.height / 2f)
                                     )
                                 }
@@ -489,7 +521,7 @@ private fun MainTabs(
                             ToggleButton(
                                 checked = selected,
                                 modifier = Modifier.onGloballyPositioned {
-                                    tabBounds[index] = it.boundsInParent()
+                                    pill.bounds[index] = it.boundsInParent()
                                 },
                             onCheckedChange = {
                                 // Straight to the page, not through the ones between: the pager
