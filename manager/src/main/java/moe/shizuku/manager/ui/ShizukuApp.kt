@@ -86,6 +86,7 @@ import moe.shizuku.manager.ui.screen.AppsScreen
 import moe.shizuku.manager.ui.screen.HomeScreen
 import moe.shizuku.manager.ui.screen.AppToggleFeature
 import moe.shizuku.manager.ui.screen.IntentsScreen
+import moe.shizuku.manager.ui.screen.DeviceInfoScreen
 import moe.shizuku.manager.ui.screen.LabsScreen
 import moe.shizuku.manager.ui.screen.LogScreen
 import moe.shizuku.manager.ui.screen.LabsToggleScreen
@@ -121,6 +122,7 @@ enum class Detail(
     HIDE_PRIVATE_DNS(AppToggleFeature.HIDE_PRIVATE_DNS),
     HIDE_VPN(AppToggleFeature.HIDE_VPN),
     LOG,
+    DEVICE_INFO,
     STEALTH,
     TERMINAL,
     INTENTS,
@@ -209,6 +211,11 @@ fun ShizukuApp() {
                             Detail.HIDE_WIRELESS_DEBUGGING,
                             Detail.HIDE_ACCESSIBILITY,
                             Detail.HIDE_PRIVATE_DNS,
+                            Detail.DEVICE_INFO -> DeviceInfoScreen(
+                                bottomPadding = 0.dp,
+                                onBack = { detail = null }
+                            )
+
                             Detail.LOG -> LogScreen(
                                 bottomPadding = 0.dp,
                                 onBack = { detail = null }
