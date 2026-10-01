@@ -1,18 +1,21 @@
 package moe.shizuku.manager.manage
 
 import android.Manifest
+import android.app.SearchManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.os.Bundle
 import android.provider.Settings
 import moe.shizuku.manager.ShizukuApplication
 import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.utils.Diag
 import moe.shizuku.manager.utils.ShizukuStateMachine
 import moe.shizuku.manager.utils.runShellCommand
+import org.lsposed.hiddenapibypass.HiddenApiBypass
 
 /**
  * Every activity an app declares, and how to start the ones it keeps to itself.
@@ -39,8 +42,9 @@ import moe.shizuku.manager.utils.runShellCommand
  * somebody with no assistant would be a much worse bug than not having the feature.
  *
  * `KEYCODE_ASSIST` has no app-facing API to trigger - firing `ACTION_ASSIST` only opens a chooser
- * - so it is pressed through the shell, which is the only permission the elevated route needs
- * beyond the `WRITE_SECURE_SETTINGS` this app already holds for hiding.
+ * - so it is pressed through the shell, which needs nothing beyond the `WRITE_SECURE_SETTINGS`
+ * this app already holds for hiding. `SearchManager` has hidden entry points for the same thing,
+ * and they are the fallback for a phone with no Shizuku running at all.
  */
 object Activities {
 
@@ -149,13 +153,21 @@ object Activities {
         }
 
         if (!holdsWriteSecureSettings()) return Outcome.REFUSED
-        if (!ShizukuStateMachine.isRunning()) return Outcome.NO_SHELL
+        if (elevate(activity.component)) return Outcome.ELEVATED
 
-        return if (elevate(activity.component)) Outcome.ELEVATED else Outcome.REFUSED
+        // Neither route worked. Say which half was missing rather than a flat refusal, because
+        // "start Shizuku" is something the user can act on.
+        return if (ShizukuStateMachine.isRunning()) Outcome.REFUSED else Outcome.NO_SHELL
     }
 
-    /** Whether this app can do the swap at all. Without the grant the elevated route is closed. */
-    fun canElevate(): Boolean = holdsWriteSecureSettings() && ShizukuStateMachine.isRunning()
+    /**
+     * Whether this app can do the swap at all.
+     *
+     * Only the grant is required, not Shizuku: asking for the assist in-process needs nothing else
+     * on any device where that route answers, and the shell is the fallback rather than the price
+     * of entry.
+     */
+    fun canElevate(): Boolean = holdsWriteSecureSettings()
 
     private fun holdsWriteSecureSettings(): Boolean = runCatching {
         ShizukuApplication.application
@@ -189,23 +201,64 @@ object Activities {
             Settings.Secure.putString(resolver, KEY_ASSISTANT, component.flattenToString())
             Settings.Secure.putString(resolver, KEY_VOICE_INTERACTION, "")
 
-            // A marker after the key event, because the command answers with nothing and an empty
-            // answer is how this app spells "the shell did not run".
-            val pressed = runShellCommand("input keyevent $ASSIST_KEYCODE; echo pressed") != null
-            if (pressed) Thread.sleep(ASSIST_WINDOW_MS)
+            // The shell first, and deliberately: a real injected key event either fires or the
+            // command does not run, while the in-process call can return having done nothing at
+            // all - a hidden method that answers is not the same as an assist that happened. So
+            // the route whose outcome is legible is the one used whenever it is available, and
+            // the in-process call is what covers a phone with no Shizuku running.
+            val asked = pressAssistKey() || askInProcess()
+            if (asked) Thread.sleep(ASSIST_WINDOW_MS)
 
             Diag.info(
                 TAG,
-                if (pressed) "asked the system to start $component"
-                else "the assist key could not be pressed"
+                if (asked) "asked the system to start $component"
+                else "the assist request could not be made"
             )
-            pressed
+            asked
         } catch (e: Throwable) {
             Diag.warn(TAG, "the elevated launch failed", e)
             false
         } finally {
             restoreAssistant()
         }
+    }
+
+    /**
+     * Asks the system for an assist without leaving the process.
+     *
+     * `SearchManager` has the two hidden entry points for it - `launchAssist` and `startAssist` -
+     * which is how the Shizuku plugin for Activity Launcher asks for the same assist. Reached only
+     * when the shell is not there to press the key, so a phone without Shizuku running can still
+     * open a hidden screen.
+     */
+    private fun askInProcess(): Boolean {
+        val search = runCatching {
+            ShizukuApplication.application.getSystemService(Context.SEARCH_SERVICE) as? SearchManager
+        }.getOrNull() ?: return false
+
+        val launched = runCatching {
+            HiddenApiBypass.invoke(SearchManager::class.java, search, "launchAssist", Bundle())
+        }.isSuccess
+        if (launched) {
+            Diag.info(TAG, "asked the system for an assist in-process")
+            return true
+        }
+
+        val started = runCatching {
+            HiddenApiBypass.invoke(SearchManager::class.java, search, "startAssist", Bundle())
+        }.isSuccess
+        if (started) Diag.info(TAG, "started an assist in-process")
+        return started
+    }
+
+    /** A real assist key press, which only the shell may make. */
+    private fun pressAssistKey(): Boolean {
+        if (!ShizukuStateMachine.isRunning()) return false
+        // A marker after the key event, because the command answers with nothing and an empty
+        // answer is how this app spells "the shell did not run".
+        val pressed = runShellCommand("input keyevent $ASSIST_KEYCODE; echo pressed") != null
+        if (pressed) Diag.info(TAG, "asked the system for an assist through the shell")
+        return pressed
     }
 
     internal fun backupLine(assistant: String?, voice: String?): String =
