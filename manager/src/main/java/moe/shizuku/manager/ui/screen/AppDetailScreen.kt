@@ -69,12 +69,14 @@ import moe.shizuku.manager.manage.PackageTools
 import moe.shizuku.manager.manage.PermissionKind
 import moe.shizuku.manager.manage.StandbyBucket
 import moe.shizuku.manager.ui.component.AppIcon
+import moe.shizuku.manager.ui.component.AppStatusLabels
 import moe.shizuku.manager.ui.component.CenteredMessage
 import moe.shizuku.manager.ui.component.ChipEmphasis
 import moe.shizuku.manager.ui.component.SegmentedCard
 import moe.shizuku.manager.ui.component.SegmentedColumn
 import moe.shizuku.manager.ui.component.SegmentedListItem
 import moe.shizuku.manager.ui.component.StatusChip
+import moe.shizuku.manager.ui.component.statusChipMinWidth
 import moe.shizuku.manager.utils.ShizukuStateMachine
 
 /** A destructive action waiting for a yes. */
@@ -231,6 +233,9 @@ fun AppDetailScreen(
                                     if (status != null) {
                                         StatusChip(
                                             status,
+                                            // The same width the list rows use, so the chip does
+                                            // not change size as the screen it is on does.
+                                            minWidth = statusChipMinWidth(AppStatusLabels),
                                             emphasis = when {
                                                 app.uninstalled -> ChipEmphasis.WARN
                                                 app.suspended || !app.enabled -> ChipEmphasis.SOFT

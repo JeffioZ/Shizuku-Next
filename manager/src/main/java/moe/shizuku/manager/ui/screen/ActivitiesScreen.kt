@@ -64,7 +64,9 @@ import moe.shizuku.manager.manage.Activities
 import moe.shizuku.manager.ui.component.AppIcon
 import moe.shizuku.manager.ui.component.CenteredMessage
 import moe.shizuku.manager.manage.InstalledPackages
+import moe.shizuku.manager.ui.component.ActivityStatusLabels
 import moe.shizuku.manager.ui.component.ChipEmphasis
+import moe.shizuku.manager.ui.component.statusChipMinWidth
 import moe.shizuku.manager.ui.component.IntentDraft
 import moe.shizuku.manager.ui.component.IntentOperation
 import moe.shizuku.manager.ui.component.IntentForm
@@ -471,6 +473,10 @@ fun ActivitiesScreen(bottomPadding: Dp, onBack: () -> Unit) {
                                 },
                                 trailingContent = {
                                     StatusChip(
+                                        // Launcher, Exported and Not exported are the labels this
+                                        // list can show, and the chips are all as wide as the
+                                        // longest of them so the column lines up.
+                                        minWidth = statusChipMinWidth(ActivityStatusLabels),
                                         text = stringResource(
                                             when {
                                                 activity.launcher -> R.string.activities_launcher

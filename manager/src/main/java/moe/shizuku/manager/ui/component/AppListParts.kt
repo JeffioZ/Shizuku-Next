@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -34,10 +35,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import kotlinx.coroutines.Dispatchers
@@ -198,6 +204,61 @@ enum class ChipEmphasis {
  * with the same hue as the text: brown at a quarter over a dark card came out as rgb(75,73,75),
  * which is grey, and the label on it could not be read either.
  */
+/** The room a chip leaves around its label, on each side. */
+private val ChipPadding = 8.dp
+
+/**
+ * The labels an app row's chip can carry - everything [appStatusChips] and the app detail screen
+ * put in one.
+ *
+ * "Removed, data kept" is deliberately not here. It is a sentence rather than a label, and
+ * measuring it would stretch every chip in the list to fit the row of an app that is already
+ * gone; left out, that one chip is simply the wider one.
+ */
+val AppStatusLabels = listOf(
+    R.string.manage_status_system,
+    R.string.manage_status_user,
+    R.string.manage_status_suspended,
+    R.string.manage_status_disabled,
+    R.string.manage_status_hidden
+)
+
+/** The labels an activity row's chip can carry, which is a different set and a different width. */
+val ActivityStatusLabels = listOf(
+    R.string.activities_launcher,
+    R.string.activities_exported,
+    R.string.activities_not_exported
+)
+
+/**
+ * The width a group of status chips is given, measured from the longest label in it.
+ *
+ * A chip that sizes to its own word makes a column of them ragged: "User" above "Disabled" in
+ * the same list are two widths, and the row under them starts somewhere else again. Measuring the
+ * group they belong to lines them up without anybody having to know which label is the longest -
+ * and the group rather than the whole app, because the activity rows' longest is "Not exported"
+ * and sizing the app rows' chips for a word they can never show would cost the app name that
+ * space on every row.
+ *
+ * Measured, rather than a number of dp worked out from the English: the labels are translated,
+ * and the longest of them is a different word in every language.
+ */
+@Composable
+fun statusChipMinWidth(labels: List<Int>): Dp {
+    val context = LocalContext.current
+    val measurer = rememberTextMeasurer()
+    val style = MaterialTheme.typography.labelSmall
+    val density = LocalDensity.current
+
+    return remember(measurer, style, density) {
+        val widest = labels.maxOf { id ->
+            measurer.measure(AnnotatedString(context.getString(id)), style).size.width
+        }
+
+        with(density) { widest.toDp() } + ChipPadding * 2
+    }
+}
+
 private val ChipRedSurface = Color(0x4DFF5252)
 private val ChipRedLabel = Color(0xFFFFDAD6)
 private val ChipGreenSurface = Color(0x4D2E7D32)
@@ -209,7 +270,14 @@ private val ChipBrownLabel = Color(0xFFF2DCC8)
 fun StatusChip(
     text: String,
     modifier: Modifier = Modifier,
-    emphasis: ChipEmphasis = ChipEmphasis.NONE
+    emphasis: ChipEmphasis = ChipEmphasis.NONE,
+    /**
+     * The width to make this chip at least, from [statusChipMinWidth] for the group it is in.
+     *
+     * Left null by the chips that are not part of such a group - a count on its own, say - which
+     * then size to what they hold.
+     */
+    minWidth: Dp? = null
 ) {
     val container = when (emphasis) {
         ChipEmphasis.NONE -> MaterialTheme.colorScheme.surfaceContainerHighest
@@ -231,11 +299,15 @@ fun StatusChip(
         text = text,
         style = MaterialTheme.typography.labelSmall,
         maxLines = 1,
+        // Centred in the width the chip was given rather than left where its own text ends, which
+        // is the other half of making a column of them line up.
+        textAlign = TextAlign.Center,
         color = content,
         modifier = modifier
+            .then(if (minWidth != null) Modifier.widthIn(min = minWidth) else Modifier)
             .clip(MaterialTheme.shapes.small)
             .background(container)
-            .padding(horizontal = 8.dp, vertical = 3.dp)
+            .padding(horizontal = ChipPadding, vertical = 3.dp)
     )
 }
 
@@ -291,6 +363,10 @@ fun AppStatusChips(
 ) {
     val chips = appStatusChips(pi, hidden, removed)
 
+    // One width for the whole group, so the column of chips lines up down the list rather than
+    // each chip being as wide as its own word.
+    val chipWidth = statusChipMinWidth(AppStatusLabels)
+
     // Three slots, always: an empty one, the kind chip, and then the status chip or another empty
     // one. That is what puts the kind chip on the row's centre line - the block is centred as a
     // whole, so a two-slot block would leave its kind chip half a chip high and a one-slot block
@@ -304,23 +380,30 @@ fun AppStatusChips(
         horizontalAlignment = Alignment.End,
         verticalArrangement = Arrangement.spacedBy(ChipGap)
     ) {
-        EmptyChip()
+        EmptyChip(chipWidth)
         chips.forEach { (label, emphasis) ->
-            StatusChip(stringResource(label), emphasis = emphasis)
+            StatusChip(stringResource(label), emphasis = emphasis, minWidth = chipWidth)
         }
-        if (chips.size < 2) EmptyChip()
+        if (chips.size < 2) EmptyChip(chipWidth)
     }
 }
 
 /** The gap between two chips in a row's trailing stack. */
 private val ChipGap = 4.dp
 
-/** The space a chip would take, with nothing in it. */
+/**
+ * The space a chip would take, with nothing in it.
+ *
+ * Given the group's width rather than the nothing it holds, so the invisible slot lines up with
+ * the visible ones - it is what keeps the kind chip on the row's centre line from one row to the
+ * next, and a slot narrower than its neighbours would do the opposite.
+ */
 @Composable
-private fun EmptyChip() {
+private fun EmptyChip(minWidth: Dp) {
     StatusChip(
         text = "",
         emphasis = ChipEmphasis.NONE,
+        minWidth = minWidth,
         modifier = Modifier
             .alpha(0f)
             .clearAndSetSemantics { }
