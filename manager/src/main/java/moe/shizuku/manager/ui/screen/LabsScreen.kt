@@ -1,6 +1,8 @@
 package moe.shizuku.manager.ui.screen
 
+import android.content.Context
 import androidx.annotation.StringRes
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -13,9 +15,12 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AdminPanelSettings
@@ -32,8 +37,15 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -42,7 +54,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import moe.shizuku.manager.R
+import moe.shizuku.manager.manage.ForceDark
+import moe.shizuku.manager.manage.Hiding
+import moe.shizuku.manager.manage.PackageTools
 import moe.shizuku.manager.ui.Detail
 import moe.shizuku.manager.utils.MoreApps
 import moe.shizuku.manager.ui.theme.LocalAmoledTheme
@@ -71,6 +90,18 @@ private val IconFraction = 0.66f
 
 /** The space between the plate and the name. */
 private val PlateGap = 8.dp
+
+/** The dot that says a tile is doing something. */
+private val ActiveDotSize = 10.dp
+
+/**
+ * Deliberately not a theme role.
+ *
+ * The palette is seeded from the wallpaper, so a role here would come out teal on a teal phone,
+ * amber on an amber one - and the one thing this dot has to do is mean the same thing on every
+ * device. The home screen's Restart button is a fixed blue for the same reason.
+ */
+private val ActiveGreen = Color(0xFF34C759)
 
 /**
  * The room reserved for the name: two lines, which is what every name in the list needs at three
@@ -104,6 +135,19 @@ private val LabelHeight = 40.dp
 @Composable
 fun LabsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
     val context = LocalContext.current
+
+    // What each tile is doing, so the grid can be read without opening eight screens to find
+    // out. It is the only place every one of them is in sight at once, and a hiding mode that is
+    // on with apps listed looks exactly like one that is off from here.
+    //
+    // Re-read whenever the tab is come back to, which is when a change made in one of the lists
+    // is about to be looked at.
+    var refresh by remember { mutableIntStateOf(0) }
+    var active by remember { mutableStateOf<Set<Detail>>(emptySet()) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { refresh++ }
+    LaunchedEffect(refresh) {
+        active = withContext(Dispatchers.IO) { activeFeatures(context) }
+    }
     // Every tile there is, in no particular order. The order is worked out below.
     val entries = listOf(
         LabEntry(R.string.tab_manage, Icons.Outlined.AdminPanelSettings, Detail.APP_OPS),
@@ -194,6 +238,7 @@ fun LabsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                     LabTile(
                         icon = entry.icon,
                         label = label,
+                        active = entry.detail in active,
                         onClick = {
                             // The module index is somebody else's website, so it goes to the
                             // browser when there is one, and the screen inside the app is only
@@ -206,6 +251,53 @@ fun LabsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                 }
             }
         }
+    }
+}
+
+/**
+ * The Lab features that are doing something right now.
+ *
+ * A list counts only when it is switched on *and* has apps on it. The switch arms a hiding mode
+ * and the list is what it acts on, so either without the other is a setting rather than a state -
+ * and a dot that lit up for an empty list would say a phone was hiding something it was not.
+ *
+ * Every answer here but one is this app's own record, which is a preference read. Autostart is the
+ * exception: its list belongs to the platform, and the platform is asked one command for all of
+ * it. That, and the size of the hiding lists, is why this is worked out off the main thread once
+ * when the tab is shown rather than inside each tile.
+ *
+ * Two tiles are left out on purpose, and not because they were forgotten. App ops is a browser
+ * rather than a mode: nothing about it is on or off, and the one change it can make that is
+ * recorded at all - blocking an app's network - writes the firewall's list, which already has a
+ * dot of its own. Activities, device info, the log, the shell and More Apps are places to look
+ * rather than things that run, so there is no state of theirs to report either.
+ */
+private fun activeFeatures(context: Context): Set<Detail> {
+    val byFeature = Detail.entries
+        .filter { it.feature != null }
+        .associateBy { it.feature!! }
+
+    return buildSet {
+        AppToggleFeature.entries.forEach { feature ->
+            val detail = byFeature[feature] ?: return@forEach
+
+            val count = when {
+                // The mode has to be on for the list to be doing anything, which is the whole
+                // difference between the two hiding lists that look alike from the grid.
+                feature.signal != null ->
+                    if (Hiding.isSignalEnabled(feature.signal)) Hiding.appsFor(feature.signal).size
+                    else 0
+
+                feature == AppToggleFeature.AUTOSTART -> PackageTools.readOpDenied(feature.op).size
+                else -> PackageTools.readFirewallBlocked(context).size
+            }
+
+            if (count > 0) add(detail)
+        }
+
+        // The other switch in the grid, and the same question asked of it: on, and with apps to
+        // act on.
+        if (ForceDark.hasWorkToDo()) add(Detail.FORCE_DARK)
     }
 }
 
@@ -224,7 +316,12 @@ private data class LabEntry(
  * colour is what the eye lands on first.
  */
 @Composable
-private fun LabTile(icon: ImageVector, label: String, onClick: () -> Unit) {
+private fun LabTile(
+    icon: ImageVector,
+    label: String,
+    active: Boolean,
+    onClick: () -> Unit
+) {
     BoxWithConstraints {
         // Every part is a fraction of the width the tile was given, and the height is what those
         // parts add up to. Nothing here is a fixed size, which is the point of it: the same tile
@@ -260,19 +357,36 @@ private fun LabTile(icon: ImageVector, label: String, onClick: () -> Unit) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth(PlateFraction)
-                        .aspectRatio(1f),
-                    shape = RoundedCornerShape(14.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.fillMaxSize(IconFraction)
+                Box {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth(PlateFraction)
+                            .aspectRatio(1f),
+                        shape = RoundedCornerShape(14.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = icon,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.fillMaxSize(IconFraction)
+                            )
+                        }
+                    }
+
+                    // On the plate's bottom corner, the way an unread count sits on an icon: the
+                    // grid is read by shape and colour at a glance, and this is the one thing
+                    // about a tile that changes on its own. Below rather than above, because the
+                    // status bar the grid scrolls under is up there and a mark at the top of a
+                    // tile reads as part of whatever is on its way past.
+                    if (active) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .offset(x = 2.dp, y = 2.dp)
+                                .size(ActiveDotSize)
+                                .background(ActiveGreen, CircleShape)
                         )
                     }
                 }
