@@ -257,6 +257,7 @@
     <string name="uid_name_system">system</string>
     <string name="uid_name_shell">shell</string>
     <string name="home_device_manager_version">Manager version</string>
+    <string name="home_device_android_version">Android version</string>
     <string name="home_device_kernel_version">Kernel version</string>
     <string name="home_device_model">Device model</string>
     <string name="home_device_fingerprint">Fingerprint</string>

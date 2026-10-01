@@ -680,6 +680,12 @@ fun HomeScreen(bottomPadding: Dp) {
                     }
                     item {
                         SegmentedListItem(
+                            headlineContent = { Text(stringResource(R.string.home_device_android_version)) },
+                            supportingContent = { Text(androidVersion()) }
+                        )
+                    }
+                    item {
+                        SegmentedListItem(
                             headlineContent = { Text(stringResource(R.string.home_device_kernel_version)) },
                             supportingContent = { Text(kernelVersion()) }
                         )
@@ -861,6 +867,9 @@ private fun deviceModel(): String = buildString {
 }
 
 private fun kernelVersion(): String = System.getProperty("os.version").orEmpty().ifEmpty { "-" }
+
+/** The Android release beside its API level, which is the pair that names it: "16 (SDK 36)". */
+private fun androidVersion(): String = "${Build.VERSION.RELEASE} (SDK ${Build.VERSION.SDK_INT})"
 
 /**
  * The kernel's SELinux state, worked out the way KernelSU's manager works it out:
