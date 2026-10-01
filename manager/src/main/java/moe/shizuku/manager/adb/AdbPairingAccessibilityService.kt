@@ -252,7 +252,10 @@ class AdbPairingAccessibilityService : AccessibilityService() {
         // so start it instead of sending them back to tap Start again.
         StartStatusReporter.clear()
         toast(getString(R.string.notification_adb_pairing_succeed_text))
-        ShizukuReceiverStarter.start(this, userInitiated = true)
+        // Not userInitiated: nobody tapped for this one, it is the pairing finishing by itself.
+        // Wi-Fi is necessarily up - pairing runs over it - so this changes nothing today; it just
+        // keeps the flag meaning what its name says.
+        ShizukuReceiverStarter.start(this)
 
         pairing = false
         if (isTelevision) disableSelf()

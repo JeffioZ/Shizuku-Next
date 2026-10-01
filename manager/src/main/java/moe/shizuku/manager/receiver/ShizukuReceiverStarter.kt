@@ -51,6 +51,13 @@ object ShizukuReceiverStarter {
      * settings. Every entry point goes through here the Start button, start on
      * boot, the watchdog, the manual-start intent and the pairing flow so they
      * all behave the same instead of guessing from whichever method worked last.
+     *
+     * [userInitiated] means a person asked for *this* start from a control in front of them, and
+     * nothing else counts. It is what decides whether a wireless start with no Wi-Fi fails at once
+     * or waits: somebody looking at the screen is owed the answer now, while a start that arrived
+     * from another app's intent, from the pairing flow or from a boot is nobody's tap and waits for
+     * the network - which is what the unattended starts have to do, since Wi-Fi routinely arrives a
+     * few seconds after they try.
      */
     fun start(
         context: Context,
