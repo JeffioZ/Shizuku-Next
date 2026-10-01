@@ -142,6 +142,20 @@
     <string name="hiding_signal_vpn">VPN</string>
     <string name="hiding_vpn_client">VPN client to Hide</string>
 
+    <string name="tab_force_dark">Force dark mode</string>
+    <string name="force_dark_gate">Force dark mode</string>
+    <string name="force_dark_gate_disabled">Force dark mode is off</string>
+    <string name="force_dark_count">%1$d forced</string>
+    <string name="force_dark_filter_forced">Forced</string>
+    <string name="force_dark_filter_not">Not forced</string>
+    <string name="force_dark_empty">Nothing is forced dark.</string>
+    <string name="force_dark_note">Keeps force dark on while a listed app is open, then restores it. On newer Android versions, most apps ignore force dark, so this may not work. Use the system theme option below instead.</string>
+    <string name="force_dark_system_theme">Switch the system theme instead</string>
+    <string name="force_dark_system_theme_note">Turns on dark mode for the whole phone while a listed app is open, then restores your previous theme when it closes.</string>
+    <string name="force_dark_toggled">Forced closed the app</string>
+    <string name="force_dark_notification_title">Force dark mode is on</string>
+    <string name="force_dark_notification_text">An app on the force dark mode list is open</string>
+
     <string name="tab_device_info">Device info</string>
     <string name="device_refresh">Refresh</string>
     <string name="device_battery">Battery</string>

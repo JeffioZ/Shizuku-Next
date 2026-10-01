@@ -83,6 +83,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ui.screen.AppsScreen
+import moe.shizuku.manager.ui.screen.ForceDarkScreen
 import moe.shizuku.manager.ui.screen.HomeScreen
 import moe.shizuku.manager.ui.screen.AppToggleFeature
 import moe.shizuku.manager.ui.screen.IntentsScreen
@@ -123,6 +124,7 @@ enum class Detail(
     HIDE_VPN(AppToggleFeature.HIDE_VPN),
     LOG,
     DEVICE_INFO,
+    FORCE_DARK,
     STEALTH,
     TERMINAL,
     INTENTS,
@@ -220,6 +222,11 @@ fun ShizukuApp() {
                             )
 
                             Detail.DEVICE_INFO -> DeviceInfoScreen(
+                                bottomPadding = 0.dp,
+                                onBack = { detail = null }
+                            )
+
+                            Detail.FORCE_DARK -> ForceDarkScreen(
                                 bottomPadding = 0.dp,
                                 onBack = { detail = null }
                             )

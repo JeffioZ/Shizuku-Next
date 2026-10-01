@@ -26,6 +26,7 @@ import moe.shizuku.manager.AppConstants
 import moe.shizuku.manager.MainActivity
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ShizukuSettings
+import moe.shizuku.manager.manage.ForceDark
 import moe.shizuku.manager.manage.Hiding
 import moe.shizuku.manager.manage.HidingGrants
 import moe.shizuku.manager.manage.Signal
@@ -36,6 +37,10 @@ import moe.shizuku.manager.utils.Diag
 /**
  * The watch: while an app on one of the hiding lists is in front, the settings it objects to are
  * hidden, and they go back the moment it leaves.
+ *
+ * It carries force dark as well, because the question underneath is the same one. An app that
+ * cannot see in the dark is an app whose switches have to be held while it is in front, and one
+ * watch that asks what is in front beats two watches asking twice.
  *
  * This is the part that makes the lists worth having. A setting is the device's, so hiding one is
  * hiding it from everybody; what makes that liveable is doing it for exactly as long as the app
@@ -81,10 +86,11 @@ class HidingWatchService : Service() {
          */
         fun refresh(context: Context) {
             val intent = Intent(context, HidingWatchService::class.java)
-            if (!Hiding.hasWorkToDo()) {
-                // No list that is switched on names an app any more, so no setting has a reason
-                // to stay hidden - and nothing for a watch to watch.
+            if (!Hiding.hasWorkToDo() && !ForceDark.hasWorkToDo()) {
+                // Neither feature has an app left to act for, so nothing has a reason to stay
+                // hidden or forced dark - and nothing for a watch to watch.
                 Hiding.restoreAll()
+                ForceDark.restore()
                 runCatching { context.stopService(intent) }
                 return
             }
@@ -159,7 +165,11 @@ class HidingWatchService : Service() {
         // notification yet is one the platform will kill.
         startForeground(
             NOTIFICATION_ID,
-            notification(hidingFor = null, paused = Hiding.isPaused()),
+            notification(
+                hidingFor = null,
+                paused = Hiding.isPaused(),
+                forcingDark = ForceDark.isApplied()
+            ),
             ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
         )
 
@@ -186,9 +196,10 @@ class HidingWatchService : Service() {
         var paused = false
 
         while (scope.isActive) {
-            if (!Hiding.hasWorkToDo()) {
+            if (!Hiding.hasWorkToDo() && !ForceDark.hasWorkToDo()) {
                 holding.set(null)
                 Hiding.restoreAll()
+                ForceDark.restore()
                 notify(notification(hidingFor = null, paused = false))
                 stopSelf()
                 return
@@ -208,6 +219,14 @@ class HidingWatchService : Service() {
                 return
             }
 
+            // Force dark is a rule of its own, and keeps to it whether or not hiding is paused:
+            // the pause is about the settings somebody asked to have back right now, and an app
+            // on this list is still an app that cannot see in the dark either way.
+            runCatching {
+                if (ForceDark.hasWorkToDo()) ForceDark.applyFor(Hiding.foregroundPackage())
+                else ForceDark.restore()
+            }.onFailure { Diag.warn(TAG, "the force dark pass failed", it) }
+
             if (Hiding.isPaused()) {
                 // Restored once on the way in, not once a second: hiding is suspended, so there
                 // is nothing to look at until somebody resumes it.
@@ -226,7 +245,7 @@ class HidingWatchService : Service() {
                 .onFailure { Diag.warn(TAG, "the hiding pass failed", it) }
                 .getOrNull()
             holding.set(hidingFor)
-            notify(notification(hidingFor, paused = false))
+            notify(notification(hidingFor, paused = false, forcingDark = ForceDark.isApplied()))
             logState(hidingFor)
             askForTheServerBack(hidingFor)
             delay(POLL_MS)
@@ -306,7 +325,8 @@ class HidingWatchService : Service() {
     private fun notification(
         hidingFor: String?,
         paused: Boolean,
-        unavailable: Boolean = false
+        unavailable: Boolean = false,
+        forcingDark: Boolean = false
     ): Notification {
         val open = PendingIntent.getActivity(
             this,
@@ -351,9 +371,21 @@ class HidingWatchService : Service() {
         // says the settings are hidden while they are not would have the user looking for a
         // problem that is not there.
         if (hidingFor == null) {
+            // Two features, one notification, because it is the same fact either way: something
+            // is being held for an app that is open, and this is how the user gets it back.
             builder
-                .setContentTitle(getString(R.string.hiding_notification_idle_title))
-                .setContentText(getString(R.string.hiding_notification_watching))
+                .setContentTitle(
+                    getString(
+                        if (forcingDark) R.string.force_dark_notification_title
+                        else R.string.hiding_notification_idle_title
+                    )
+                )
+                .setContentText(
+                    getString(
+                        if (forcingDark) R.string.force_dark_notification_text
+                        else R.string.hiding_notification_watching
+                    )
+                )
             return builder.build()
         }
 
