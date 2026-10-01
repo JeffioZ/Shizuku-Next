@@ -62,6 +62,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -153,6 +154,13 @@ private data class Tab(
     val unselectedIcon: ImageVector
 )
 
+/**
+ * The key the tab pages' saveable state is filed under, so it survives while a detail screen is
+ * the one on screen. One key rather than one per tab: the pager keeps every page it has already
+ * visited, so the pages are all inside this one provider and none of them needs its own.
+ */
+private const val TAB_PAGES = "tab-pages"
+
 private val tabs = listOf(
     Tab(R.string.tab_home, Icons.Filled.Home, Icons.Outlined.Home),
     Tab(R.string.tab_apps, Icons.Filled.Apps, Icons.Outlined.Apps),
@@ -188,6 +196,13 @@ fun ShizukuApp() {
                 // neither was saveable, so a rotation dropped both and did the same thing.
                 var detail by rememberSaveable { mutableStateOf<Detail?>(null) }
                 val pagerState = rememberPagerState(pageCount = { tabs.size })
+                // The pages leave the composition while a detail is open, and where a list is
+                // scrolled to is saveable state - which is discarded when the composable holding
+                // it goes away. So going back from Intents landed at the top of Settings rather
+                // than where it was left, and the pager alone could not fix that: this holds the
+                // state of the pages while they are gone, which is the same thing a navigation
+                // library does, and for the same reason.
+                val pages = rememberSaveableStateHolder()
                 val current = detail
 
                 if (current != null) {
@@ -257,7 +272,9 @@ fun ShizukuApp() {
                         }
                     }
                 } else {
-                    MainTabs(pagerState = pagerState, onOpenDetail = { detail = it })
+                    pages.SaveableStateProvider(TAB_PAGES) {
+                        MainTabs(pagerState = pagerState, onOpenDetail = { detail = it })
+                    }
                 }
             }
         }
