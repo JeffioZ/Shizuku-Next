@@ -156,7 +156,7 @@
     <string name="force_dark_notification_title">Force dark mode is on</string>
     <string name="force_dark_notification_text">An app on the force dark mode list is open</string>
 
-    <string name="tab_activities">Activities</string>
+    <string name="tab_activities">Activities Launcher</string>
     <string name="activities_apps_count">%1$d apps</string>
     <string name="activities_count">%1$d activities</string>
     <string name="activities_note">Lists every activity an app has, including hidden ones. Activities that cannot be started by other apps are opened through the system instead. The assistant opens it briefly, presses the assist key, then restores the assistant to its previous state.</string>
@@ -173,6 +173,35 @@
     <string name="activities_open">Open</string>
     <string name="activities_copy">Copy</string>
     <string name="activities_copied">Copied</string>
+
+    <string name="tab_intent_builder">Intent builder</string>
+    <string name="intent_builder_note">Build and send an intent. You can set its action, data, type, component, categories, extras, and flags. You can also load an intent from a URI, such as intent:#Intent;action=android.intent.action.VIEW;data=https://example.com;end. This is the format used by Activity Launcher and most automation tools. Loading one fills in the fields so you can check and edit it before sending.</string>
+    <string name="intent_uri">Intent URI</string>
+    <string name="intent_uri_load">Load into the fields</string>
+    <string name="intent_uri_invalid">That is not a valid intent URI.</string>
+    <string name="intent_action">Action</string>
+    <string name="intent_data">Data</string>
+    <string name="intent_type">Type</string>
+    <string name="intent_component">Component</string>
+    <string name="intent_package">Package</string>
+    <string name="intent_categories">Categories</string>
+    <string name="intent_extras">Extras</string>
+    <string name="intent_extra_add">Add extra</string>
+    <string name="intent_extra_remove">Remove this extra</string>
+    <string name="intent_key">Key</string>
+    <string name="intent_value">Value</string>
+    <string name="intent_flags">Flags</string>
+    <string name="intent_start">Start</string>
+    <string name="intent_nothing">Give the intent an action, some data, a package or a component.</string>
+    <string name="intent_refused">The intent could not be started.</string>
+    <string name="intent_flag_clear_top">Clear top</string>
+    <string name="intent_flag_single_top">Single top</string>
+    <string name="intent_flag_clear_task">Clear task</string>
+    <string name="intent_flag_new_document">New document</string>
+    <string name="intent_flag_no_animation">No animation</string>
+    <string name="intent_flag_exclude_recents">No recents</string>
+    <string name="intent_flag_grant_read">Grant read</string>
+    <string name="intent_flag_grant_write">Grant write</string>
 
     <string name="tab_device_info">Device info</string>
     <string name="device_refresh">Refresh</string>

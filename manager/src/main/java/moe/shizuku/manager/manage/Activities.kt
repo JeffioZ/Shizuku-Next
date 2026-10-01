@@ -181,6 +181,31 @@ object Activities {
      */
     fun canElevate(): Boolean = holdsWriteSecureSettings()
 
+    /**
+     * Starts an intent, with the same two routes an activity row gets.
+     *
+     * The builder can name a component that is not exported as easily as one that is - a class
+     * name is a class name - and a builder that could describe an activity it could not open
+     * would be a strange thing to hand somebody. So a refused start falls through to the same
+     * swap rather than reporting the refusal the platform gave.
+     */
+    fun launch(context: Context, intent: Intent): Outcome {
+        // Nothing here is an activity, so there is no task to join: without this the platform
+        // refuses the start outright with "Calling startActivity() from outside of an Activity
+        // context requires the FLAG_ACTIVITY_NEW_TASK flag".
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
+        if (runCatching { context.startActivity(intent) }.isSuccess) {
+            Diag.info(TAG, "started an intent for ${intent.component ?: intent.action}")
+            return Outcome.STARTED
+        }
+
+        val component = intent.component ?: return Outcome.REFUSED
+        if (!holdsWriteSecureSettings()) return Outcome.REFUSED
+        if (elevate(component)) return Outcome.ELEVATED
+        return if (ShizukuStateMachine.isRunning()) Outcome.REFUSED else Outcome.NO_SHELL
+    }
+
     private fun holdsWriteSecureSettings(): Boolean = runCatching {
         ShizukuApplication.application
             .checkSelfPermission(Manifest.permission.WRITE_SECURE_SETTINGS) ==

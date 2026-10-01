@@ -86,6 +86,7 @@ import moe.shizuku.manager.ui.screen.AppsScreen
 import moe.shizuku.manager.ui.screen.ActivitiesScreen
 import moe.shizuku.manager.ui.screen.ForceDarkScreen
 import moe.shizuku.manager.ui.screen.HomeScreen
+import moe.shizuku.manager.ui.screen.IntentBuilderScreen
 import moe.shizuku.manager.ui.screen.AppToggleFeature
 import moe.shizuku.manager.ui.screen.IntentsScreen
 import moe.shizuku.manager.ui.screen.DeviceInfoScreen
@@ -127,6 +128,7 @@ enum class Detail(
     DEVICE_INFO,
     FORCE_DARK,
     ACTIVITIES,
+    INTENT_BUILDER,
     STEALTH,
     TERMINAL,
     INTENTS,
@@ -234,6 +236,11 @@ fun ShizukuApp() {
                             )
 
                             Detail.ACTIVITIES -> ActivitiesScreen(
+                                bottomPadding = 0.dp,
+                                onBack = { detail = null }
+                            )
+
+                            Detail.INTENT_BUILDER -> IntentBuilderScreen(
                                 bottomPadding = 0.dp,
                                 onBack = { detail = null }
                             )
