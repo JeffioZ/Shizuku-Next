@@ -12,10 +12,10 @@ import moe.shizuku.manager.manage.ForceDark
 import moe.shizuku.manager.manage.Hiding
 import moe.shizuku.manager.service.HidingWatchService
 import moe.shizuku.manager.service.WatchdogService
+import moe.shizuku.manager.utils.AppLocale
 import moe.shizuku.manager.utils.ShizukuStateMachine
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 import rikka.core.util.BuildUtils.atLeast30
-import rikka.material.app.LocaleDelegate
 import rikka.shizuku.Shizuku
 import kotlin.concurrent.thread
 
@@ -56,7 +56,10 @@ class ShizukuApplication : Application() {
         // installs from before this read the component back and can be stuck disabled with
         // start on boot switched on.
         ShizukuSettings.updateBootReceiver(context)
-        LocaleDelegate.defaultLocale = ShizukuSettings.getLocale()
+        // The chosen language, which lives in two places depending on the release: the framework
+        // per-app locale from Android 13, and LocaleDelegate - what the activities wrap their
+        // context with - below it. AppLocale knows which is which.
+        AppLocale.initialize(this)
         AppCompatDelegate.setDefaultNightMode(ShizukuSettings.getNightMode())
 
         if(ShizukuSettings.getWatchdog()) WatchdogService.start(context)

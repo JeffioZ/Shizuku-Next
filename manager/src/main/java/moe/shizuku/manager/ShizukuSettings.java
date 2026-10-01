@@ -15,6 +15,7 @@ import java.lang.annotation.Retention;
 import java.util.Locale;
 import moe.shizuku.manager.service.WatchdogService;
 import moe.shizuku.manager.receiver.BootCompleteReceiver;
+import moe.shizuku.manager.utils.AppLocale;
 import moe.shizuku.manager.utils.Token;
 import moe.shizuku.manager.utils.EmptySharedPreferencesImpl;
 import moe.shizuku.manager.utils.EnvironmentUtils;
@@ -421,9 +422,25 @@ public class ShizukuSettings {
         return getPreferences().getInt(Keys.KEY_NIGHT_MODE, defValue);
     }
 
-    public static Locale getLocale() {
+    /**
+     * The language the user chose, as a BCP 47 tag, or [AppLocale.SYSTEM] to follow the device.
+     *
+     * What is stored is the tag and not a `Locale`, because the tag is what the framework per-app
+     * locale takes on Android 13+, and because a tag is still meaningful for a language this build
+     * has no resources for.
+     */
+    public static String getLanguageTag() {
         String tag = getPreferences().getString(Keys.KEY_LANGUAGE, null);
-        if (TextUtils.isEmpty(tag) || "SYSTEM".equals(tag)) {
+        return TextUtils.isEmpty(tag) ? AppLocale.SYSTEM : tag;
+    }
+
+    public static void setLanguageTag(String tag) {
+        getPreferences().edit().putString(Keys.KEY_LANGUAGE, tag).apply();
+    }
+
+    public static Locale getLocale() {
+        String tag = getLanguageTag();
+        if (AppLocale.SYSTEM.equals(tag)) {
             return Locale.getDefault();
         }
         return Locale.forLanguageTag(tag);

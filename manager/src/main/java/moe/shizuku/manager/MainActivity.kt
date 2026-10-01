@@ -15,6 +15,7 @@ import moe.shizuku.manager.adb.AdbPairingService
 import moe.shizuku.manager.home.showAccessibilityDialog
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter
 import moe.shizuku.manager.ui.ShizukuApp
+import moe.shizuku.manager.utils.AppLocale
 
 class MainActivity : ComponentActivity() {
 
@@ -33,6 +34,16 @@ class MainActivity : ComponentActivity() {
         ) return
 
         notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+    }
+
+    /**
+     * The whole Compose UI lives here, and unlike the activities that come from `MaterialActivity`
+     * this one used to attach with the device's language whatever the user had chosen. On
+     * Android 13+ the per-app locale is already in the configuration and [AppLocale.wrap] leaves
+     * it alone; below that this is what makes the choice take effect.
+     */
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(AppLocale.wrap(newBase))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

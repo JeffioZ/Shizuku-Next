@@ -485,6 +485,7 @@
     <string name="settings_auto_disable_usb_debugging">Disable USB debugging</string>
     <string name="settings_auto_disable_usb_debugging_summary">Disable USB debugging when stopping Shizuku</string>
     <string name="settings_language">Language</string>
+    <string name="settings_language_system">System default</string>
     <string name="settings_black_night_theme">Amoled Black</string>
     <string name="settings_black_night_theme_summary">Use a pure black theme in dark mode</string>
     <string name="settings_update_stable">Stable</string>

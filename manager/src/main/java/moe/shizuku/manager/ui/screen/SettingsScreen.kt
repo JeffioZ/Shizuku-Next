@@ -1,9 +1,7 @@
 package moe.shizuku.manager.ui.screen
 
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
-import android.provider.Settings
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.background
@@ -19,7 +17,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.AdminPanelSettings
@@ -92,6 +92,7 @@ import moe.shizuku.manager.start.AdbPortPersistence
 import moe.shizuku.manager.start.applyAdbWithoutDeveloperOptions
 import moe.shizuku.manager.start.restoreDeveloperOptions
 import moe.shizuku.manager.start.startMethodLabelRes
+import moe.shizuku.manager.utils.AppLocale
 import moe.shizuku.manager.utils.CustomTabsHelper
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.SettingsHelper
@@ -101,6 +102,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import rikka.shizuku.manager.ShizukuLocales
 
 /** The agent a system uid start goes through, checked for when it is not running yet. */
 private const val FOTA_AGENT_PACKAGE = "com.sdet.fotaagent"
@@ -124,6 +126,8 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
     var updateMode by remember { mutableStateOf(ShizukuSettings.getUpdateMode()) }
     var nightMode by remember { mutableStateOf(ShizukuSettings.getNightMode()) }
     var themeDialog by remember { mutableStateOf(false) }
+    var languageDialog by remember { mutableStateOf(false) }
+    var language by remember { mutableStateOf(ShizukuSettings.getLanguageTag()) }
     var useSystemColor by remember {
         mutableStateOf(ShizukuSettings.getPreferences().getBoolean(ShizukuSettings.Keys.KEY_USE_SYSTEM_COLOR, true))
     }
@@ -680,19 +684,18 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                             centerSlots = true,
                             leadingContent = { SettingsIcon(Icons.Outlined.Translate) },
                             headlineContent = { Text(stringResource(R.string.settings_language)) },
+                            // The row says which language is in force, because the choice is now
+                            // made here and there is nowhere else to look it up.
+                            supportingContent = {
+                                Text(
+                                    if (language == AppLocale.SYSTEM) stringResource(R.string.settings_language_system)
+                                    else AppLocale.label(language)
+                                )
+                            },
                             trailingContent = {
                                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
                             },
-                            onClick = {
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                    runCatching {
-                                        context.startActivity(
-                                            Intent(Settings.ACTION_APP_LOCALE_SETTINGS)
-                                                .setData(Uri.fromParts("package", context.packageName, null))
-                                        )
-                                    }
-                                }
-                            }
+                            onClick = { languageDialog = true }
                         )
                     }
                 }
@@ -888,6 +891,29 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
         )
     }
 
+    if (languageDialog) {
+        val systemLabel = stringResource(R.string.settings_language_system)
+        ChoiceDialog(
+            title = stringResource(R.string.settings_language),
+            options = ShizukuLocales.LOCALES.map { tag ->
+                tag to if (tag == AppLocale.SYSTEM) systemLabel else AppLocale.label(tag)
+            },
+            selected = language,
+            onDismiss = { languageDialog = false },
+            onSelect = { tag ->
+                languageDialog = false
+                language = tag
+                AppLocale.select(context, tag)
+                // Android 13+ rebuilds the activities itself when the per-app locale changes.
+                // Below that nothing does, so the context wrapped in attachBaseContext would go
+                // on being the old language until the next launch.
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                    AppLocale.activityOf(context)?.recreate()
+                }
+            }
+        )
+    }
+
     if (tcpPortDialog) {
         var draft by remember { mutableStateOf(tcpPort) }
         AlertDialog(
@@ -1071,7 +1097,13 @@ private fun ChoiceDialog(
             // it shifted the text along, said nothing to a screen reader, and left the
             // choice looking like a row of buttons. Material 3 puts a radio on each row
             // and tints the chosen one.
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            // The list is as long as the setting is: three themes do not need this, but the
+            // language dialog has one entry per translation, and a plain Column silently cuts
+            // the rest off with no way to reach them.
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
                 options.forEach { (value, label) ->
                     val isSelected = value == selected
                     Row(
