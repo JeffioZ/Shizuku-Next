@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
@@ -32,6 +33,8 @@ import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -42,6 +45,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,6 +64,8 @@ import moe.shizuku.manager.manage.Activities
 import moe.shizuku.manager.ui.component.AppIcon
 import moe.shizuku.manager.ui.component.CenteredMessage
 import moe.shizuku.manager.ui.component.ChipEmphasis
+import moe.shizuku.manager.ui.component.IntentDraft
+import moe.shizuku.manager.ui.component.IntentForm
 import moe.shizuku.manager.ui.component.SegmentedCard
 import moe.shizuku.manager.ui.component.StatusChip
 import moe.shizuku.manager.ui.component.appLabel
@@ -95,6 +101,11 @@ fun ActivitiesScreen(bottomPadding: Dp, onBack: () -> Unit) {
     var details by remember { mutableStateOf<Activities.Activity?>(null) }
     var version by remember { mutableIntStateOf(0) }
 
+    // Which half of this screen: what apps declare, or an intent written by hand. Saved, because
+    // it is a place somebody chose to be rather than a step in a flow.
+    var tab by rememberSaveable { mutableIntStateOf(0) }
+    val draft = remember { IntentDraft() }
+
     LaunchedEffect(version) {
         loading = true
         apps = withContext(Dispatchers.IO) {
@@ -115,8 +126,8 @@ fun ActivitiesScreen(bottomPadding: Dp, onBack: () -> Unit) {
     }
 
     // Back leaves the activities before it leaves the screen, which is the order the two lists
-    // were walked in.
-    BackHandler(enabled = chosen != null) {
+    // were walked in. On the form there is no level to leave, so the screen is what back closes.
+    BackHandler(enabled = tab == 0 && chosen != null) {
         chosen = null
         query = ""
         message = null
@@ -126,6 +137,23 @@ fun ActivitiesScreen(bottomPadding: Dp, onBack: () -> Unit) {
         if (ClipboardUtils.put(context, text)) {
             Toast.makeText(context, context.getString(R.string.activities_copied), Toast.LENGTH_SHORT)
                 .show()
+        }
+    }
+
+    /** Sends what the form holds, and says what happened when it is worth saying. */
+    fun send() {
+        if (!draft.sendable()) {
+            draft.message = R.string.intent_nothing
+            return
+        }
+        val intent = draft.build()
+        scope.launch {
+            val outcome = withContext(Dispatchers.IO) { Activities.launch(context, intent) }
+            draft.message = when (outcome) {
+                Activities.Outcome.STARTED, Activities.Outcome.ELEVATED -> null
+                Activities.Outcome.NO_SHELL -> R.string.activities_needs_shizuku
+                Activities.Outcome.REFUSED -> R.string.intent_refused
+            }
         }
     }
 
@@ -176,7 +204,9 @@ fun ActivitiesScreen(bottomPadding: Dp, onBack: () -> Unit) {
             title = {
                 Column {
                     Text(
-                        if (packageName == null) {
+                        if (tab == 1) {
+                            stringResource(R.string.tab_intent_builder)
+                        } else if (packageName == null) {
                             stringResource(R.string.tab_activities)
                         } else {
                             appLabelText
@@ -184,22 +214,25 @@ fun ActivitiesScreen(bottomPadding: Dp, onBack: () -> Unit) {
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    Text(
-                        text = if (packageName == null) {
-                            stringResource(R.string.activities_apps_count, apps.size)
-                        } else {
-                            stringResource(R.string.activities_count, activities.size)
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    // The count belongs to the list; the form has nothing to count.
+                    if (tab == 0) {
+                        Text(
+                            text = if (packageName == null) {
+                                stringResource(R.string.activities_apps_count, apps.size)
+                            } else {
+                                stringResource(R.string.activities_count, activities.size)
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             },
             windowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
             navigationIcon = {
                 IconButton(
                     onClick = {
-                        if (packageName == null) {
+                        if (tab == 1 || packageName == null) {
                             onBack()
                         } else {
                             chosen = null
@@ -210,8 +243,39 @@ fun ActivitiesScreen(bottomPadding: Dp, onBack: () -> Unit) {
                 ) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
                 }
+            },
+            actions = {
+                // Only where there is something to send.
+                if (tab == 1) {
+                    IconButton(onClick = { send() }) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.Send,
+                            contentDescription = stringResource(R.string.intent_start)
+                        )
+                    }
+                }
             }
         )
+
+        // Two halves of one question, so one screen with two tabs rather than two doors on the
+        // grid: what this app can open, and what to open.
+        PrimaryTabRow(selectedTabIndex = tab) {
+            Tab(
+                selected = tab == 0,
+                onClick = { tab = 0 },
+                text = { Text(stringResource(R.string.tab_activities)) }
+            )
+            Tab(
+                selected = tab == 1,
+                onClick = { tab = 1 },
+                text = { Text(stringResource(R.string.tab_intent_builder)) }
+            )
+        }
+
+        if (tab == 1) {
+            IntentForm(draft = draft, bottomPadding = bottomPadding)
+            return@Column
+        }
 
         OutlinedTextField(
             value = query,

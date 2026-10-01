@@ -1,4 +1,4 @@
-package moe.shizuku.manager.ui.screen
+package moe.shizuku.manager.ui.component
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
