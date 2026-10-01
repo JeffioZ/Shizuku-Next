@@ -77,6 +77,8 @@ fun DeviceInfoScreen(bottomPadding: Dp, onBack: () -> Unit) {
     var drain by remember { mutableStateOf<List<Pair<String, Double>>>(emptyList()) }
     var usage by remember { mutableStateOf<DeviceInfo.Usage?>(null) }
     var system by remember { mutableStateOf<DeviceInfo.SystemFacts?>(null) }
+    var thermal by remember { mutableStateOf<DeviceInfo.Thermal?>(null) }
+    var cpu by remember { mutableStateOf<DeviceInfo.Cpu?>(null) }
     var shizuku by remember { mutableStateOf<DeviceInfo.ShizukuState?>(null) }
     var loading by remember { mutableStateOf(true) }
     var version by remember { mutableIntStateOf(0) }
@@ -95,6 +97,8 @@ fun DeviceInfoScreen(bottomPadding: Dp, onBack: () -> Unit) {
             drain = all.drain
             usage = all.usage
             system = all.system
+            thermal = all.thermal
+            cpu = all.cpu
             shizuku = all.shizuku
         }
         loading = false
@@ -429,6 +433,54 @@ fun DeviceInfoScreen(bottomPadding: Dp, onBack: () -> Unit) {
                         detail = "${DeviceInfo.gigabytes(facts.storageFreeMb)} free of " +
                             DeviceInfo.gigabytes(facts.storageTotalMb)
                     )
+                }
+            }
+
+            thermal?.let { heat ->
+                if (heat.present) {
+                    item { SectionTitle(stringResource(R.string.device_thermal)) }
+                    item {
+                        SegmentedCard {
+                            SegmentedColumn {
+                                heat.zones.take(8).forEach { zone ->
+                                    item {
+                                        Fact(
+                                            DeviceInfo.thermalLabel(zone.name),
+                                            DeviceInfo.celsius(zone.temperatureC)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    item { Note(stringResource(R.string.device_thermal_note, heat.total)) }
+                }
+            }
+
+            cpu?.let { busy ->
+                if (busy.present) {
+                    item { SectionTitle(stringResource(R.string.device_cpu)) }
+                    item {
+                        SegmentedCard {
+                            SegmentedColumn {
+                                item {
+                                    Fact(
+                                        stringResource(R.string.device_load_average),
+                                        DeviceInfo.loadAverage(busy.load)
+                                    )
+                                }
+                                busy.processes.take(8).forEach { process ->
+                                    item {
+                                        Fact(
+                                            process.name,
+                                            DeviceInfo.percentText(process.percent)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    item { Note(stringResource(R.string.device_cpu_note)) }
                 }
             }
 

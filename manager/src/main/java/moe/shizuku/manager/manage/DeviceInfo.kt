@@ -229,6 +229,8 @@ object DeviceInfo {
         val drain: List<Pair<String, Double>>,
         val usage: Usage,
         val system: SystemFacts,
+        val thermal: Thermal,
+        val cpu: Cpu,
         val shizuku: ShizukuState
     )
 
@@ -236,6 +238,8 @@ object DeviceInfo {
         val batteryDump = runShellCommand("dumpsys battery")
         val statsDump = runShellCommand("dumpsys batterystats")
         val chargedDump = runShellCommand("dumpsys batterystats --charged")
+        val cpuDump = runShellCommand("dumpsys cpuinfo")
+        val thermalDump = runShellCommand(THERMAL_COMMAND)
 
         return Snapshot(
             battery = battery(batteryDump),
@@ -245,6 +249,8 @@ object DeviceInfo {
             drain = drain(chargedDump),
             usage = usage(statsDump),
             system = system(),
+            thermal = thermal(thermalDump),
+            cpu = cpu(cpuDump),
             shizuku = shizuku()
         )
     }
@@ -514,6 +520,109 @@ object DeviceInfo {
     private fun kernelRelease(build: String): String =
         Regex("""^\d+(\.\d+)+""").find(build)?.value ?: build
 
+    // ---- how warm, and how busy ---------------------------------------------------
+
+    /** One thermal sensor: what it watches over, and how hot it reads. */
+    data class Zone(val name: String, val temperatureC: Double)
+
+    /**
+     * The kernel's thermal sensors, hottest first.
+     *
+     * The kernel puts every one of them in `/sys/class/thermal/thermal_zoneN`: the sensor's own
+     * name in `type` and its reading in `temp`, in thousandths of a degree. Not every entry is a
+     * temperature, though - a radio sensor with nothing attached reports the -273 sentinel, and
+     * the power-supply `bcl` entries are trip levels, which read 0 - so only readings above zero
+     * are kept. [total] is how many zones the kernel listed, kept so the screen can say how many
+     * were left off.
+     */
+    data class Thermal(val zones: List<Zone>, val total: Int) {
+        val present: Boolean get() = zones.isNotEmpty()
+    }
+
+    /**
+     * Read the zones with two `cat`s rather than a loop, and pair them up by glob order.
+     *
+     * One `cat` prints every sensor name, one a line, in the same order the second prints every
+     * reading, so the two lists line up. Shelling a `cat` per zone instead is a process per file -
+     * a hundred and thirty of them on this device - for a single screen.
+     */
+    private const val THERMAL_COMMAND =
+        "cat /sys/class/thermal/thermal_zone*/type; echo ---; cat /sys/class/thermal/thermal_zone*/temp"
+
+    fun thermal(dumpText: String? = null): Thermal {
+        val out = dumpText ?: runShellCommand(THERMAL_COMMAND)
+            ?: return Thermal(emptyList(), 0)
+
+        val lines = out.lines()
+        val split = lines.indexOf("---")
+        if (split < 0) return Thermal(emptyList(), 0)
+
+        val names = lines.subList(0, split)
+        val temps = lines.subList(split + 1, lines.size)
+        val count = minOf(names.size, temps.size)
+
+        val zones = (0 until count)
+            .mapNotNull { i ->
+                val celsius = temps[i].trim().toIntOrNull()?.div(1000.0) ?: return@mapNotNull null
+                if (celsius <= 0.0) null else Zone(names[i].trim(), celsius)
+            }
+            .sortedByDescending { it.temperatureC }
+
+        return Thermal(zones, count)
+    }
+
+    /** One process's share of the CPU over the dump's window. */
+    data class Process(val name: String, val percent: Double)
+
+    /**
+     * The kernel's accounting: the load average, and which processes were running.
+     *
+     * `dumpsys cpuinfo` is the shell's view of it - the app cannot read it itself - and it is a
+     * snapshot rather than an instantaneous one: each figure is the process's share over the
+     * interval named at the top of the dump. The names are the kernel's, so some of what is busiest
+     * is a kernel worker rather than an app, and the list says so rather than pretending otherwise.
+     */
+    data class Cpu(val load: List<Double>, val processes: List<Process>) {
+        val present: Boolean get() = processes.isNotEmpty() || load.isNotEmpty()
+    }
+
+    fun cpu(dumpText: String? = null): Cpu {
+        val dump = dumpText ?: runShellCommand("dumpsys cpuinfo") ?: return Cpu(emptyList(), emptyList())
+
+        val load = dump.lineSequence()
+            .firstOrNull { it.startsWith("Load:") }
+            ?.substringAfter(':')
+            ?.split('/')
+            ?.mapNotNull { it.trim().toDoubleOrNull() }
+            ?: emptyList()
+
+        val processes = mutableListOf<Process>()
+        for (line in dump.lineSequence()) {
+            // The window ends at the total, and the lines past it belong to the next one.
+            if (line.contains("TOTAL")) break
+            val match = CPU_PROCESS.find(line) ?: continue
+            val percent = match.groupValues[1].toDoubleOrNull() ?: continue
+            if (percent <= 0.0) continue
+            processes += Process(match.groupValues[2], percent)
+        }
+
+        // Ordered here rather than trusted from the dump: the kernel sorts its own list, but
+        // the list is the point of the section, and a screen that reads 10%, 3%, 0.1%, 2% is
+        // read as broken however the dump wrote it.
+        return Cpu(load, processes.sortedByDescending { it.percent })
+    }
+
+    // "  19% 4762/com.android.systemui: 15% user + 3.5% kernel / ...", and the same line with a
+    // leading + when a process is new since the last dump. The name is lazy so that a name with a
+    // colon in it - crtc_commit:203 - is taken whole rather than cut at the first one.
+    private val CPU_PROCESS = Regex("""^\s*\+?([0-9.]+)%\s+\d+/(.+?):\s""")
+
+    /** Load averages as "1.51 / 0.51 / 0.10", the one, five and fifteen minute figures. */
+    fun loadAverage(load: List<Double>): String =
+        if (load.size < 3) "—" else load.take(3).joinToString(" / ") {
+            String.format(Locale.US, "%.2f", it)
+        }
+
     /** Uptime as "3 d 4 h 12 m", which is how somebody reads it. */
     fun uptime(millis: Long): String {
         val minutes = millis / 60_000
@@ -553,6 +662,16 @@ object DeviceInfo {
     /** Degrees, one decimal. */
     fun celsius(t: Double?): String =
         if (t == null) "—" else String.format(Locale.US, "%.1f °C", t)
+
+    /**
+     * A thermal zone's name as a label: the kernel writes them lowercase and hyphenated, and
+     * `gpuss-0` reads better as `GPUSS-0`.
+     */
+    fun thermalLabel(name: String): String = name.uppercase(Locale.US)
+
+    /** A process's share of the CPU, one decimal. */
+    fun percentText(percent: Double): String =
+        String.format(Locale.US, "%.1f%%", percent)
 
     /** The battery's status, as words. */
     fun statusText(status: Int?): String = when (status) {
