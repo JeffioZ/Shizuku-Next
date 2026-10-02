@@ -208,6 +208,9 @@ dependencies {
     // (`android.permission.C` and `com.fo` are told apart by their dots), which is exactly the
     // sort of thing a device cannot confirm by having commands typed at it.
     testImplementation "junit:junit:4.13.2"
+    // The credited snapshot is JSON, and org.json inside android.jar is a stub that throws in a
+    // unit test. This is the real thing, test-only, so the snapshot can be checked where it lies.
+    testImplementation "org.json:json:20231013"
     implementation "androidx.lifecycle:lifecycle-viewmodel-compose:2.9.0"
     debugImplementation "androidx.compose.ui:ui-tooling"
 

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -50,8 +51,14 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import moe.shizuku.manager.ui.component.ChoiceRow
+import moe.shizuku.manager.ui.component.Contributor
+import moe.shizuku.manager.ui.component.ContributorCredits
+import moe.shizuku.manager.ui.component.ContributorDetailsDialog
+import moe.shizuku.manager.ui.component.ContributorWall
 import moe.shizuku.manager.ui.component.ExpressiveSwitch
+import moe.shizuku.manager.ui.component.SegmentedCard
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -64,6 +71,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -194,6 +202,8 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
     var tcpPortDialog by remember { mutableStateOf(false) }
     var systemStartDialog by remember { mutableStateOf(false) }
     var updateDialog by remember { mutableStateOf(false) }
+    var selectedContributor by remember { mutableStateOf<Contributor?>(null) }
+    val contributors = rememberContributors()
 
     // The language can be changed without this screen: from Android 13 the system's own per-app
     // language screen sets it too, and the framework rebuilds the activities rather than the
@@ -797,7 +807,44 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                     }
                 }
             }
+            // Nothing to credit is better than an empty card: a build with no snapshot at all - an
+            // asset that failed to make it in - simply has no credits section.
+            if (contributors.isNotEmpty()) {
+                // The heading and the card are separate items so the list's own spacing sits
+                // between them; inside one item the badge came to rest on the card's edge.
+                item {
+                    SettingsSectionHeader(
+                        titleRes = R.string.settings_contributors,
+                        badge = contributors.size.toString()
+                    )
+                }
+                item {
+                    SegmentedCard {
+                        Column(
+                            modifier = Modifier.padding(18.dp),
+                            verticalArrangement = Arrangement.spacedBy(14.dp)
+                        ) {
+                            ContributorWall(
+                                contributors = contributors,
+                                onSelect = { selectedContributor = it }
+                            )
+                            Text(
+                                text = stringResource(R.string.settings_contributors_hint),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
         }
+    }
+
+    selectedContributor?.let { contributor ->
+        ContributorDetailsDialog(
+            contributor = contributor,
+            onDismiss = { selectedContributor = null }
+        )
     }
 
     restartAction?.let { action ->
@@ -1084,14 +1131,36 @@ private fun needsRestart(setting: String, newValue: Any? = null): Boolean {
 
 /** Section title above a settings card, so the list reads as deliberate groups. */
 @Composable
-private fun SettingsSectionHeader(@StringRes titleRes: Int) {
-    Text(
-        text = stringResource(titleRes),
-        style = MaterialTheme.typography.labelLarge,
-        fontWeight = FontWeight.SemiBold,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 16.dp, top = 12.dp)
-    )
+private fun SettingsSectionHeader(@StringRes titleRes: Int, badge: String? = null) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, top = 12.dp, end = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = stringResource(titleRes),
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        // How many people the wall is holding, beside the title, so the number is read rather than
+        // counted off the faces.
+        badge?.let {
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surfaceContainerHighest
+            ) {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                )
+            }
+        }
+    }
 }
 
 /**
@@ -1109,6 +1178,26 @@ private fun SettingsIcon(icon: ImageVector) {
         tint = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.size(24.dp)
     )
+}
+
+/**
+ * The credits to draw, and the fetch that keeps them current.
+ *
+ * The shipped snapshot is read synchronously, so the wall is never empty on the frame it first
+ * appears; the published copy is fetched behind it - at most once a day - and the wall redraws if
+ * it arrives. A failed fetch leaves the wall exactly as it was, which is why nothing here reports
+ * an error: a credits screen is not worth interrupting anyone over.
+ */
+@Composable
+private fun rememberContributors(): List<Contributor> {
+    val context = LocalContext.current
+    var contributors by remember(context) {
+        mutableStateOf(ContributorCredits.initial(context))
+    }
+    LaunchedEffect(context) {
+        ContributorCredits.refresh(context)?.let { contributors = it }
+    }
+    return contributors
 }
 
 private fun needsBatteryPrompt(context: android.content.Context): Boolean =
