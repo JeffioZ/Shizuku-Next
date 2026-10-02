@@ -34,6 +34,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.AdminPanelSettings
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.Coffee
 import androidx.compose.material.icons.rounded.Computer
 import androidx.compose.material.icons.rounded.Numbers
 import androidx.compose.material.icons.rounded.StopCircle
@@ -110,6 +111,7 @@ import moe.shizuku.manager.ui.component.SegmentedColumn
 import moe.shizuku.manager.ui.theme.LocalAmoledTheme
 import moe.shizuku.manager.ui.component.SegmentedListItem
 import moe.shizuku.manager.ui.component.stripHtmlTags
+import moe.shizuku.manager.utils.CustomTabsHelper
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.SettingsHelper
 import moe.shizuku.manager.utils.SettingsPage
@@ -724,6 +726,24 @@ fun HomeScreen(bottomPadding: Dp) {
                         )
                     }
                 }
+            }
+
+            item {
+                // The other half of the About row in Settings, and at the end of the page
+                // rather than the top: nobody opens this app to be asked, and the person who
+                // has scrolled past the device details is the one who has got something out
+                // of it. Same page, same way of opening it.
+                ExpressiveCard(
+                    icon = Icons.Rounded.Coffee,
+                    title = stringResource(R.string.settings_support_coffee),
+                    body = stringResource(R.string.home_support_body),
+                    onClick = {
+                        CustomTabsHelper.launchUrlOrCopy(
+                            context,
+                            context.getString(R.string.buymeacoffee_url)
+                        )
+                    }
+                )
             }
         }
     }

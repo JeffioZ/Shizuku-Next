@@ -19,6 +19,7 @@
     <string name="home_wireless_adb_summary">Starts using wireless debugging.</string>
     <string name="home_usb_adb_title"><![CDATA[Start via USB debugging]]></string>
     <string name="home_usb_adb_summary">Starts using USB debugging.</string>
+    <string name="home_support_body">Shizuku Next is free and has no ads. A coffee goes towards the time it takes to maintain.</string>
 
     <!-- Adb -->
     <string name="dialog_adb_port">Port</string>
