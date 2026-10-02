@@ -580,6 +580,8 @@
     <string name="bug_report_dialog_method">Please submit an issue on ^1 if you have an account.</string>
     <string name="bug_report_dialog_method_2">Otherwise, you can send an email.</string>
     <string name="bug_report_dialog_button_email">Email</string>
+    <string name="bug_report_dialog_diagnostics_note">Your current diagnostics are filled in at the top of the issue and the email.</string>
+    <string name="bug_report_dialog_body_prompt">Please describe the bug. Include steps to reproduce if possible, as well as any relevant images/logs.</string>
 
     <!-- Snackbar -->
     <string name="snackbar_battery_optimization_settings">Turn off battery optimization to use this feature.</string>
