@@ -241,7 +241,14 @@ object PackageTools {
             packageName = packageName,
             label = label,
             versionName = info.versionName,
-            versionCode = runCatching { info.longVersionCode }.getOrDefault(info.versionCode.toLong()),
+            // `longVersionCode` arrived with Android 9 (API 28); below it the int is all the
+            // platform keeps, so widening that is the same number, not a fallback.
+            versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                info.longVersionCode
+            } else {
+                @Suppress("DEPRECATION")
+                info.versionCode.toLong()
+            },
             uid = ai?.uid ?: 0,
             targetSdk = ai?.targetSdkVersion ?: 0,
             minSdk = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) ai?.minSdkVersion ?: 0 else 0,

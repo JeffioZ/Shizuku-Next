@@ -54,6 +54,7 @@ import moe.shizuku.manager.starter.Starter
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.ShizukuStateMachine
 import moe.shizuku.manager.utils.Diag
+import moe.shizuku.manager.utils.createChannelCompat
 
 class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
@@ -195,6 +196,18 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             val useClassicPort = usbMethod || !EnvironmentUtils.isTlsSupported()
             val port = tcpPort.takeIf { useClassicPort }
                 ?: callbackFlow {
+                // The mDNS service discovery below arrived with wireless debugging in Android 11
+                // (API 30), and so did the class that queries it: on anything older the class
+                // does not exist at all and naming it is a NoClassDefFoundError rather than a
+                // start that reports no port. The branch above cannot reach here on those
+                // platforms - a start that may not use the classic port already knows TLS is
+                // supported, which is exactly API 30 - so this only makes that explicit and
+                // keeps the reference off the older platforms.
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+                    close(TimeoutException("mDNS wireless discovery needs Android 11"))
+                    awaitClose { }
+                    return@callbackFlow
+                }
                 val adbMdns = AdbMdns(applicationContext, AdbMdns.TLS_CONNECT) { p ->
                     if (p.second > 0) trySend(p.second)
                 }
@@ -467,13 +480,12 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
     }
 
     private fun showErrorNotification(context: Context, e: Exception) {
-        val channel = NotificationChannel(
+        val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        nm.createChannelCompat(
             CHANNEL_ID,
             context.getString(R.string.wadb_notification_title),
             NotificationManager.IMPORTANCE_LOW
         )
-        val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        nm.createNotificationChannel(channel)
 
         val nb = NotificationCompat.Builder(context, CHANNEL_ID)
 

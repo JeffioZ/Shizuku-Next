@@ -315,11 +315,23 @@ object Hiding {
     fun hasUsageAccess(): Boolean = runCatching {
         val appOps = ShizukuApplication.application.getSystemService(AppOpsManager::class.java)
             ?: return false
-        appOps.unsafeCheckOpNoThrow(
-            AppOpsManager.OPSTR_GET_USAGE_STATS,
-            Process.myUid(),
-            ShizukuApplication.application.packageName
-        ) == AppOpsManager.MODE_ALLOWED
+        // `unsafeCheckOpNoThrow` arrived with Android 10 (API 29); `checkOpNoThrow` is the same
+        // question asked the way the older platforms understand it.
+        @Suppress("DEPRECATION")
+        val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            appOps.unsafeCheckOpNoThrow(
+                AppOpsManager.OPSTR_GET_USAGE_STATS,
+                Process.myUid(),
+                ShizukuApplication.application.packageName
+            )
+        } else {
+            appOps.checkOpNoThrow(
+                AppOpsManager.OPSTR_GET_USAGE_STATS,
+                Process.myUid(),
+                ShizukuApplication.application.packageName
+            )
+        }
+        mode == AppOpsManager.MODE_ALLOWED
     }.getOrDefault(false)
 
     /**

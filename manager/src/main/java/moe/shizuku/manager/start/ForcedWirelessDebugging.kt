@@ -3,10 +3,12 @@ package moe.shizuku.manager.start
 import android.content.ContentResolver
 import android.content.Context
 import android.net.wifi.WifiManager
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
 import android.util.Log
+import androidx.annotation.RequiresApi
 import kotlin.coroutines.resume
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -128,6 +130,9 @@ object ForcedWirelessDebugging {
 
     /** Stops the hotspot. Safe to call when there is none. */
     fun releaseHotspot() {
+        // The reservation's own class does not exist below Android 8, which is also the only
+        // platform where there is never a reservation to release.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         runCatching { reservation?.close() }
             .onFailure { Diag.warn(AppConstants.TAG, "Could not close the local-only hotspot", it) }
         reservation = null
@@ -150,6 +155,14 @@ object ForcedWirelessDebugging {
      * object; it also dies with the process, which is a fair fallback.
      */
     private suspend fun startHotspot(context: Context, log: (String) -> Unit): Boolean {
+        // The local-only hotspot arrived with Android 8 (API 26) and the class it is held in
+        // does not exist below it. The experiment that reaches this is only ever useful on a
+        // modern platform anyway, so on an older one there is nothing to try, and that is what
+        // is reported rather than a NoClassDefFoundError.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            log("the local-only hotspot needs Android 8")
+            return false
+        }
         if (reservation != null) return true
 
         val wifi = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
@@ -173,6 +186,7 @@ object ForcedWirelessDebugging {
     }
 
     /** One request, with the refusal reason said in words rather than a number. */
+    @RequiresApi(Build.VERSION_CODES.O)
     private suspend fun attemptHotspot(
         wifi: WifiManager,
         attempt: Int

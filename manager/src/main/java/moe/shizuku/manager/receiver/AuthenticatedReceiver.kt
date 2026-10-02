@@ -1,6 +1,5 @@
 package moe.shizuku.manager.receiver
 
-import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
@@ -10,6 +9,7 @@ import androidx.core.app.NotificationCompat
 import moe.shizuku.manager.MainActivity
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ShizukuSettings
+import moe.shizuku.manager.utils.createChannelCompat
 
 abstract class AuthenticatedReceiver : BroadcastReceiver() {
 
@@ -50,14 +50,8 @@ abstract class AuthenticatedReceiver : BroadcastReceiver() {
         val titleStr = getString(title)
         val messageStr = getString(message)
 
-        val channel = NotificationChannel(
-            CHANNEL_ID,
-            CHANNEL_NAME,
-            NotificationManager.IMPORTANCE_HIGH
-        )
-
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        nm.createNotificationChannel(channel)
+        nm.createChannelCompat(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH)
 
         val launchIntent = Intent(this, MainActivity::class.java).apply {
             addFlags(

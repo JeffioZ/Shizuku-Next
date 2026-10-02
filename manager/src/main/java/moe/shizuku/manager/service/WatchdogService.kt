@@ -1,7 +1,6 @@
 package moe.shizuku.manager.service
 
 import android.app.Notification
-import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
@@ -16,6 +15,7 @@ import android.os.IBinder
 import android.os.SystemClock
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import androidx.work.WorkManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -36,6 +36,7 @@ import moe.shizuku.manager.starter.Starter
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.SettingsPage
 import moe.shizuku.manager.utils.ShizukuStateMachine
+import moe.shizuku.manager.utils.createChannelCompat
 import java.util.concurrent.atomic.AtomicBoolean
 import moe.shizuku.manager.utils.Diag
 
@@ -390,15 +391,13 @@ class WatchdogService : Service() {
         val channelId = "shizuku_watchdog_v2"
         val channelName = "Watchdog"
 
-        val channel = NotificationChannel(
+        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        manager.createChannelCompat(
             channelId,
             channelName,
-            NotificationManager.IMPORTANCE_LOW
-        ).apply {
-            setShowBadge(false)
-        }
-        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        manager.createNotificationChannel(channel)
+            NotificationManager.IMPORTANCE_LOW,
+            showBadge = false
+        )
 
         val launchIntent = Intent(this, MainActivity::class.java).apply {
             addFlags(
@@ -440,12 +439,7 @@ class WatchdogService : Service() {
         val channelName = "Crash Reports"
 
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val channel = NotificationChannel(
-            channelId,
-            channelName,
-            NotificationManager.IMPORTANCE_DEFAULT
-        )
-        nm.createNotificationChannel(channel)
+        nm.createChannelCompat(channelId, channelName, NotificationManager.IMPORTANCE_DEFAULT)
 
         val learnMoreIntent = Intent(Intent.ACTION_VIEW).apply {
             setData(Uri.parse("https://github.com/thedjchi/Shizuku/wiki#shizuku-keeps-stopping-randomly"))
@@ -476,13 +470,7 @@ class WatchdogService : Service() {
      */
     private fun showRecoveryNotification() {
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        nm.createNotificationChannel(
-            NotificationChannel(
-                CRASH_CHANNEL_ID,
-                "Crash Reports",
-                NotificationManager.IMPORTANCE_DEFAULT
-            )
-        )
+        nm.createChannelCompat(CRASH_CHANNEL_ID, "Crash Reports", NotificationManager.IMPORTANCE_DEFAULT)
 
         val notification = NotificationCompat.Builder(this, CRASH_CHANNEL_ID)
             .setContentTitle(getString(R.string.watchdog_shizuku_recovered_title))
@@ -517,13 +505,7 @@ class WatchdogService : Service() {
      */
     private fun showGaveUpNotification() {
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        nm.createNotificationChannel(
-            NotificationChannel(
-                CRASH_CHANNEL_ID,
-                "Crash Reports",
-                NotificationManager.IMPORTANCE_DEFAULT
-            )
-        )
+        nm.createChannelCompat(CRASH_CHANNEL_ID, "Crash Reports", NotificationManager.IMPORTANCE_DEFAULT)
 
         val notification = NotificationCompat.Builder(this, CRASH_CHANNEL_ID)
             .setContentTitle(getString(R.string.watchdog_given_up_title))
@@ -645,7 +627,11 @@ class WatchdogService : Service() {
         @JvmStatic
         fun start(context: Context): Boolean {
             return try {
-                context.startForegroundService(Intent(context, WatchdogService::class.java))
+                // ContextCompat, not the plain call: the two-argument startForegroundService
+                // only exists from Android 8 (API 26), and a NoSuchMethodError is an Error the
+                // catch below cannot see. The compat helper falls back to startService on the
+                // platforms that predate it.
+                ContextCompat.startForegroundService(context, Intent(context, WatchdogService::class.java))
                 true
             } catch (e: Exception) {
                 // ForegroundServiceStartNotAllowedException on Android 12+, which is an ordinary

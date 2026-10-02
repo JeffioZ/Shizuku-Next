@@ -2,6 +2,7 @@ package moe.shizuku.manager.adb
 
 import android.accessibilityservice.AccessibilityService
 import android.content.Intent
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -168,17 +169,24 @@ class AdbPairingAccessibilityService : AccessibilityService() {
      */
     private suspend fun discoverPairingEndpoint(
         timeoutMs: Long = PAIRING_DISCOVERY_TIMEOUT_MS
-    ): Pair<String, Int>? = withTimeoutOrNull(timeoutMs) {
-        suspendCancellableCoroutine { continuation ->
-            lateinit var mdns: AdbMdns
-            mdns = AdbMdns(this@AdbPairingAccessibilityService, AdbMdns.TLS_PAIRING) { (host, port) ->
-                if (port > 0 && continuation.isActive) {
-                    mdns.stop()
-                    continuation.resume(host to port)
+    ): Pair<String, Int>? {
+        // Wireless pairing arrived with Android 11 (API 30), and so did the mDNS class that
+        // locates the pairing port below: on anything older the class does not exist at all,
+        // and there is no pairing service to discover either, so "no endpoint" is the honest
+        // answer rather than a NoClassDefFoundError.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return null
+        return withTimeoutOrNull(timeoutMs) {
+            suspendCancellableCoroutine { continuation ->
+                lateinit var mdns: AdbMdns
+                mdns = AdbMdns(this@AdbPairingAccessibilityService, AdbMdns.TLS_PAIRING) { (host, port) ->
+                    if (port > 0 && continuation.isActive) {
+                        mdns.stop()
+                        continuation.resume(host to port)
+                    }
                 }
+                continuation.invokeOnCancellation { mdns.stop() }
+                mdns.start()
             }
-            continuation.invokeOnCancellation { mdns.stop() }
-            mdns.start()
         }
     }
 
@@ -191,6 +199,14 @@ class AdbPairingAccessibilityService : AccessibilityService() {
     }
 
     private fun pair(dialog: PairingDialog) {
+        // Wireless pairing and the client below both arrived with Android 11 (API 30), and the
+        // client's class does not exist before it. A pairing dialog cannot appear on an older
+        // platform, so this is only making that explicit rather than reaching for a class that
+        // is not there.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            finish(getString(R.string.cannot_connect_port))
+            return
+        }
         pairing = true
 
         GlobalScope.launch(Dispatchers.IO) {

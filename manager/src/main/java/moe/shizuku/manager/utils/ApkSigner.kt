@@ -1,6 +1,7 @@
 package moe.shizuku.manager.utils
 
 import android.content.pm.PackageManager
+import android.os.Build
 import com.android.apksig.ApkSigner
 import java.io.File
 import java.io.IOException
@@ -144,13 +145,23 @@ object ApkSigner {
         val certificate: X509Certificate
     )
 
+    @Suppress("DEPRECATION")
     private fun getAppCertificate(): X509Certificate {
+        // `signingInfo` and GET_SIGNING_CERTIFICATES both arrived with Android 9 (API 28);
+        // reading the field on an older platform is a NoSuchFieldError, not a null. The
+        // deprecated `signatures` is the same certificate the newer field reports - this app
+        // has never been through a signing-key rotation - so it is the correct fallback.
+        val legacy = Build.VERSION.SDK_INT < Build.VERSION_CODES.P
         val info = appContext.packageManager.getPackageInfo(
             appContext.packageName,
-            PackageManager.GET_SIGNING_CERTIFICATES
+            if (legacy) PackageManager.GET_SIGNATURES else PackageManager.GET_SIGNING_CERTIFICATES
         )
 
-        val signers = info.signingInfo?.apkContentsSigners ?: emptyArray()
+        val signers = if (legacy) {
+            info.signatures ?: emptyArray()
+        } else {
+            info.signingInfo?.apkContentsSigners ?: emptyArray()
+        }
         require(signers.isNotEmpty()) { "No signing certificates found" }
 
         val certBytes = signers[0].toByteArray()

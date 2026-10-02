@@ -1,7 +1,6 @@
 package moe.shizuku.manager.receiver
 
 import android.app.Notification
-import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
@@ -28,6 +27,7 @@ import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.SettingsPage
 import moe.shizuku.manager.utils.ShizukuStateMachine
 import moe.shizuku.manager.utils.UserHandleCompat
+import moe.shizuku.manager.utils.createChannelCompat
 import moe.shizuku.manager.worker.AdbStartWorker
 import moe.shizuku.manager.utils.Diag
 
@@ -202,13 +202,12 @@ object ShizukuReceiverStarter {
         msg: String? = null,
         @ShizukuSettings.StartMethod startMethod: Int = ShizukuSettings.getStartMethod()
     ): Notification {
-        val channel = NotificationChannel(
+        val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        nm.createChannelCompat(
             CHANNEL_ID,
             context.getString(R.string.wadb_notification_title),
             NotificationManager.IMPORTANCE_LOW
         )
-        val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        nm.createNotificationChannel(channel)
 
         val cancelIntent = Intent(context, NotifCancelReceiver::class.java)
         val cancelPendingIntent = PendingIntent.getBroadcast(
@@ -298,13 +297,12 @@ object ShizukuReceiverStarter {
         @ShizukuSettings.StartMethod startMethod: Int
     ) {
 
-        val channel = NotificationChannel(
+        val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        nm.createChannelCompat(
             CHANNEL_ID,
             context.getString(R.string.wadb_notification_title),
             NotificationManager.IMPORTANCE_LOW
         )
-        val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        nm.createNotificationChannel(channel)
 
         val webpageIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/thedjchi/Shizuku/wiki#shizuku-isnt-starting-on-boot-for-me"))
         val pendingWebpageIntent = PendingIntent.getActivity(

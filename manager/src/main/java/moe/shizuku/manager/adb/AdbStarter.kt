@@ -3,6 +3,7 @@ package moe.shizuku.manager.adb
 import android.Manifest.permission.WRITE_SECURE_SETTINGS
 import android.content.pm.PackageManager
 import android.content.Context
+import android.os.Build
 import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
@@ -228,8 +229,14 @@ object AdbStarter {
     }
 
     /** The wireless (TLS) port, as advertised over mDNS, or null if none shows up. */
-    private suspend fun findWirelessPort(context: Context, timeoutMs: Long = 15_000L): Int? =
-        withTimeoutOrNull(timeoutMs) {
+    private suspend fun findWirelessPort(context: Context, timeoutMs: Long = 15_000L): Int? {
+        // mDNS discovery of the wireless port needs the service discovery the platform gained
+        // in Android 11 (API 30), and the class that asks for it does not exist before then:
+        // naming it would be a NoClassDefFoundError rather than an answer of "no port".
+        // Returning null is the same answer the discovery gives when nothing advertises, and
+        // it is the truth here - an older platform has no wireless debugging to advertise.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return null
+        return withTimeoutOrNull(timeoutMs) {
             callbackFlow {
                 val adbMdns = AdbMdns(context, AdbMdns.TLS_CONNECT) { p ->
                     if (p.second > 0) trySend(p.second)
@@ -238,6 +245,7 @@ object AdbStarter {
                 awaitClose { adbMdns.stop() }
             }.first()
         }
+    }
 
     private suspend fun waitForPortAvailable(
         host: String,

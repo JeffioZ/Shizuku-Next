@@ -1,7 +1,6 @@
 package moe.shizuku.manager.receiver
 
 import android.app.AlarmManager
-import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
@@ -14,6 +13,7 @@ import moe.shizuku.manager.R
 import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.service.WatchdogService
 import moe.shizuku.manager.utils.Diag
+import moe.shizuku.manager.utils.createChannelCompat
 
 /**
  * Brings the watchdog back after something killed it, from outside the app.
@@ -95,12 +95,10 @@ class WatchdogAlarmReceiver : BroadcastReceiver() {
     private fun showNotRunningNotification(context: Context) {
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
             ?: return
-        manager.createNotificationChannel(
-            NotificationChannel(
-                WatchdogService.CRASH_CHANNEL_ID,
-                "Crash Reports",
-                NotificationManager.IMPORTANCE_DEFAULT
-            )
+        manager.createChannelCompat(
+            WatchdogService.CRASH_CHANNEL_ID,
+            "Crash Reports",
+            NotificationManager.IMPORTANCE_DEFAULT
         )
         val notification = NotificationCompat.Builder(context, WatchdogService.CRASH_CHANNEL_ID)
             .setContentTitle(context.getString(R.string.watchdog_not_running_title))

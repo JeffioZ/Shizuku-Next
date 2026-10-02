@@ -1,17 +1,18 @@
 package moe.shizuku.manager.service
 
 import android.app.Notification
-import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.os.Build
 import android.os.IBinder
 import android.os.SystemClock
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -33,6 +34,7 @@ import moe.shizuku.manager.manage.Signal
 import moe.shizuku.manager.receiver.HidingRestoreReceiver
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter
 import moe.shizuku.manager.utils.Diag
+import moe.shizuku.manager.utils.createChannelCompat
 
 /**
  * The watch: while an app on one of the hiding lists is in front, the settings it objects to are
@@ -95,7 +97,7 @@ class HidingWatchService : Service() {
                 return
             }
 
-            runCatching { context.startForegroundService(intent) }
+            runCatching { ContextCompat.startForegroundService(context, intent) }
                 .onFailure { Diag.warn(TAG, "could not start the hiding watch", it) }
         }
 
@@ -163,15 +165,22 @@ class HidingWatchService : Service() {
 
         // Posted before the first pass, because a foreground service that has not posted its
         // notification yet is one the platform will kill.
-        startForeground(
-            NOTIFICATION_ID,
-            notification(
-                hidingFor = null,
-                paused = Hiding.isPaused(),
-                forcingDark = ForceDark.isApplied()
-            ),
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+        val notification = notification(
+            hidingFor = null,
+            paused = Hiding.isPaused(),
+            forcingDark = ForceDark.isApplied()
         )
+        // The type argument arrived with Android 10 (API 29); below it the two-argument call
+        // is the only one there is, and it is also the only one that is legal there.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(
+                NOTIFICATION_ID,
+                notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+            )
+        } else {
+            startForeground(NOTIFICATION_ID, notification)
+        }
 
         watching = scope.launch { watch() }
     }
@@ -309,12 +318,11 @@ class HidingWatchService : Service() {
     }
 
     private fun channel() {
-        getSystemService(NotificationManager::class.java)?.createNotificationChannel(
-            NotificationChannel(
-                CHANNEL_ID,
-                getString(R.string.hiding_notification_channel),
-                NotificationManager.IMPORTANCE_LOW
-            ).apply { setShowBadge(false) }
+        getSystemService(NotificationManager::class.java).createChannelCompat(
+            CHANNEL_ID,
+            getString(R.string.hiding_notification_channel),
+            NotificationManager.IMPORTANCE_LOW,
+            showBadge = false
         )
     }
 

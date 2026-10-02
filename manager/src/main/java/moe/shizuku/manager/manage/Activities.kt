@@ -8,6 +8,7 @@ import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import moe.shizuku.manager.ShizukuApplication
@@ -390,6 +391,10 @@ object Activities {
      * open a hidden screen.
      */
     private fun askInProcess(): Boolean {
+        // HiddenApiBypass needs Android 9 (API 28); below it there is no bypass to reach the
+        // hidden assist entry points through, so the answer is simply that this way did not work.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return false
+
         val search = runCatching {
             ShizukuApplication.application.getSystemService(Context.SEARCH_SERVICE) as? SearchManager
         }.getOrNull() ?: return false

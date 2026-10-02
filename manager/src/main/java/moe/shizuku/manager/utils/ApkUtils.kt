@@ -8,6 +8,7 @@ import android.content.IntentFilter
 import android.content.pm.PackageInstaller
 import android.os.Build
 import android.util.Log
+import androidx.core.content.ContextCompat
 import com.reandroid.apk.AndroidFrameworks
 import com.reandroid.apk.ApkModule
 import com.reandroid.archive.ByteInputSource
@@ -218,7 +219,15 @@ private fun Context.createInstallerPendingIntent(
         IntentFilter().apply {
             addAction(installerAction)
         }
-    registerReceiver(installerReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+    // ContextCompat, not the plain call: the three-argument registerReceiver only exists from
+    // Android 8 (API 26) and the NOT_EXPORTED flag from Android 13 (API 33); the compat helper
+    // picks the right form for whichever platform is underneath.
+    ContextCompat.registerReceiver(
+        this,
+        installerReceiver,
+        filter,
+        ContextCompat.RECEIVER_NOT_EXPORTED
+    )
 
     val callbackIntent =
         Intent(installerAction).apply {
