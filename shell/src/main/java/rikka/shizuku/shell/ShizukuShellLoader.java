@@ -28,6 +28,13 @@ public class ShizukuShellLoader {
     private static String callingPackage;
     private static Handler handler;
 
+    /**
+     * Whether a binder has been handed over already. Only ever read and written on the main
+     * looper, which is where the receiver binder and the fallback below both run, so it needs no
+     * more than this.
+     */
+    private static boolean answered;
+
     private static final Binder receiverBinder = new Binder() {
 
         @Override
@@ -53,10 +60,7 @@ public class ShizukuShellLoader {
         Bundle data = new Bundle();
         data.putBinder("binder", receiverBinder);
 
-        String managerApplicationId = System.getenv("MANAGER_APPLICATION_ID");
-        if (TextUtils.isEmpty(managerApplicationId) || "MANAGER_PKG".equals(managerApplicationId)) {
-            managerApplicationId = BuildConfig.MANAGER_APPLICATION_ID;
-        }
+        final String managerApplicationId = managerApplicationId();
 
         Intent intent = new Intent("rikka.shizuku.intent.action.REQUEST_BINDER")
                 .setPackage(managerApplicationId)
@@ -79,6 +83,36 @@ public class ShizukuShellLoader {
         try {
             am.broadcastIntent(null, intent, null, null, 0, null, null,
                     null, -1, null, true, false, 0);
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA) {
+                // Android 16 does not deliver a broadcast sent from app_process to a receiver in
+                // another app on every OEM: on some the call above reports success and onReceive
+                // is never called, which leaves this sitting here until the timeout. The manager's
+                // activity answers the same exchange - ShellRequestHandlerActivity runs the very
+                // ShellBinderRequestHandler the receiver does - so the request is made that way
+                // too, unless the broadcast was answered first. Where the broadcast does arrive,
+                // as it did on every device this was tried on, nothing is started and nothing
+                // changes; only a device that drops it sees the second request.
+                handler.postDelayed(() -> {
+                    if (answered) {
+                        return;
+                    }
+
+                    try {
+                        Intent activityIntent = new Intent("rikka.shizuku.intent.action.REQUEST_BINDER")
+                                .setPackage(managerApplicationId)
+                                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                .putExtra("data", data);
+
+                        am.startActivityAsUser(null, callingPackage, activityIntent, null, null, null,
+                                0, 0, null, null, Os.getuid() / 100000);
+                    } catch (Throwable t) {
+                        t.printStackTrace(System.err);
+                        System.err.flush();
+                    }
+                }, 1000);
+            }
         } catch (Throwable e) {
             if ((Build.VERSION.SDK_INT != Build.VERSION_CODES.O && Build.VERSION.SDK_INT != Build.VERSION_CODES.O_MR1)
                     || !Objects.equals(e.getMessage(), "Calling application did not provide package name")) {
@@ -101,7 +135,26 @@ public class ShizukuShellLoader {
         }
     }
 
+    /**
+     * The application id of the manager to ask, from the environment when rish set it there and
+     * from this build otherwise.
+     */
+    private static String managerApplicationId() {
+        String fromEnvironment = System.getenv("MANAGER_APPLICATION_ID");
+        if (TextUtils.isEmpty(fromEnvironment) || "MANAGER_PKG".equals(fromEnvironment)) {
+            return BuildConfig.MANAGER_APPLICATION_ID;
+        }
+        return fromEnvironment;
+    }
+
     private static void onBinderReceived(IBinder binder, String sourceDir) {
+        // The broadcast and the fallback can both be delivered when the first one is merely slow:
+        // the first to arrive is the one that counts, or the shell would be started twice.
+        if (answered) {
+            return;
+        }
+        answered = true;
+
         var base = sourceDir.substring(0, sourceDir.lastIndexOf('/'));
         String librarySearchPath = base + "/lib/" + VMRuntimeHidden.getRuntime().vmInstructionSet();
         String systemLibrarySearchPath = System.getProperty("java.library.path");
