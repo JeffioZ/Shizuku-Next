@@ -25,7 +25,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,6 +33,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import moe.shizuku.manager.ui.component.PillButton
+import moe.shizuku.manager.ui.component.PillButtonQuiet
 import moe.shizuku.manager.R
 import moe.shizuku.manager.shell.LibraryCommand
 import moe.shizuku.manager.shell.ShellCommands
@@ -160,10 +161,10 @@ internal fun VariablesDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onConfirm) { Text(stringResource(android.R.string.ok)) }
+            PillButton(onClick = onConfirm) { Text(stringResource(android.R.string.ok)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(android.R.string.cancel)) }
+            PillButtonQuiet(onClick = onDismiss) { Text(stringResource(android.R.string.cancel)) }
         }
     )
 }

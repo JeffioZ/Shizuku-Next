@@ -10,6 +10,8 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import java.io.File
+import moe.shizuku.manager.ui.component.PillButton
+import moe.shizuku.manager.ui.component.PillButtonQuiet
 import moe.shizuku.manager.BuildConfig
 import android.widget.Toast
 import androidx.annotation.StringRes
@@ -60,7 +62,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
@@ -306,7 +307,7 @@ fun HomeScreen(bottomPadding: Dp) {
                                 modifier = Modifier.weight(1f),
                                 style = MaterialTheme.typography.bodyMedium
                             )
-                            TextButton(onClick = {
+                            PillButton(onClick = {
                                 scope.launch {
                                     runCatching { UpdateHelper.update() }
                                     updateAvailable = false
@@ -806,7 +807,7 @@ fun HomeScreen(bottomPadding: Dp) {
             title = { Text(stringResource(R.string.intents_adb_command)) },
             text = { Text(Starter.adbCommand, fontFamily = FontFamily.Monospace) },
             confirmButton = {
-                TextButton(onClick = {
+                PillButton(onClick = {
                     if (ClipboardUtils.put(context, Starter.adbCommand)) {
                         Toast.makeText(context, context.getString(R.string.toast_copied_to_clipboard), Toast.LENGTH_SHORT).show()
                     }
@@ -814,7 +815,7 @@ fun HomeScreen(bottomPadding: Dp) {
                 }) { Text(stringResource(R.string.intents_copy)) }
             },
             dismissButton = {
-                TextButton(onClick = { showAdbCommand = false }) {
+                PillButtonQuiet(onClick = { showAdbCommand = false }) {
                     Text(stringResource(android.R.string.cancel))
                 }
             }
@@ -1144,7 +1145,7 @@ private fun ExitDialog(titleRes: Int, messageRes: Int) {
         title = { Text(stringResource(titleRes)) },
         text = { Text(stringResource(messageRes)) },
         confirmButton = {
-            TextButton(onClick = { activity?.finishAffinity() }) {
+            PillButton(onClick = { activity?.finishAffinity() }) {
                 Text(stringResource(R.string.home_dialog_button_exit))
             }
         }

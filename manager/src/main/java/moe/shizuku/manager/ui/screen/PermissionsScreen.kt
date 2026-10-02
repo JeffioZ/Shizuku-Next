@@ -34,7 +34,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -55,6 +54,7 @@ import androidx.lifecycle.Lifecycle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import moe.shizuku.manager.ui.component.PillButton
 import moe.shizuku.manager.R
 import moe.shizuku.manager.home.isAccessibilityEnabled
 import moe.shizuku.manager.manage.HidingGrants
@@ -362,7 +362,7 @@ private fun PermissionRow(
                     modifier = Modifier.size(20.dp)
                 )
             } else {
-                TextButton(onClick = onAction) { Text(actionLabel) }
+                PillButton(onClick = onAction) { Text(actionLabel) }
             }
         }
     }

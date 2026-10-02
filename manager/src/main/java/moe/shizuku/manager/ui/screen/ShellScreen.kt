@@ -81,7 +81,6 @@ import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.Surface
-import androidx.compose.material3.TextButton
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.filled.Close
@@ -113,6 +112,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import moe.shizuku.manager.ui.component.PillButton
+import moe.shizuku.manager.ui.component.PillButtonQuiet
 import moe.shizuku.manager.R
 import moe.shizuku.manager.shell.ShellBackend
 import moe.shizuku.manager.shell.LibraryCommand
@@ -1049,7 +1050,7 @@ fun ShellScreen(bottomPadding: Dp = 0.dp, onBack: (() -> Unit)? = null) {
                     modifier = Modifier.weight(1f)
                 )
                 if (bookmarks.size > 1) {
-                    TextButton(onClick = { sortByName = !sortByName }) {
+                    PillButtonQuiet(onClick = { sortByName = !sortByName }) {
                         Text(
                             stringResource(
                                 if (sortByName) R.string.shell_bookmark_sort_name
@@ -1079,7 +1080,7 @@ fun ShellScreen(bottomPadding: Dp = 0.dp, onBack: (() -> Unit)? = null) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.weight(1f)
                     )
-                    TextButton(onClick = {
+                    PillButtonQuiet(onClick = {
                         ShellBookmarks.restore(context, deleted)
                         bookmarks = ShellBookmarks.load(context)
                         undoable = null
@@ -1284,12 +1285,12 @@ private fun NameDialog(
             )
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(name) }) {
+            PillButton(onClick = { onConfirm(name) }) {
                 Text(stringResource(android.R.string.ok))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(android.R.string.cancel)) }
+            PillButtonQuiet(onClick = onDismiss) { Text(stringResource(android.R.string.cancel)) }
         }
     )
 }
@@ -1375,7 +1376,7 @@ private fun PackagePickerDialog(
         // Picking an app is the whole answer, so there is nothing left to confirm.
         confirmButton = {},
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(android.R.string.cancel)) }
+            PillButtonQuiet(onClick = onDismiss) { Text(stringResource(android.R.string.cancel)) }
         }
     )
 }

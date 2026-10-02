@@ -32,9 +32,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import moe.shizuku.manager.ui.component.PillButton
+import moe.shizuku.manager.ui.component.PillButtonQuiet
 import moe.shizuku.manager.ui.component.ExpressiveSwitch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -568,13 +569,13 @@ fun AppDetailScreen(
             },
             text = { Text(stringResource(R.string.app_grant_confirm_message)) },
             confirmButton = {
-                TextButton(onClick = {
+                PillButton(onClick = {
                     confirmGrant = null
                     changePermission(permission, true)
                 }) { Text(stringResource(R.string.app_grant_confirm_ok)) }
             },
             dismissButton = {
-                TextButton(onClick = { confirmGrant = null }) {
+                PillButtonQuiet(onClick = { confirmGrant = null }) {
                     Text(stringResource(android.R.string.cancel))
                 }
             }
@@ -611,13 +612,13 @@ fun AppDetailScreen(
             title = { Text(stringResource(pending.title)) },
             text = { Text(stringResource(pending.message, pending.name)) },
             confirmButton = {
-                TextButton(onClick = {
+                PillButton(onClick = {
                     confirm = null
                     runAction(pending.done, pending.action)
                 }) { Text(stringResource(android.R.string.ok)) }
             },
             dismissButton = {
-                TextButton(onClick = { confirm = null }) {
+                PillButtonQuiet(onClick = { confirm = null }) {
                     Text(stringResource(android.R.string.cancel))
                 }
             }
@@ -777,10 +778,10 @@ private fun ModeDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { onPick(selected) }) { Text(stringResource(android.R.string.ok)) }
+            PillButton(onClick = { onPick(selected) }) { Text(stringResource(android.R.string.ok)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(android.R.string.cancel)) }
+            PillButtonQuiet(onClick = onDismiss) { Text(stringResource(android.R.string.cancel)) }
         }
     )
 }
@@ -819,13 +820,13 @@ private fun BucketDialog(
             }
         },
         confirmButton = {
-            TextButton(
+            PillButton(
                 onClick = { selected?.let(onPick) },
                 enabled = selected != null
             ) { Text(stringResource(android.R.string.ok)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(android.R.string.cancel)) }
+            PillButtonQuiet(onClick = onDismiss) { Text(stringResource(android.R.string.cancel)) }
         }
     )
 }

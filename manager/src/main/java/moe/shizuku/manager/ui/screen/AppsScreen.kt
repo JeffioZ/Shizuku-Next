@@ -2,6 +2,8 @@ package moe.shizuku.manager.ui.screen
 
 import android.content.pm.ApplicationInfo
 import android.util.Log
+import moe.shizuku.manager.ui.component.PillButton
+import moe.shizuku.manager.ui.component.PillButtonQuiet
 import moe.shizuku.manager.AppConstants
 import android.content.pm.PackageInfo
 import android.content.Intent
@@ -48,7 +50,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import moe.shizuku.manager.ui.component.ExpressiveSwitch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -326,13 +327,13 @@ fun AppsScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = fals
                     }
                 },
                 actions = {
-                    TextButton(onClick = { selected = shown.map { it.packageName }.toSet() }) {
+                    PillButtonQuiet(onClick = { selected = shown.map { it.packageName }.toSet() }) {
                         Text(stringResource(R.string.app_management_action_select_all))
                     }
-                    TextButton(onClick = { pendingBatch = true }) {
+                    PillButtonQuiet(onClick = { pendingBatch = true }) {
                         Text(stringResource(R.string.app_management_action_grant))
                     }
-                    TextButton(onClick = { pendingBatch = false }) {
+                    PillButtonQuiet(onClick = { pendingBatch = false }) {
                         Text(stringResource(R.string.app_management_action_revoke))
                     }
                 }
@@ -345,7 +346,7 @@ fun AppsScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = fals
                     // Long-press and Select all exist for picking individual apps; this is
                     // the one-tap version for when every listed app should be flipped.
                     if (shown.isNotEmpty()) {
-                        TextButton(onClick = {
+                        PillButtonQuiet(onClick = {
                             scope.launch {
                                 val allGranted = withContext(Dispatchers.IO) {
                                     shown.all {
@@ -660,7 +661,7 @@ fun AppsScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = fals
                 }
             },
             confirmButton = {
-                TextButton(onClick = { permissionLimited = false }) {
+                PillButton(onClick = { permissionLimited = false }) {
                     Text(stringResource(android.R.string.ok))
                 }
             }
@@ -681,14 +682,14 @@ fun AppsScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = fals
             // Only what is listed: searching first is how you narrow this down.
             text = { Text(stringResource(R.string.app_management_toggle_all_message, shown.size)) },
             confirmButton = {
-                TextButton(onClick = {
+                PillButton(onClick = {
                     val target = shown.toList()
                     pendingToggleAll = null
                     applyBatch(grant, target)
                 }) { Text(stringResource(android.R.string.ok)) }
             },
             dismissButton = {
-                TextButton(onClick = { pendingToggleAll = null }) {
+                PillButtonQuiet(onClick = { pendingToggleAll = null }) {
                     Text(stringResource(android.R.string.cancel))
                 }
             }
@@ -708,7 +709,7 @@ fun AppsScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = fals
             },
             text = { Text(stringResource(R.string.app_management_batch_message, selected.size)) },
             confirmButton = {
-                TextButton(onClick = {
+                PillButton(onClick = {
                     // Same path as Toggle all, so a hand-picked batch can be taken back
                     // just as easily.
                     val target = all.filter { it.packageName in selected }
@@ -718,7 +719,7 @@ fun AppsScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = fals
                 }) { Text(stringResource(android.R.string.ok)) }
             },
             dismissButton = {
-                TextButton(onClick = { pendingBatch = null }) {
+                PillButtonQuiet(onClick = { pendingBatch = null }) {
                     Text(stringResource(android.R.string.cancel))
                 }
             }

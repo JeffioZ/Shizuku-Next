@@ -29,7 +29,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -43,6 +42,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import moe.shizuku.manager.ui.component.PillButton
+import moe.shizuku.manager.ui.component.PillButtonQuiet
 import moe.shizuku.manager.R
 import moe.shizuku.manager.stealth.Action
 import moe.shizuku.manager.stealth.ApkType
@@ -286,13 +287,13 @@ fun StealthScreen(onBack: () -> Unit) {
             title = { Text(stringResource(R.string.stealth_uninstall_required)) },
             text = { Text(stringResource(R.string.stealth_uninstall_message)) },
             confirmButton = {
-                TextButton(onClick = {
+                PillButton(onClick = {
                     pendingUninstall = false
                     context.uninstallPackage(ORIGINAL_PACKAGE_NAME) { _, _ -> vm.refresh() }
                 }) { Text(stringResource(R.string.stealth_uninstall)) }
             },
             dismissButton = {
-                TextButton(onClick = { pendingUninstall = false }) {
+                PillButtonQuiet(onClick = { pendingUninstall = false }) {
                     Text(stringResource(android.R.string.cancel))
                 }
             }
@@ -305,7 +306,7 @@ fun StealthScreen(onBack: () -> Unit) {
             title = { Text(stringResource(R.string.error)) },
             text = { Text(message) },
             confirmButton = {
-                TextButton(onClick = { error = null }) { Text(stringResource(android.R.string.ok)) }
+                PillButton(onClick = { error = null }) { Text(stringResource(android.R.string.ok)) }
             }
         )
     }

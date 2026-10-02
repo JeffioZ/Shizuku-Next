@@ -20,7 +20,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,6 +27,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import moe.shizuku.manager.ui.component.PillButtonQuiet
 import moe.shizuku.manager.R
 import moe.shizuku.manager.shell.ShellHistory
 
@@ -62,7 +62,7 @@ fun ShellHistorySheet(
                 modifier = Modifier.weight(1f)
             )
             if (entries.isNotEmpty()) {
-                TextButton(onClick = onClear) {
+                PillButtonQuiet(onClick = onClear) {
                     Text(stringResource(R.string.shell_history_clear))
                 }
             }

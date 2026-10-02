@@ -14,12 +14,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -117,7 +115,7 @@ internal fun ContributorDetailsDialog(
         },
         confirmButton = {
             if (profileUrl != null) {
-                FilledTonalButton(onClick = { CustomTabsHelper.launchUrlOrCopy(context, profileUrl) }) {
+                PillButton(onClick = { CustomTabsHelper.launchUrlOrCopy(context, profileUrl) }) {
                     Icon(
                         imageVector = Icons.Outlined.Link,
                         contentDescription = null,
@@ -129,14 +127,14 @@ internal fun ContributorDetailsDialog(
                     )
                 }
             } else {
-                TextButton(onClick = onDismiss) {
+                PillButton(onClick = onDismiss) {
                     Text(stringResource(R.string.contributor_details_close))
                 }
             }
         },
         dismissButton = if (profileUrl != null) {
             {
-                TextButton(onClick = onDismiss) {
+                PillButtonQuiet(onClick = onDismiss) {
                     Text(stringResource(R.string.contributor_details_close))
                 }
             }

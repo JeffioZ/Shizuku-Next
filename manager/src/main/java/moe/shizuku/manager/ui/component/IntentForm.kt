@@ -28,7 +28,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -295,7 +294,7 @@ internal fun IntentForm(draft: IntentDraft, bottomPadding: Dp, onPick: () -> Uni
                         onValueChange = { draft.uri = it },
                         label = stringResource(R.string.intent_uri)
                     )
-                    TextButton(onClick = { draft.load() }) {
+                    PillButtonQuiet(onClick = { draft.load() }) {
                         Text(stringResource(R.string.intent_uri_load))
                     }
                 }
@@ -380,7 +379,7 @@ internal fun IntentForm(draft: IntentDraft, bottomPadding: Dp, onPick: () -> Uni
         }
 
         item {
-            TextButton(onClick = { draft.addExtra() }) {
+            PillButtonQuiet(onClick = { draft.addExtra() }) {
                 Icon(Icons.Filled.Add, contentDescription = null)
                 Text(
                     text = stringResource(R.string.intent_extra_add),

@@ -52,6 +52,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
+import moe.shizuku.manager.ui.component.PillButton
+import moe.shizuku.manager.ui.component.PillButtonQuiet
 import moe.shizuku.manager.ui.component.ChoiceRow
 import moe.shizuku.manager.ui.component.Contributor
 import moe.shizuku.manager.ui.component.ContributorCredits
@@ -60,7 +62,6 @@ import moe.shizuku.manager.ui.component.ContributorWall
 import moe.shizuku.manager.ui.component.ExpressiveSwitch
 import moe.shizuku.manager.ui.component.SegmentedCard
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import android.widget.Toast
 import androidx.compose.runtime.Composable
@@ -869,14 +870,14 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                 }
             },
             confirmButton = {
-                TextButton(onClick = {
+                PillButton(onClick = {
                     action()
                     restartAction = null
                     ShizukuReceiverStarter.start(context, forceStart = true, userInitiated = true)
                 }) { Text(stringResource(android.R.string.ok)) }
             },
             dismissButton = {
-                TextButton(onClick = { restartAction = null }) {
+                PillButtonQuiet(onClick = { restartAction = null }) {
                     Text(stringResource(android.R.string.cancel))
                 }
             }
@@ -889,7 +890,7 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
             title = { Text(stringResource(android.R.string.dialog_alert_title)) },
             text = { Text(stringResource(R.string.settings_tcp_mode_dialog_close_port)) },
             confirmButton = {
-                TextButton(onClick = {
+                PillButton(onClick = {
                     closeTcpDialog = false
                     scope.launch {
                         val port = EnvironmentUtils.getAdbTcpPort()
@@ -900,7 +901,7 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                 }) { Text(stringResource(android.R.string.ok)) }
             },
             dismissButton = {
-                TextButton(onClick = { closeTcpDialog = false }) {
+                PillButtonQuiet(onClick = { closeTcpDialog = false }) {
                     Text(stringResource(android.R.string.cancel))
                 }
             }
@@ -917,13 +918,13 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                 Text(stringResource(R.string.settings_adb_without_developer_options_confirm_message))
             },
             confirmButton = {
-                TextButton(onClick = {
+                PillButton(onClick = {
                     adbWithoutDeveloperOptionsPrompt = false
                     setAdbWithoutDeveloperOptions(true)
                 }) { Text(stringResource(R.string.settings_adb_without_developer_options_confirm)) }
             },
             dismissButton = {
-                TextButton(onClick = { adbWithoutDeveloperOptionsPrompt = false }) {
+                PillButtonQuiet(onClick = { adbWithoutDeveloperOptionsPrompt = false }) {
                     Text(stringResource(android.R.string.cancel))
                 }
             }
@@ -936,14 +937,14 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
             title = { Text(stringResource(R.string.tools_battery)) },
             text = { Text(stringResource(R.string.snackbar_battery_optimization_settings)) },
             confirmButton = {
-                TextButton(onClick = {
+                PillButton(onClick = {
                     SettingsHelper.requestIgnoreBatteryOptimizationsPrivileged(context)
                     action()
                     batteryPrompt = null
                 }) { Text(stringResource(R.string.snackbar_action_fix)) }
             },
             dismissButton = {
-                TextButton(onClick = { batteryPrompt = null }) {
+                PillButtonQuiet(onClick = { batteryPrompt = null }) {
                     Text(stringResource(android.R.string.cancel))
                 }
             }
@@ -1011,7 +1012,7 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                 )
             },
             confirmButton = {
-                TextButton(onClick = {
+                PillButton(onClick = {
                     val value = draft.toIntOrNull()?.takeIf { it in 1..65535 }
                     tcpPortDialog = false
                     if (value != null) {
@@ -1031,7 +1032,7 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                 }) { Text(stringResource(android.R.string.ok)) }
             },
             dismissButton = {
-                TextButton(onClick = { tcpPortDialog = false }) { Text(stringResource(android.R.string.cancel)) }
+                PillButtonQuiet(onClick = { tcpPortDialog = false }) { Text(stringResource(android.R.string.cancel)) }
             }
         )
     }
@@ -1107,7 +1108,7 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
             // Picking a mode only says when to look; this is the "look now" that
             // the About screen used to offer.
             confirmButton = {
-                TextButton(onClick = {
+                PillButton(onClick = {
                     updateDialog = false
                     scope.launch { runCatching { UpdateHelper.checkAndInstallUpdates() } }
                 }) { Text(stringResource(R.string.check_for_updates_now)) }
@@ -1238,7 +1239,7 @@ private fun ChoiceDialog(
         },
         confirmButton = { confirmButton?.invoke() },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(android.R.string.cancel)) }
+            PillButtonQuiet(onClick = onDismiss) { Text(stringResource(android.R.string.cancel)) }
         }
     )
 }

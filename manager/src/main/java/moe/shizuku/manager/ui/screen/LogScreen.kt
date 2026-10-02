@@ -48,7 +48,6 @@ import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -77,6 +76,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import moe.shizuku.manager.ui.component.PillButtonQuiet
 import moe.shizuku.manager.AppConstants
 import moe.shizuku.manager.R
 import moe.shizuku.manager.manage.InstalledPackages
@@ -454,7 +454,7 @@ private fun CaptureTab(bottomPadding: Dp) {
             )
             if (lastCrash >= 0) {
                 val jump = rememberCoroutineScope()
-                TextButton(onClick = { jump.launch { listState.animateScrollToItem(lastCrash) } }) {
+                PillButtonQuiet(onClick = { jump.launch { listState.animateScrollToItem(lastCrash) } }) {
                     Text(stringResource(R.string.log_capture_jump))
                 }
             }
@@ -669,7 +669,7 @@ private fun AppPickerDialog(onDismiss: () -> Unit, onPick: (Logcat.Scope.App) ->
         },
         confirmButton = {},
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(android.R.string.cancel)) }
+            PillButtonQuiet(onClick = onDismiss) { Text(stringResource(android.R.string.cancel)) }
         }
     )
 }

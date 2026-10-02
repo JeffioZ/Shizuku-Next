@@ -36,7 +36,6 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -59,6 +58,8 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import moe.shizuku.manager.ui.component.PillButton
+import moe.shizuku.manager.ui.component.PillButtonQuiet
 import moe.shizuku.manager.R
 import moe.shizuku.manager.manage.Activities
 import moe.shizuku.manager.ui.component.AppIcon
@@ -582,17 +583,17 @@ private fun ActivityDetailsDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onOpen) { Text(stringResource(R.string.activities_open)) }
+            PillButton(onClick = onOpen) { Text(stringResource(R.string.activities_open)) }
         },
         dismissButton = {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(onClick = { onCopy(activity.name) }) {
+                PillButtonQuiet(onClick = { onCopy(activity.name) }) {
                     Text(stringResource(R.string.activities_copy))
                 }
                 // The way from here into the builder: this dialog is where the whole component
                 // name is readable, so it is where somebody decides they want to send it
                 // something rather than just open it.
-                TextButton(onClick = onBuild) {
+                PillButtonQuiet(onClick = onBuild) {
                     Text(stringResource(R.string.activities_edit_as_intent))
                 }
             }

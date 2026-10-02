@@ -15,7 +15,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -27,6 +26,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
+import moe.shizuku.manager.ui.component.PillButtonQuiet
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.starter.Starter
@@ -93,7 +93,7 @@ fun IntentsScreen(onBack: () -> Unit) {
                                 Text(token, fontFamily = FontFamily.Monospace)
                             },
                             trailingContent = {
-                                TextButton(onClick = { copy("Copied", token) }) {
+                                PillButtonQuiet(onClick = { copy("Copied", token) }) {
                                     Text(stringResource(R.string.intents_copy))
                                 }
                             }
@@ -103,7 +103,7 @@ fun IntentsScreen(onBack: () -> Unit) {
                         SegmentedListItem(
                             headlineContent = { Text(stringResource(R.string.intents_regenerate)) },
                             trailingContent = {
-                                TextButton(onClick = {
+                                PillButtonQuiet(onClick = {
                                     token = ShizukuSettings.generateAuthToken()
                                 }) { Text(stringResource(R.string.intents_regenerate)) }
                             }
@@ -116,7 +116,7 @@ fun IntentsScreen(onBack: () -> Unit) {
                                 Text(Starter.adbCommand, fontFamily = FontFamily.Monospace)
                             },
                             trailingContent = {
-                                TextButton(onClick = { copy("Copied", Starter.adbCommand) }) {
+                                PillButtonQuiet(onClick = { copy("Copied", Starter.adbCommand) }) {
                                     Text(stringResource(R.string.intents_copy))
                                 }
                             }
@@ -174,7 +174,7 @@ private fun CommandRow(label: String, command: String, onCopy: (String) -> Unit)
         headlineContent = { Text(label) },
         supportingContent = { Text(command, fontFamily = FontFamily.Monospace) },
         trailingContent = {
-            TextButton(onClick = { onCopy(command) }) {
+            PillButtonQuiet(onClick = { onCopy(command) }) {
                 Text(stringResource(R.string.intents_copy))
             }
         }
