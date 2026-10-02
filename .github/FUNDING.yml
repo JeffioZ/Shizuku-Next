@@ -1,8 +1,13 @@
-# This fork has no funding accounts of its own yet. Add yours here, e.g.
-#   github: [your-handle]
-#   buy_me_a_coffee: your-handle
-#
-# The work this fork is built on belongs to these people, if you want to support it:
-  github: [rushiranpise]          # the fork this one is based on
-  buy_me_a_coffee: rushiranpise
-#   (Shizuku itself: RikkaW / RikkaApps, https://github.com/RikkaApps/Shizuku)
+# This fork's own funding accounts, which is what GitHub's Sponsor button on the
+# repository points at. The coffee page is also what the "Buy me a coffee" row in the
+# app's Settings > About opens.
+github: [rushiranpise]
+buy_me_a_coffee: rushiranpise
+
+# Most of what is in this fork is not this fork's work. If you would rather support the
+# people it came from, GitHub has no field for them - they are linked here and in the
+# README's Donations section.
+#   thedjchi, whose fork these features were first built on:
+#     https://www.buymeacoffee.com/thedjchi
+#   RikkaW / RikkaApps, who wrote Shizuku itself:
+#     https://github.com/RikkaApps/Shizuku
