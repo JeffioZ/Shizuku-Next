@@ -97,9 +97,19 @@ fun Context.isWirelessDebuggingEnabled(): Boolean =
  * TLS port isn't advertised without it. USB and the classic ADB port need nothing of the
  * sort, and neither does a wireless start where the toggle is already on so those
  * shouldn't be held up for a permission they won't use.
+ *
+ * Starting without a network is a wireless start too, and the one this question matters
+ * most for: with the toggle off there is no other way for it to come on, because the
+ * Settings switch cannot be reached without a network and the write is what a device that
+ * is offline needs. Left out of this check, an install that turned the experiment on
+ * before Shizuku had ever started asked a settings provider that refuses every write and
+ * retried every half minute forever, with nothing anywhere saying why - which is the one
+ * state the experiment can never get itself out of.
  */
 fun Context.needsWriteSecureSettingsFor(@ShizukuSettings.StartMethod startMethod: Int): Boolean =
-    startMethod == ShizukuSettings.StartMethod.WIRELESS && !isWirelessDebuggingEnabled()
+    (startMethod == ShizukuSettings.StartMethod.WIRELESS ||
+        startMethod == ShizukuSettings.StartMethod.WIRELESS_NO_NETWORK) &&
+        !isWirelessDebuggingEnabled()
 
 /**
  * Writes a global setting, and shrugs when the app isn't allowed to.

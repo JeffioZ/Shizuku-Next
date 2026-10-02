@@ -93,6 +93,7 @@ import moe.shizuku.manager.ui.component.stripHtmlTags
 import moe.shizuku.manager.adb.AdbStarter
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter
 import moe.shizuku.manager.start.StartMethodGuard
+import moe.shizuku.manager.start.hasWriteSecureSettings
 import moe.shizuku.manager.start.AdbPortPersistence
 import moe.shizuku.manager.start.applyAdbWithoutDeveloperOptions
 import moe.shizuku.manager.start.restoreDeveloperOptions
@@ -206,12 +207,19 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
     var selectedContributor by remember { mutableStateOf<Contributor?>(null) }
     val contributors = rememberContributors()
 
+    // Whether the experiment can write the setting it is made of, which is what decides if it
+    // is offered at all. It arrives without this screen being told - a running Shizuku grants
+    // itself the permission, and `pm grant` from a computer does the same - so it is read
+    // again every time the screen is come back to rather than once when it is built.
+    var writeSecureSettings by remember { mutableStateOf(context.hasWriteSecureSettings()) }
+
     // The language can be changed without this screen: from Android 13 the system's own per-app
     // language screen sets it too, and the framework rebuilds the activities rather than the
     // process, so the row would go on naming the language that used to be chosen.
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         AppLocale.reconcile(context)
         language = ShizukuSettings.getLanguageTag()
+        writeSecureSettings = context.hasWriteSecureSettings()
     }
 
     // Root can be gone since the method was chosen (an OTA, root switched off in the
@@ -402,14 +410,30 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                         )
                     }
                     item {
+                        // The experiment is a write to the settings provider, and a fresh
+                        // install has no WRITE_SECURE_SETTINGS to make it with: switching it
+                        // on there asks for a start that cannot happen, from a screen whose
+                        // own warning is then the only way out. So it is offered only once
+                        // the permission is there, which a running Shizuku grants itself - and
+                        // a switch that is already on stays operable, because a device that
+                        // reached that state has to be able to leave it.
                         SegmentedListItem(
                             centerSlots = true,
                             leadingContent = { SettingsIcon(Icons.Outlined.WifiTethering) },
                             headlineContent = { Text(stringResource(R.string.settings_force_wireless_debugging)) },
                             supportingContent = {
-                                Text(stringResource(R.string.settings_force_wireless_debugging_summary))
+                                Text(
+                                    stringResource(
+                                        if (writeSecureSettings)
+                                            R.string.settings_force_wireless_debugging_summary
+                                        else R.string.settings_force_wireless_debugging_needs_permission
+                                    )
+                                )
                             },
                             switchState = forceWireless,
+                            // On stays on offer so it can be turned back off: the state it
+                            // describes is the one that cannot start anything.
+                            switchEnabled = forceWireless || writeSecureSettings,
                             onSwitchChange =
                                 { checked ->
                                     // The two settings this one cannot work with are turned
