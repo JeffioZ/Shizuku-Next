@@ -531,6 +531,8 @@
     <string name="permissions_battery_summary">Stops Android from killing Shizuku in the background.</string>
     <string name="settings_help">Help</string>
     <string name="settings_report_bug">Report a bug</string>
+    <string name="settings_support_coffee">Buy me a coffee</string>
+    <string name="settings_support_coffee_note">Support the development of Shizuku Next</string>
     <string name="settings_legacy_pairing">Legacy pairing</string>
     <string name="settings_legacy_pairing_summary">Enter the pairing code in a dialog instead of a notification</string>
 

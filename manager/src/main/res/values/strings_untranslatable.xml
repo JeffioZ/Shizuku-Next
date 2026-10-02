@@ -6,4 +6,6 @@
          documented, and this fork inherits them unchanged. -->
     <string name="help_url" translatable="false">https://github.com/thedjchi/Shizuku/wiki</string>
     <string name="automation_apps_url" translatable="false">https://github.com/thedjchi/Shizuku/wiki#using-automation-apps-to-startstop-shizuku</string>
+    <!-- The same page GitHub's sponsor button points at, from FUNDING.yml. -->
+    <string name="buymeacoffee_url" translatable="false">https://www.buymeacoffee.com/rushiranpise</string>
 </resources>

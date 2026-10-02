@@ -22,6 +22,7 @@ import androidx.compose.material.icons.outlined.AdminPanelSettings
 import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.BugReport
 import androidx.compose.material.icons.outlined.Code
+import androidx.compose.material.icons.outlined.Coffee
 import androidx.compose.material.icons.outlined.Contrast
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.DeveloperMode
@@ -768,6 +769,29 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                             },
                             onClick = {
                                 context.startActivity(Intent(context, BugReportDialogActivity::class.java))
+                            }
+                        )
+                    }
+                    item {
+                        SegmentedListItem(
+                            centerSlots = true,
+                            leadingContent = { SettingsIcon(Icons.Outlined.Coffee) },
+                            headlineContent = {
+                                Text(stringResource(R.string.settings_support_coffee))
+                            },
+                            // Says what the tap does, because the row is a link out of the app
+                            // rather than another screen of it.
+                            supportingContent = {
+                                Text(stringResource(R.string.settings_support_coffee_note))
+                            },
+                            trailingContent = {
+                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+                            },
+                            onClick = {
+                                CustomTabsHelper.launchUrlOrCopy(
+                                    context,
+                                    context.getString(R.string.buymeacoffee_url)
+                                )
                             }
                         )
                     }

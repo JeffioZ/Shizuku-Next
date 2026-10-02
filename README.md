@@ -38,6 +38,8 @@ keep working.
 
 [![Translate on Crowdin](https://img.shields.io/badge/Translate%20on%20Crowdin-2e3340?style=for-the-badge&logo=crowdin&logoColor=ffffff)](https://crowdin.com/project/Shizuku-Next)
 
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=for-the-badge&logo=buymeacoffee&logoColor=black)](https://www.buymeacoffee.com/rushiranpise)
+
 </div>
 
 ## ⚠️ Disclaimer
@@ -477,9 +479,13 @@ from the API without using the web interface is in [docs/translations.md](docs/t
 
 ## 🎁 Donations
 
-This fork and all of its features are free, and there will never be ads. It has no donation setup of its own.
+This fork and all of its features are free, and there will never be ads. If you want to support its
+maintenance, **[buy me a coffee](https://www.buymeacoffee.com/rushiranpise)** - the same page as the
+**Sponsor** button on this repository, and as the *Buy me a coffee* row in **Settings → About**.
 
-If you want to support the work it is built on, support the people who made it: **[thedjchi](https://www.buymeacoffee.com/thedjchi)**, whose fork most of these features come from, and **[RikkaW / RikkaApps](https://github.com/RikkaApps/Shizuku)**, who wrote Shizuku itself.
+Most of what is in this fork is other people's work, and it is worth supporting them as well:
+**[thedjchi](https://www.buymeacoffee.com/thedjchi)**, whose fork most of these features come from,
+and **[RikkaW / RikkaApps](https://github.com/RikkaApps/Shizuku)**, who wrote Shizuku itself.
 
 ## 📱 Developer Guide
 
