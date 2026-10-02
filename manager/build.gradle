@@ -72,6 +72,26 @@ android {
     }
     lint {
         checkReleaseBuilds = false
+
+        // Only the API-level check runs, and it fails the build.
+        //
+        // A call to an API newer than minSdk (24) is not a harmless no-op on an older phone:
+        // a class that does not exist is a NoClassDefFoundError and a method that does not
+        // exist is a NoSuchMethodError, and both are Errors - which the surrounding
+        // catch (e: Exception) blocks cannot stop, so they take the process down with them.
+        // That is a crash the compiler will not warn about and no unit test can reach without
+        // an old device, which makes this the one check worth failing on.
+        //
+        // checkOnly rather than the whole suite because the full report has a long-standing
+        // backlog in the other checks (translations, unused resources) that nobody acts on,
+        // and a report nobody acts on is not a gate. Restricting lint here keeps its answer
+        // meaningful - it says pass or fail about exactly the thing that can cost a user
+        // their running Shizuku - and makes the task cheap enough to run on every build.
+        //
+        // Run with: ./gradlew :manager:lintDebug
+        checkOnly += "NewApi"
+        error += "NewApi"
+        abortOnError = true
     }
 }
 
