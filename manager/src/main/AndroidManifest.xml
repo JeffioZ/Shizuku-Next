@@ -16,6 +16,15 @@
 
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!--
+    The watchdog's backstop alarm. Declared rather than assumed: an app targeting Android 14 or
+    later is not granted exact alarms by default, and this one asks only for the runtime-revocable
+    SCHEDULE_EXACT_ALARM rather than USE_EXACT_ALARM, which is reserved for apps that are an alarm
+    clock. Where it is not granted the backstop arms an inexact alarm instead, which still
+    survives the process being killed, so the permission changes the punctuality of the check and
+    not whether there is one.
+    -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Android 17 (SDK 37): local network access is gated behind these permissions;
          required for mDNS discovery used by wireless ADB pairing and for the
@@ -343,6 +352,15 @@
                 <action android:name="${applicationId}.WATCHDOG_STATUS" />
             </intent-filter>
         </receiver>
+
+        <!-- The watchdog's backstop: an alarm the platform holds on the app's behalf, delivered
+             by system_server so that it arrives even when this app's process has been killed or
+             frozen. Not exported - the only thing that is ever meant to fire it is this app's own
+             PendingIntent. -->
+        <receiver
+            android:name=".receiver.WatchdogAlarmReceiver"
+            android:enabled="true"
+            android:exported="false" />
 
         <receiver android:name=".receiver.NotifAttemptReceiver" />
         <receiver android:name=".receiver.NotifCancelReceiver" />

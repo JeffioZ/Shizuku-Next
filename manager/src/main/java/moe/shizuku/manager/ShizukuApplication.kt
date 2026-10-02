@@ -10,6 +10,7 @@ import moe.shizuku.manager.ktx.logd
 import moe.shizuku.manager.manage.Activities
 import moe.shizuku.manager.manage.ForceDark
 import moe.shizuku.manager.manage.Hiding
+import moe.shizuku.manager.receiver.WatchdogAlarmReceiver
 import moe.shizuku.manager.service.HidingWatchService
 import moe.shizuku.manager.service.WatchdogService
 import moe.shizuku.manager.utils.AppLocale
@@ -63,6 +64,11 @@ class ShizukuApplication : Application() {
         AppCompatDelegate.setDefaultNightMode(ShizukuSettings.getNightMode())
 
         if(ShizukuSettings.getWatchdog()) WatchdogService.start(context)
+        // Re-armed on every startup as well as at boot, because an update replaces the app and
+        // takes its alarms with it: without this a phone that updates while the watchdog is on
+        // would lose the backstop until its next reboot, which is exactly the kind of window the
+        // backstop exists to close. Safe to call when the watchdog is off - it checks.
+        WatchdogAlarmReceiver.schedule(context)
 
         // Hiding and force dark are both rules about the app in front, and the same watch holds
         // both. A process that died while either was armed starts it again rather than leaving the

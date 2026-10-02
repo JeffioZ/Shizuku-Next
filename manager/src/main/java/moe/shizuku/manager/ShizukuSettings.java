@@ -15,6 +15,7 @@ import java.lang.annotation.Retention;
 import java.util.Locale;
 import moe.shizuku.manager.service.WatchdogService;
 import moe.shizuku.manager.receiver.BootCompleteReceiver;
+import moe.shizuku.manager.receiver.WatchdogAlarmReceiver;
 import moe.shizuku.manager.utils.AppLocale;
 import moe.shizuku.manager.utils.Token;
 import moe.shizuku.manager.utils.EmptySharedPreferencesImpl;
@@ -381,6 +382,15 @@ public class ShizukuSettings {
             WatchdogService.stop(context);
         }
         getPreferences().edit().putBoolean(Keys.KEY_WATCHDOG, enable).apply();
+        // After the preference, not before: the alarm's own schedule() reads that preference to
+        // decide whether it should exist at all. Cancelling on the way off is the half that
+        // matters - a backstop left armed would start the watchdog again after the user had
+        // switched it off, which is the one thing it must never do.
+        if (enable) {
+            WatchdogAlarmReceiver.schedule(context);
+        } else {
+            WatchdogAlarmReceiver.cancel(context);
+        }
         return;
     }
 

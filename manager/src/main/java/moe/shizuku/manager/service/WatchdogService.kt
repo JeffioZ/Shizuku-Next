@@ -29,6 +29,7 @@ import moe.shizuku.manager.MainActivity
 import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.adb.AdbStarter
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter
+import moe.shizuku.manager.receiver.WatchdogAlarmReceiver
 import moe.shizuku.manager.start.runningMethodLabel
 import moe.shizuku.manager.start.runningMethodSuffix
 import moe.shizuku.manager.starter.Starter
@@ -336,6 +337,11 @@ class WatchdogService : Service() {
             // redundantly call stop() while we're already stopping via stopSelf).
             ShizukuSettings.getPreferences().edit()
                 .putBoolean(ShizukuSettings.Keys.KEY_WATCHDOG, false).apply()
+            // This path writes the preference directly rather than going through
+            // ShizukuSettings.setWatchdog, so it has to cancel the backstop itself: an alarm left
+            // armed would find the watchdog gone and start it again, switching back on the thing
+            // the user just switched off.
+            WatchdogAlarmReceiver.cancel(applicationContext)
             stopSelf()
             return START_NOT_STICKY
         }
