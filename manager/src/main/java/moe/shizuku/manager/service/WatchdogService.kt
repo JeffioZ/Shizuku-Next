@@ -311,6 +311,11 @@ class WatchdogService : Service() {
         // was already gone is the case it cannot see a transition for, and that is what the
         // unlock probe is for.
         Diag.info(TAG, "Watchdog started, server is ${ShizukuStateMachine.get()}")
+        // A notice that the watchdog was not running is answered by the watchdog running: this is
+        // every path back in, so clearing it here covers the user's tap, a boot and a start asked
+        // for by anything else, without each of them having to remember to.
+        (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
+            .cancel(NOTIFICATION_ID_NOT_RUNNING)
         ShizukuStateMachine.addListener(stateListener)
         registerReceiver(screenOnReceiver, IntentFilter(Intent.ACTION_USER_PRESENT))
         startRecoveryLoop()
@@ -602,6 +607,8 @@ class WatchdogService : Service() {
         private const val NOTIFICATION_ID_CRASH = 1002
         private const val NOTIFICATION_ID_RECOVERY = 1003
         private const val NOTIFICATION_ID_GAVE_UP = 1004
+        /** Posted by the alarm backstop when a revive was refused; cleared by [onCreate]. */
+        const val NOTIFICATION_ID_NOT_RUNNING = 1005
         const val CRASH_CHANNEL_ID = "crash_reports"
         const val ACTION_WATCHDOG_CHANGED = "WATCHDOG_CHANGED"
 
@@ -622,12 +629,29 @@ class WatchdogService : Service() {
             context.sendBroadcast(intent)
         }
 
+        /**
+         * Asks the platform to start the watchdog, and says whether it agreed.
+         *
+         * The answer matters to exactly one caller. Everywhere else the request comes from
+         * something in front of the user - the settings switch, the app starting, a reboot - and
+         * the platform allows those starts, so the failure is worth a log line and nothing more.
+         * The alarm backstop is the exception: it runs in the background, where an app targeting
+         * Android 12 or later may not start a foreground service at all, and it carries the one
+         * duty that has no alternative - bringing the watchdog back. A silent refusal there would
+         * look exactly like the outage it exists to end, so it is told, and it can tell the user.
+         *
+         * @return false when the start was refused rather than made.
+         */
         @JvmStatic
-        fun start(context: Context) {
-            try {
+        fun start(context: Context): Boolean {
+            return try {
                 context.startForegroundService(Intent(context, WatchdogService::class.java))
+                true
             } catch (e: Exception) {
-                Diag.error("ShizukuApplication", "Failed to start WatchdogService: ${e.message}" )
+                // ForegroundServiceStartNotAllowedException on Android 12+, which is an ordinary
+                // outcome for a background caller rather than an error in this app.
+                Diag.error("ShizukuApplication", "Failed to start WatchdogService: ${e.message}")
+                false
             }
         }
 

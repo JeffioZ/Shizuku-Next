@@ -744,6 +744,8 @@
     <string name="watchdog_given_up_title">Shizuku could not be started</string>
     <string name="watchdog_given_up_text">Shizuku was started %1$d times and did not come back. Starting it again will not help until the reason is fixed.</string>
     <string name="watchdog_given_up_action_start">Start</string>
+    <string name="watchdog_not_running_title">Watchdog is not running</string>
+    <string name="watchdog_not_running_text">Android would not let it be started on its own. Tap to start it again.</string>
 
     <!-- Misc -->
     <string name="error">Error</string>

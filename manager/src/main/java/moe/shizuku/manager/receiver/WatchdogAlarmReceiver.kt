@@ -1,11 +1,16 @@
 package moe.shizuku.manager.receiver
 
 import android.app.AlarmManager
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import androidx.core.app.NotificationCompat
+import moe.shizuku.manager.MainActivity
+import moe.shizuku.manager.R
 import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.service.WatchdogService
 import moe.shizuku.manager.utils.Diag
@@ -57,12 +62,63 @@ class WatchdogAlarmReceiver : BroadcastReceiver() {
         }
 
         if (!WatchdogService.isRunning()) {
-            Diag.warn(TAG, "The watchdog is not running; the alarm is starting it again")
-            WatchdogService.start(app)
+            if (WatchdogService.start(app)) {
+                Diag.warn(TAG, "The watchdog is not running; the alarm started it again")
+            } else {
+                // The platform refused, which is the expected answer for a background caller: a
+                // foreground service may not be started from the background unless the alarm that
+                // woke us was an exact one, and this app targets Android 14 or later, where exact
+                // alarms are not granted to it by default. So the one duty of this receiver is the
+                // one the platform can decline, and a silent refusal would be indistinguishable
+                // from the outage it was meant to end - hence the notice. Tapping it opens the
+                // app, and starting the watchdog from there is a start the platform allows, so the
+                // way back costs the user one tap and exists even when this cannot work.
+                Diag.error(TAG, "The watchdog is not running and the platform refused to start it")
+                showNotRunningNotification(app)
+            }
         }
         // Exact alarms do not repeat, and a repeating one would not be exact anyway, so each
-        // firing arms the next.
+        // firing arms the next. Armed even after a refusal: the next firing is another chance,
+        // and the notice is what covers the case where every one of them is refused.
         schedule(app)
+    }
+
+    /**
+     * The only way back when the revive was refused.
+     *
+     * A plain notification, posted from a receiver, which needs no service of any kind - which is
+     * the whole point, since the thing it is reporting is that a service could not be started. Its
+     * content intent opens the app, because starting the watchdog is something the app
+     * already does when it comes up, and a tap is a user action on a notification: the start is
+     * then the user's own, which the platform allows.
+     */
+    private fun showNotRunningNotification(context: Context) {
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+            ?: return
+        manager.createNotificationChannel(
+            NotificationChannel(
+                WatchdogService.CRASH_CHANNEL_ID,
+                "Crash Reports",
+                NotificationManager.IMPORTANCE_DEFAULT
+            )
+        )
+        val notification = NotificationCompat.Builder(context, WatchdogService.CRASH_CHANNEL_ID)
+            .setContentTitle(context.getString(R.string.watchdog_not_running_title))
+            .setContentText(context.getString(R.string.watchdog_not_running_text))
+            .setSmallIcon(R.drawable.ic_system_icon)
+            .setContentIntent(
+                PendingIntent.getActivity(
+                    context,
+                    0,
+                    Intent(context, MainActivity::class.java).addFlags(
+                        Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    ),
+                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+                )
+            )
+            .setAutoCancel(true)
+            .build()
+        runCatching { manager.notify(WatchdogService.NOTIFICATION_ID_NOT_RUNNING, notification) }
     }
 
     companion object {
