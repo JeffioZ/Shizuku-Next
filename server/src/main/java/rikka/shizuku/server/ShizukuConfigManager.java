@@ -19,8 +19,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import kotlin.collections.ArraysKt;
@@ -39,6 +41,12 @@ public class ShizukuConfigManager extends ConfigManager {
             .create();
 
     private static final long WRITE_DELAY = 10 * 1000;
+
+    /**
+     * How android.os.UserHandle divides a UID into a user and an app id. Written out because the
+     * server runs in a process where the class is not there to ask.
+     */
+    private static final int PER_USER_RANGE = 100000;
 
     private static final File FILE = new File("/data/user_de/0/com.android.shell/shizuku.json");
     private static final AtomicFile ATOMIC_FILE = new AtomicFile(FILE);
@@ -111,12 +119,29 @@ public class ShizukuConfigManager extends ConfigManager {
             changed = true;
         }
 
+        // What this device has installed, read once, before a single record is removed: the loop
+        // below is the only place that takes grants away, and this is the evidence it needs. A user
+        // whose list cannot be read answers with an empty list, the same as a user with nothing
+        // installed, so only a non-empty one counts as having read anything.
+        Map<Integer, List<PackageInfo>> installed = new LinkedHashMap<>();
+        for (int userId : UsersCompat.getUserIdsNoThrow()) {
+            installed.put(userId, InstalledPackagesCompat.getInstalledPackagesNoThrow(PackageManager.GET_PERMISSIONS, userId));
+        }
+
         for (ShizukuConfig.PackageEntry entry : new ArrayList<>(config.packages)) {
             if (entry.packages == null) {
                 entry.packages = new ArrayList<>();
             }
 
-            List<String> packages = PackageManagerApis.getPackagesForUidNoThrow(entry.uid);
+            Set<String> packages = packagesStillThere(entry.uid, installed);
+            if (packages == null) {
+                // Nothing could be read for this UID, which is not the same as reading that it is
+                // gone: dropping the record here would revoke its apps over a question that was
+                // never answered.
+                LOGGER.w("cannot tell whether uid %d still has packages; keeping its config", entry.uid);
+                continue;
+            }
+
             if (packages.isEmpty()) {
                 LOGGER.i("remove config for uid %d since it has gone", entry.uid);
                 config.packages.remove(entry);
@@ -149,8 +174,8 @@ public class ShizukuConfigManager extends ConfigManager {
             }
         }
 
-        for (int userId : UsersCompat.getUserIdsNoThrow()) {
-            for (PackageInfo pi : InstalledPackagesCompat.getInstalledPackagesNoThrow(PackageManager.GET_PERMISSIONS, userId)) {
+        for (List<PackageInfo> forUser : installed.values()) {
+            for (PackageInfo pi : forUser) {
                 if (pi == null
                         || pi.applicationInfo == null
                         || pi.requestedPermissions == null
@@ -178,6 +203,44 @@ public class ShizukuConfigManager extends ConfigManager {
         if (changed) {
             scheduleWriteLocked();
         }
+    }
+
+    /**
+     * The packages a UID still has, or null when nothing could be read about it.
+     *
+     * The server used to call the compat library's no-throw packages-for-UID here and treat an
+     * empty list as an answer, which is how a lookup that never got through managed to remove a
+     * record - and the record is the grant. The platform is asked in its throwing spelling
+     * instead, so a call that throws is an answer about the reading rather than about the UID, and
+     * the installed list of the UID's own user is read alongside it: the two together are what
+     * [UidPackages] is handed to decide, and it hands back null when neither of them spoke.
+     */
+    @Nullable
+    private static Set<String> packagesStillThere(int uid, Map<Integer, List<PackageInfo>> installed) {
+        String[] lookup = null;
+        try {
+            lookup = PackageManagerApis.getPackagesForUid(uid);
+        } catch (Throwable tr) {
+            LOGGER.w(tr, "getPackagesForUid for uid %d", uid);
+        }
+
+        List<PackageInfo> forUser = installed.get(uid / PER_USER_RANGE);
+
+        // Null rather than an empty list when the user's list could not be read: an empty
+        // enumeration and a user with nothing installed look the same, and the difference is what
+        // decides whether a record may be removed.
+        List<String> named = null;
+        if (forUser != null && !forUser.isEmpty()) {
+            named = new ArrayList<>();
+            for (PackageInfo pi : forUser) {
+                if (pi != null && pi.applicationInfo != null && pi.packageName != null
+                        && pi.applicationInfo.uid == uid) {
+                    named.add(pi.packageName);
+                }
+            }
+        }
+
+        return UidPackages.of(lookup, named);
     }
 
     private void scheduleWriteLocked() {
