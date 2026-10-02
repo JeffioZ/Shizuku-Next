@@ -133,8 +133,9 @@ exist. It was merged by hand, and that is the step every new language takes.
 
 ## Which languages ship
 
-The folders that ship are the ones with real content — **36 languages** now, from Russian at 707
-strings and Japanese at 382 down to the tail at about 115, the ten the licence brought in sitting
+The folders that ship are the ones with real content — **37 languages** now, from the Polish, Czech,
+Finnish and Norwegian folders at 758 strings down to the tail at about 115, the ten the licence
+brought in sitting
 at about 118 each. The ~200 that were nothing but English were removed, which also shrank the app:
 `resources.arsc` fell from 3.7 MB to 1.1 MB, taking the release APK from 7.2 MB to 4.6 MB. The ten
 added since cost about 178 kB of source XML between them, against the thousands of lines of English
@@ -380,7 +381,40 @@ The split, in the end:
 `values-ru` went from 496 strings to 707, and the export of it is purely additive against what was
 committed: no string that was there before was dropped or retranslated. `values-ru-rBY` is
 line-for-line what `values-ru` used to hold, so the Belarus variant lost nothing in the move, and
-`ru` stays out of `excluded_target_languages`, which leaves six there against 42 mapped.
+`ru` stays out of `excluded_target_languages`, which leaves five there against 43 mapped.
+
+## The same bug in Turkish
+
+Issue **#25** reported the Turkish translations as "somewhat unnatural or machine-translated" -
+*bekçi köpeği*, literally "watchdog dog", for `device_watchdog` - and asked for Turkish and Turkish
+(Cyprus) to be separated. It was closed, and then reopened in effect by its own last comment: the
+reporter had translated into `tr-CY`, the folder the app shipped as `values-tr`, and could not
+download it, while the plain `tr` target "doesn't seem to have any strings.xml". That is issue #31
+in Turkish, and it is the same cause.
+
+So the same fix was applied, and the pair is worth recording as a pattern rather than a one-off.
+Both were a regional target - `ru-BY`, `tr-CY` - writing the folder the language actually ships
+from, while the plain target sat in `excluded_target_languages` with nothing to translate:
+
+| target | folder | before | after |
+| --- | --- | --- | --- |
+| `tr` | `values-tr` | excluded, 0 strings | seeded from the repository, 593 of 787 (83%) |
+| `tr-CY` | `values-tr-rCY` | wrote `values-tr`, 619 | moved, 618 - unchanged |
+
+Both were seeded with the CLI, not the API, for the reason in the section above, and `tr` needed
+the same `tr: tr` entry in `languages_mapping` that `ru` did - Crowdin's own Android code is
+`tr-rTR`. The download then shrank `values-tr` by 26 strings, and every one of them was text
+identical to the English source (`adb`, `Root`, `Port`, `A-Z`): untranslated placeholders that the
+project's `skipUntranslatedStrings` is supposed to leave out and had been exporting. Nothing
+translated was lost, and the folder now holds 592 real Turkish strings against `tr-CY`'s 618.
+
+One consequence is worth stating plainly, because it is the half of #25 that a folder split does
+not fix: **`tr-CY` moved to `values-tr-rCY`, which this app has never shipped, so on Android it now
+matches no device.** A Turkish speaker still gets `values-tr`, which at 592 strings is smaller than
+the `tr-CY` content the folder used to hold, and the two hold different translations of the same
+strings. The direction that fixes both is the one the reporter asked for - make `tr` the target
+that fills `values-tr`, and merge or retire `tr-CY` rather than shipping it beside. The same
+question sits over the Russian pair, and it is the maintainer's to answer, not a sync's.
 
 ## Checking progress without the web interface
 

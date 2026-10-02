@@ -5,11 +5,12 @@ files:
   - source: manager/src/main/res/values/strings.xml
     translation: manager/src/main/res/values-%android_code%/%original_file_name%
 
-    # This is where the app's languages are decided, for the 42 of the project's target
+    # This is where the app's languages are decided, for the 43 of the project's target
     # languages that this app carries. Crowdin's targets are regional locales - Japanese is `ja` with the Android
-    # code `ja-rJP`, Russian is `ru` and its Belarus variant `ru-BY`, Indonesian's code is the
-    # legacy `in-rID`, German is `de-BE` - so Android's own placeholder would write
-    # values-ja-rJP, values-ru-rRU and values-de-rBY.
+    # code `ja-rJP`, Russian is `ru` and its Belarus variant `ru-BY`, Turkish is `tr` and its
+    # Cyprus variant `tr-CY`, Indonesian's code is the legacy `in-rID`, German is `de-BE` - so
+    # Android's own placeholder would write values-ja-rJP, values-ru-rRU, values-tr-rTR and
+    # values-de-rBY.
     # Each is named here instead, which is what makes the export land in the folder this app
     # ships. The format is Crowdin's language code: the code the placeholder should produce.
     #
@@ -63,7 +64,13 @@ files:
         ta: ta
         te: te
         th: th
-        tr-CY: tr
+        # Same shape as the Russian pair above: the app's Turkish ships as `values-tr` and is
+        # translated in the project's plain `tr` target, and the Cyprus variant is kept as its
+        # own folder instead of being allowed to write over the bulk of the language. It was
+        # values-tr that `tr-CY` used to land in, and the two targets hold different
+        # translations of the same strings.
+        tr: tr
+        tr-CY: tr-rCY
         uk: uk
         ur-IN: ur
         vi: vi
@@ -89,18 +96,19 @@ files:
     # because there is nothing that compares them: adding a target in Crowdin is otherwise
     # enough to start this happening again.
     #
-    # Six are left, and none of them is a language this app is missing. Four are the same
-    # language arriving twice - `ru-MD` against the `ru` this app now ships as values-ru, `tr`
-    # against `tr-CY`, `es-ES` and `es-US` against `es-419` - and because an unmapped target
-    # falls back to Android's placeholder, opening one of those would put two project languages
-    # on one folder and let the last export win. `bn-IN` is Bengali a second time beside the
-    # `bn` now mapped above, and `en-IN` is English, which is the source.
+    # Five are left, and none of them is a language this app is missing. Three are the same
+    # language arriving twice - `ru-MD` against the `ru` this app ships as values-ru, `es-ES`
+    # and `es-US` against `es-419` - and because an unmapped target falls back to Android's
+    # placeholder, opening one of those would put two project languages on one folder and let
+    # the last export win. `bn-IN` is Bengali a second time beside the `bn` now mapped above,
+    # and `en-IN` is English, which is the source.
     #
-    # `ru` used to be held back here, and holding it back is what issue #31 was: the app's
-    # Russian ships from values-ru, the bulk of that translation was made in the `ru-BY` target,
-    # and the plain `ru` target - the one a Russian speaker opens on Crowdin - was excluded from
-    # this file and therefore had nothing to translate. It is now the target that fills values-ru,
-    # seeded from the translation contributed as issue #29.
+    # `ru` and `tr` used to be held back here, and holding them back is what issues #31 and #25
+    # were: the app's Russian and Turkish ship from values-ru and values-tr, the bulk of each
+    # translation was made in that language's regional target (`ru-BY`, `tr-CY`), and the plain
+    # target - the one a speaker of the language opens on Crowdin - was excluded from this file
+    # and therefore had nothing to translate. Both are now the targets that fill those folders,
+    # seeded from the translations already in the repository.
     #
     # Note that removing a language from this list does not by itself make it translatable:
     # the CLI also wrote the list onto the file in Crowdin when it uploaded it, and only the
@@ -111,7 +119,6 @@ files:
       - es-ES
       - es-US
       - ru-MD
-      - tr
 
     translate_attributes: 0
     content_segmentation: 0
