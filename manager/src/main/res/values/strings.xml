@@ -741,6 +741,9 @@
     <string name="watchdog_shizuku_crashed_action_turn_off_alerts">Turn Off Alerts</string>
     <string name="watchdog_shizuku_recovered_title">Shizuku is running again</string>
     <string name="watchdog_shizuku_recovered_text">Watchdog started it again after it stopped by itself.</string>
+    <string name="watchdog_given_up_title">Shizuku could not be started</string>
+    <string name="watchdog_given_up_text">Shizuku was started %1$d times and did not come back. Starting it again will not help until the reason is fixed.</string>
+    <string name="watchdog_given_up_action_start">Start</string>
 
     <!-- Misc -->
     <string name="error">Error</string>

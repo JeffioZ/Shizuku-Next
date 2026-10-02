@@ -53,6 +53,12 @@ class WatchdogService : Service() {
     @Volatile
     private var lastRestartAt = 0L
 
+    /**
+     * Counts failed starts, and stops the retrying once a run of them means the start is the
+     * thing that is broken. See [StartCircuitBreaker] for the failure it answers.
+     */
+    private val breaker = StartCircuitBreaker(BREAKER_MAX_ATTEMPTS, BREAKER_WINDOW_MS)
+
     private val stateListener: (ShizukuStateMachine.State) -> Unit = { state ->
         // Deliberately not cleared when the server is seen running again: the binder that
         // reports that is the sticky one, and during a replacement it arrives while the old
@@ -85,6 +91,12 @@ class WatchdogService : Service() {
                 // Server is back, so there is nothing left for the screen-on retry to do,
                 // and any outage the user was told about is over.
                 pendingRestart = false
+                // A server that came back - however it came back - is proof the breaker was
+                // counting failures that were not permanent, so the count starts over. The
+                // reset is unconditional on purpose: a server that is up now may have come back
+                // while the breaker was open, and a count left standing would stop the next
+                // genuine crash from being recovered.
+                resetBreaker()
                 if (awaitingRecovery) {
                     awaitingRecovery = false
                     showRecoveryNotification()
@@ -191,6 +203,14 @@ class WatchdogService : Service() {
             return
         }
 
+        // The breaker is open, so the last [BREAKER_MAX_ATTEMPTS] starts all failed. Trying
+        // again is what the user was watching happen, so this is where it stops: the notice
+        // has been posted, and the way back is a start they asked for themselves.
+        if (breaker.open) {
+            Diag.debug(TAG, "Restart attempt skipped: the breaker is open")
+            return
+        }
+
         // A list is holding the debugging toggle off for an app the user has open. A start could
         // not work - it needs that very toggle - and the attempt would write the toggle back on,
         // which is the opposite of what the list is for. Waited out rather than tried: the watch
@@ -213,6 +233,7 @@ class WatchdogService : Service() {
             return
         }
         lastRestartAt = now
+        recordAttempt(now)
 
         // Cancel any prior WorkManager attempt so we don't inherit exponential backoff
         WorkManager.getInstance(applicationContext).cancelUniqueWork("adb_start_worker")
@@ -258,6 +279,29 @@ class WatchdogService : Service() {
         }
     }
 
+    /**
+     * Counts one restart attempt, and says so when it is the one that opens the breaker.
+     *
+     * Attempts from any trigger count, including a user's own tap. Five deliberate retries in a
+     * row inside one window would have to mean four of them failed within twenty seconds of each
+     * other, so the breaker is not going to open under somebody who is simply trying again.
+     */
+    private fun recordAttempt(now: Long) {
+        if (!breaker.record(now)) return
+        pendingRestart = false
+        Diag.warn(
+            TAG,
+            "Giving up: $BREAKER_MAX_ATTEMPTS starts in under " +
+                "${BREAKER_WINDOW_MS / 1000}s and the server is still down"
+        )
+        showGaveUpNotification()
+    }
+
+    /** A server that is running again clears the count, and re-arms the breaker with it. */
+    private fun resetBreaker() {
+        breaker.reset()
+    }
+
     override fun onCreate() {
         super.onCreate()
         isRunning.set(true)
@@ -272,6 +316,20 @@ class WatchdogService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == ACTION_START_NOW) {
+            // The breaker exists to stop the app retrying on its own, not to refuse the user.
+            // A start from here goes through the same path as the home screen's button, so the
+            // server is asked for afresh and the count starts over - and if that start works,
+            // the RUNNING transition clears the breaker and posts nothing further.
+            Diag.info(TAG, "Start asked for from the notification, resetting the breaker")
+            resetBreaker()
+            ShizukuReceiverStarter.start(
+                applicationContext,
+                forceStart = true,
+                userInitiated = true
+            )
+            return START_STICKY
+        }
         if (intent?.action == "ACTION_STOP_SERVICE") {
             // User explicitly turned the watchdog off via the notification persist
             // the setting directly instead of calling setWatchdog() (which would
@@ -437,6 +495,65 @@ class WatchdogService : Service() {
         nm.cancel(NOTIFICATION_ID_CRASH)
     }
 
+    /**
+     * The other outcome of an outage, and the one that used to be silent.
+     *
+     * Says how many starts were tried rather than only that it stopped trying, because the
+     * count is the evidence: one failed start is a phone having a bad moment, five in twenty
+     * seconds is a reason that will not fix itself. The action is a plain Start, which goes
+     * through the same path as the home screen's button and so clears [gaveUp] with it - the
+     * breaker is meant to stop the app retrying on its own, never to take the decision away.
+     */
+    private fun showGaveUpNotification() {
+        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        nm.createNotificationChannel(
+            NotificationChannel(
+                CRASH_CHANNEL_ID,
+                "Crash Reports",
+                NotificationManager.IMPORTANCE_DEFAULT
+            )
+        )
+
+        val notification = NotificationCompat.Builder(this, CRASH_CHANNEL_ID)
+            .setContentTitle(getString(R.string.watchdog_given_up_title))
+            .setContentText(
+                getString(R.string.watchdog_given_up_text, BREAKER_MAX_ATTEMPTS) +
+                    runningMethodSuffix()
+            )
+            .setStyle(
+                NotificationCompat.BigTextStyle().bigText(
+                    getString(R.string.watchdog_given_up_text, BREAKER_MAX_ATTEMPTS) +
+                        runningMethodSuffix()
+                )
+            )
+            .setSmallIcon(R.drawable.ic_system_icon)
+            .setContentIntent(
+                PendingIntent.getActivity(
+                    this,
+                    0,
+                    Intent(this, MainActivity::class.java),
+                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+                )
+            )
+            .setAutoCancel(true)
+            .addAction(
+                0,
+                getString(R.string.watchdog_given_up_action_start),
+                PendingIntent.getService(
+                    this,
+                    2,
+                    Intent(this, WatchdogService::class.java).setAction(ACTION_START_NOW),
+                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+                )
+            )
+            .build()
+
+        nm.notify(NOTIFICATION_ID_GAVE_UP, notification)
+        // It replaces the crash notice rather than stacking under it: both describe the same
+        // outage, and this is the later and more useful word on it.
+        nm.cancel(NOTIFICATION_ID_CRASH)
+    }
+
     companion object {
         private const val TAG = "ShizukuWatchdog"
         private const val BINDER_GRACE_MS = 3000L
@@ -456,11 +573,34 @@ class WatchdogService : Service() {
          * still the one who noticed.
          */
         private const val RECOVERY_POLL_MS = 30_000L
+
+        /**
+         * How many failed starts inside [BREAKER_WINDOW_MS] mean the start itself is broken.
+         *
+         * Five, matching the same idea upstream in ReShizukuX: enough that a phone which
+         * merely has not got its Wi-Fi back yet is not cut off, few enough that the loop is
+         * stopped in the first couple of minutes rather than after a night of it.
+         */
+        private const val BREAKER_MAX_ATTEMPTS = 5
+
+        /**
+         * The span those attempts have to fall inside, and it has to be wide enough for the
+         * retries themselves: the poll is 30s and the cooldown 15s, so a genuine outage being
+         * retried lands roughly one attempt per poll - a little under three attempts a minute,
+         * which is about a minute and a half to open the breaker. Narrower than this and the
+         * poll's own spacing would never fill it.
+         */
+        private const val BREAKER_WINDOW_MS = 120_000L
+
         private const val NOTIFICATION_ID_WATCHDOG = 1001
         private const val NOTIFICATION_ID_CRASH = 1002
         private const val NOTIFICATION_ID_RECOVERY = 1003
+        private const val NOTIFICATION_ID_GAVE_UP = 1004
         const val CRASH_CHANNEL_ID = "crash_reports"
         const val ACTION_WATCHDOG_CHANGED = "WATCHDOG_CHANGED"
+
+        /** A start the user asked for from the notification, which the breaker must not block. */
+        const val ACTION_START_NOW = "ACTION_START_NOW"
         const val EXTRA_WATCHDOG_STATUS = "status"
 
         private val isRunning = AtomicBoolean(false)
