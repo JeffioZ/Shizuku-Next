@@ -43,6 +43,8 @@ import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Science
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.FloatingToolbarExitDirection
@@ -57,6 +59,7 @@ import androidx.compose.material3.ToggleButtonShapes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -351,6 +354,11 @@ private fun MainTabs(
         warmUp = true
     }
 
+    // The number of apps Shizuku's permission is granted to, as last reported by the Apps page.
+    // That page owns the read - it is the one with the list - and this is where its answer is
+    // kept so the tab bar can show it without a second pass over the same packages.
+    var grantedCount by remember { mutableIntStateOf(0) }
+
     val scrollBehavior = FloatingToolbarDefaults.exitAlwaysScrollBehavior(
         exitDirection = FloatingToolbarExitDirection.Bottom
     )
@@ -392,7 +400,8 @@ private fun MainTabs(
                     1 -> AppsScreen(
                         bottomPadding = bottomPadding,
                         active = active,
-                        warmUp = warmUp
+                        warmUp = warmUp,
+                        onGrantedCount = { grantedCount = it }
                     )
                     2 -> LabsScreen(bottomPadding = bottomPadding, onOpenDetail = onOpenDetail)
                     3 -> SettingsScreen(bottomPadding = bottomPadding, onOpenDetail = onOpenDetail)
@@ -549,16 +558,35 @@ private fun MainTabs(
                                 // and taller, and the pages under it move. The filled pill says
                                 // which tab is current, and the outlined icon resolving into the
                                 // filled one says the pill has arrived.
-                                Crossfade(
-                                    targetState = selected,
-                                    animationSpec = MaterialTheme.motionScheme
-                                        .defaultEffectsSpec<Float>(),
-                                    label = "tabIcon"
-                                ) { isSelected ->
-                                    Icon(
-                                        if (isSelected) tab.selectedIcon else tab.unselectedIcon,
-                                        contentDescription = stringResource(tab.label)
-                                    )
+                                // The count of granted apps rides on the Apps tab as a badge: it
+                                // is the one number about the service that changes on its own,
+                                // and drawn over the icon rather than beside it, so the bar's
+                                // size does not depend on how large the number is.
+                                BadgedBox(
+                                    badge = {
+                                        if (index == 1 && grantedCount > 0) {
+                                            // The accent at its low-emphasis tone rather than
+                                            // the badge's own default, which is the error red:
+                                            // a count of granted apps is not a problem, and
+                                            // the container role is the accent's quiet one.
+                                            Badge(
+                                                containerColor = MaterialTheme.colorScheme
+                                                    .primaryContainer
+                                            ) { Text(grantedCount.toString()) }
+                                        }
+                                    }
+                                ) {
+                                    Crossfade(
+                                        targetState = selected,
+                                        animationSpec = MaterialTheme.motionScheme
+                                            .defaultEffectsSpec<Float>(),
+                                        label = "tabIcon"
+                                    ) { isSelected ->
+                                        Icon(
+                                            if (isSelected) tab.selectedIcon else tab.unselectedIcon,
+                                            contentDescription = stringResource(tab.label)
+                                        )
+                                    }
                                 }
                             }
                         }

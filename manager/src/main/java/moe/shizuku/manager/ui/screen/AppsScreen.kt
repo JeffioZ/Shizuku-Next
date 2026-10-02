@@ -117,7 +117,14 @@ enum class AppFilter {
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun AppsScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = false) {
+fun AppsScreen(
+    bottomPadding: Dp,
+    active: Boolean = true,
+    warmUp: Boolean = false,
+    // Reported so the tab bar can carry it as a badge: the count is worked out here, over the
+    // list the server just handed over, and nowhere else has that list.
+    onGrantedCount: (Int) -> Unit = {}
+) {
     val context = LocalContext.current
     val pm = context.packageManager
 
@@ -186,6 +193,9 @@ fun AppsScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = fals
         if ((!active && !warmUp) || all.isEmpty()) {
             grantedNames = emptySet()
             launcherless = emptySet()
+            // Nothing is known yet, or there is no server to ask, so there is no number to
+            // carry to the tab bar either.
+            onGrantedCount(0)
             return@LaunchedEffect
         }
         if (derivedFor == (running to version)) return@LaunchedEffect
@@ -203,6 +213,7 @@ fun AppsScreen(bottomPadding: Dp, active: Boolean = true, warmUp: Boolean = fals
         }
         grantedNames = granted
         launcherless = withoutLauncher
+        onGrantedCount(granted.size)
     }
 
     // What kind of app it is, which needs no server: the flags and the record are on the app
