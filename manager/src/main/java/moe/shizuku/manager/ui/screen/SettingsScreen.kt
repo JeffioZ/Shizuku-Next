@@ -180,10 +180,14 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
         val applied = if (enable) {
             applyAdbWithoutDeveloperOptions(context)
         } else {
+            // The way back is a write as well, and the permission can be gone since the
+            // setting was switched on - a reinstall under a new key loses it - so this is
+            // the one place where being refused would otherwise leave Developer options
+            // hidden and the switch claiming they are not. A refusal keeps the setting as
+            // it was, which is what the device is actually in.
             restoreDeveloperOptions(context)
-            true
         }
-        ShizukuSettings.setAdbWithoutDeveloperOptions(context, enable && applied)
+        ShizukuSettings.setAdbWithoutDeveloperOptions(context, if (applied) enable else !enable)
         adbWithoutDeveloperOptions = ShizukuSettings.getAdbWithoutDeveloperOptions()
         if (!applied) {
             Toast.makeText(
@@ -299,12 +303,25 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                         )
                     }
                     item {
+                        // A switch whose whole effect is one write to the settings provider,
+                        // so it is offered only while that write can be made - see
+                        // writeSecureSettings above. On stays on offer, because a device that
+                        // is already in the state has to be able to leave it.
                         SegmentedListItem(
                             centerSlots = true,
                             leadingContent = { SettingsIcon(Icons.Outlined.Usb) },
                             headlineContent = { Text(stringResource(R.string.settings_auto_disable_usb_debugging)) },
-                            supportingContent = { Text(stringResource(R.string.settings_auto_disable_usb_debugging_summary)) },
+                            supportingContent = {
+                                Text(
+                                    stringResource(
+                                        if (writeSecureSettings)
+                                            R.string.settings_auto_disable_usb_debugging_summary
+                                        else R.string.settings_needs_write_secure_settings
+                                    )
+                                )
+                            },
                             switchState = autoDisableUsb,
+                            switchEnabled = autoDisableUsb || writeSecureSettings,
                             onSwitchChange =
                                 {
                                     ShizukuSettings.getPreferences().edit()
@@ -321,8 +338,15 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                             supportingContent = {
                                 Text(
                                     stringResource(
-                                        if (forceWireless) R.string.settings_unavailable_while_forcing_wireless
-                                        else R.string.settings_auto_disable_wireless_debugging_summary
+                                        when {
+                                            forceWireless ->
+                                                R.string.settings_unavailable_while_forcing_wireless
+
+                                            !writeSecureSettings ->
+                                                R.string.settings_needs_write_secure_settings
+
+                                            else -> R.string.settings_auto_disable_wireless_debugging_summary
+                                        }
                                     )
                                 )
                             },
@@ -330,7 +354,8 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                             // thing the experiment cannot survive, so this row is not offered
                             // while it is on rather than flipped and then flipped back.
                             switchState = autoDisableWireless && !forceWireless,
-                            switchEnabled = !forceWireless,
+                            switchEnabled =
+                                !forceWireless && (autoDisableWireless || writeSecureSettings),
                             onSwitchChange =
                                 {
                                     ShizukuSettings.getPreferences().edit()
@@ -368,9 +393,16 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                             leadingContent = { SettingsIcon(Icons.Outlined.DeveloperMode) },
                             headlineContent = { Text(stringResource(R.string.settings_adb_without_developer_options)) },
                             supportingContent = {
-                                Text(stringResource(R.string.settings_adb_without_developer_options_summary))
+                                Text(
+                                    stringResource(
+                                        if (writeSecureSettings)
+                                            R.string.settings_adb_without_developer_options_summary
+                                        else R.string.settings_needs_write_secure_settings
+                                    )
+                                )
                             },
                             switchState = adbWithoutDeveloperOptions,
+                            switchEnabled = adbWithoutDeveloperOptions || writeSecureSettings,
                             onSwitchChange =
                                 { checked ->
                                     // Hiding Developer options is not something to do to
@@ -426,7 +458,7 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                                     stringResource(
                                         if (writeSecureSettings)
                                             R.string.settings_force_wireless_debugging_summary
-                                        else R.string.settings_force_wireless_debugging_needs_permission
+                                        else R.string.settings_needs_write_secure_settings
                                     )
                                 )
                             },

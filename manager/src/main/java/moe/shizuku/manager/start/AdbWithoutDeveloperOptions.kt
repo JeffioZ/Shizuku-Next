@@ -42,10 +42,15 @@ fun applyAdbWithoutDeveloperOptions(context: Context): Boolean {
     return true
 }
 
-/** Puts Developer options back the way it was before the setting was switched on. */
-fun restoreDeveloperOptions(context: Context) {
+/**
+ * Puts Developer options back the way it was before the setting was switched on.
+ *
+ * Returns false when the write was refused. The permission can be gone since the setting was
+ * switched on - an install under a new signing key loses it - so the caller has to know
+ * whether Developer options are really back rather than assume the write landed.
+ */
+fun restoreDeveloperOptions(context: Context): Boolean =
     context.writeGlobalSetting(DEVELOPMENT_SETTINGS_ENABLED, 1)
-}
 
 /**
  * Whether Developer options is currently available at all.
