@@ -20,6 +20,38 @@
     <string name="home_usb_adb_title"><![CDATA[Start via USB debugging]]></string>
     <string name="home_usb_adb_summary">Starts using USB debugging.</string>
     <string name="home_support_body">Shizuku Next is free and has no ads. A coffee goes towards the time it takes to maintain.</string>
+    <string name="diagnostics_title">Diagnostics</string>
+    <string name="diagnostics_copy">Copy diagnostics</string>
+    <string name="diagnostics_copied">Diagnostics copied</string>
+    <string name="diagnostics_service">Service</string>
+    <string name="diagnostics_server_uid">Server uid</string>
+    <string name="diagnostics_server_api">Server API</string>
+    <string name="diagnostics_server_context">Server context</string>
+    <string name="diagnostics_wireless_debugging">Wireless debugging</string>
+    <string name="diagnostics_adb_port">ADB port</string>
+    <string name="diagnostics_wifi">Wi-Fi</string>
+    <string name="diagnostics_local_network">Local network</string>
+    <string name="diagnostics_battery">Battery optimization</string>
+    <string name="diagnostics_app">App</string>
+    <string name="diagnostics_android">Android</string>
+    <string name="diagnostics_device">Device</string>
+    <string name="diagnostics_started_with">Started with</string>
+    <string name="diagnostics_default">Default method</string>
+    <string name="diagnostics_hiding">Hiding</string>
+    <string name="diagnostics_root">Root</string>
+    <string name="diagnostics_granted">granted</string>
+    <string name="diagnostics_missing">missing</string>
+    <string name="diagnostics_not_required">not required</string>
+    <string name="diagnostics_connected">connected</string>
+    <string name="diagnostics_not_connected">not connected</string>
+    <!-- The platform says "not optimized" and Samsung says "unrestricted" for the same state,
+         and "Battery optimization: not optimized" reads as a fault to anyone holding the phone.
+         "unrestricted" says what the app did and what it is: left alone. -->
+    <string name="diagnostics_battery_optimized">optimized</string>
+    <string name="diagnostics_battery_unrestricted">unrestricted</string>
+    <string name="diagnostics_available">available</string>
+    <string name="diagnostics_unavailable">unavailable</string>
+    <string name="diagnostics_closed">closed</string>
 
     <!-- Adb -->
     <string name="dialog_adb_port">Port</string>

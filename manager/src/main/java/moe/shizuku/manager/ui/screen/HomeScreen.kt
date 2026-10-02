@@ -3,6 +3,9 @@
 package moe.shizuku.manager.ui.screen
 
 import android.app.Activity
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -102,7 +105,6 @@ import moe.shizuku.manager.start.needsLocalNetworkPermissionFor
 import moe.shizuku.manager.start.openAppSettings
 import moe.shizuku.manager.start.openAdbPortAndStart
 import moe.shizuku.manager.start.StartMethodGuard
-import moe.shizuku.manager.start.runningStartMethodLabelRes
 import moe.shizuku.manager.start.startMethodLabelRes
 import moe.shizuku.manager.starter.Starter
 import moe.shizuku.manager.starter.StarterActivity
@@ -143,6 +145,7 @@ fun HomeScreen(bottomPadding: Dp) {
     var otherMethodsOpen by rememberSaveable { mutableStateOf(false) }
     var selinuxRes by remember { mutableStateOf<Int?>(null) }
     var seccompRes by remember { mutableStateOf<Int?>(null) }
+    var diagnostics by remember { mutableStateOf("") }
     val startStatus by StartStatusReporter.status.collectAsState()
     val scope = rememberCoroutineScope()
 
@@ -216,6 +219,17 @@ fun HomeScreen(bottomPadding: Dp) {
             val (selinux, seccomp) = readDeviceStatus()
             selinuxRes = selinux
             seccompRes = seccomp
+            // Read off the same pass as the rest of the state, so the card cannot describe a
+            // service that was there when the screen appeared and not now.
+            diagnostics = buildDiagnostics(
+                context = context,
+                running = running,
+                uid = uid,
+                method = startMethod,
+                hidingActive = hidingActive,
+                batteryIgnored = batteryIgnored,
+                rooted = rooted
+            )
         }
     }
 
@@ -544,7 +558,6 @@ fun HomeScreen(bottomPadding: Dp) {
                     }
                 )
             }
-
             item {
                 // The ways to start, as cards rather than rows: each one is a decision with
                 // a reason attached, so it gets an icon to be recognised by and a body that
@@ -678,7 +691,6 @@ fun HomeScreen(bottomPadding: Dp) {
                     }
                 }
             }
-
             item {
                 SegmentedColumn(modifier = Modifier.fillMaxWidth()) {
                     // Same rows KernelSU's manager shows, so the device is described the
@@ -725,6 +737,32 @@ fun HomeScreen(bottomPadding: Dp) {
                             supportingContent = { Text(seccompRes?.let { stringResource(it) } ?: "-") }
                         )
                     }
+                }
+            }
+
+            if (diagnostics.isNotEmpty()) {
+                item {
+                    // Last of the state, after the device rows: the status card is the
+                    // glance, this is the whole answer, and it is the one place that puts it
+                    // on the clipboard. Whoever needs it has already scrolled this far.
+                    DiagnosticsCard(
+                        text = diagnostics,
+                        onCopy = {
+                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE)
+                                as ClipboardManager
+                            clipboard.setPrimaryClip(
+                                ClipData.newPlainText(
+                                    context.getString(R.string.diagnostics_title),
+                                    diagnostics
+                                )
+                            )
+                            Toast.makeText(
+                                context,
+                                R.string.diagnostics_copied,
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    )
                 }
             }
 
@@ -790,6 +828,7 @@ private fun StatusCard(
     uid: Int,
     @StringRes startMethodLabelRes: Int
 ) {
+    val context = LocalContext.current
     // "Stopped" is a normal state, not an error a red container made the
     // primary action clash. Use a neutral surface instead.
     val containerColor = if (running) {
@@ -850,11 +889,14 @@ private fun StatusCard(
                     style = MaterialTheme.typography.titleMedium
                 )
                 // Everything about the server at a glance: how it is running now, what
-                // the Start button below will do next, and what it is running as.
+                // the Start button below will do next, and what it is running as. The same
+                // facts are in the diagnostics card at the end of the page, where they are
+                // one block with everything else in it - this is the one that is read, that
+                // one is the one that is pasted.
                 StatusFacts(
                     StatusFactEntry(
                         R.string.home_status_started_with,
-                        if (running) runningMethodLabel(uid) else stringResource(R.string.status_value_none)
+                        if (running) startedWithLabel(context, uid) else stringResource(R.string.status_value_none)
                     ),
                     StatusFactEntry(
                         R.string.home_status_started_default,
@@ -864,14 +906,14 @@ private fun StatusCard(
                     // the classic port (and a system start uses no adb at all).
                     StatusFactEntry(
                         R.string.home_status_transport_label,
-                        if (running) transportLabel(uid) else stringResource(R.string.status_value_none)
+                        if (running) transportLabel(context, uid) else stringResource(R.string.status_value_none)
                     ),
                     // The number is the fact; what the uid is called goes underneath it,
                     // because "2000 (shell)" in a quarter of the width lost its own name.
                     StatusFactEntry(
                         R.string.uid_label,
                         if (uid < 0) stringResource(R.string.status_value_none) else uid.toString(),
-                        uidName(uid)
+                        uidName(context, uid)
                     )
                 )
             }
@@ -1109,59 +1151,4 @@ private fun ExitDialog(titleRes: Int, messageRes: Int) {
     )
 }
 
-/**
- * The uid the server runs as, as the number first: the number is what decides what it can
- * reach, and 0, 1000 and 2000 are the ones worth being able to read at a glance.
- *
- * Note what 2000 is called here: shell, not adb. It is the shell user whichever wire the
- * server was started over, and naming it after the transport printed the same word twice on
- * a card that already has a Transport row.
- */
-@Composable
-private fun uidName(uid: Int): String? = when (uid) {
-    0 -> stringResource(R.string.uid_name_format, stringResource(R.string.uid_name_root))
-    1000 -> stringResource(R.string.uid_name_format, stringResource(R.string.uid_name_system))
-    2000 -> stringResource(R.string.uid_name_format, stringResource(R.string.uid_name_shell))
-    else -> null
-}
 
-/**
- * The method the running server was started with. Falls back to the ADB transport when
- * no launch of ours was recorded e.g. the server was started by another tool.
- */
-@Composable
-private fun runningMethodLabel(uid: Int): String =
-    // Shared with the notifications, so both name the method the same way.
-    runningStartMethodLabelRes()?.let { stringResource(it) } ?: transportLabel(uid)
-
-/**
- * The wire the running server is on.
- *
- * The transport is only known for a launch of ours that went over adb. A root or system
- * launch doesn't record one, a server started outside the app (from a computer with the
- * command it hands out, or by another manager) records nothing at all, and whatever an
- * earlier adb launch recorded would be a lie about this server. Those cases used to read
- * "Unknown", which looks like a fault: the server does run as adb, that is the fact worth
- * showing, and which wire carried the command isn't knowable from here anyway.
- */
-@Composable
-private fun transportLabel(uid: Int): String = when {
-    uid == 0 -> stringResource(R.string.start_method_root)
-    uid == 1000 -> stringResource(R.string.start_method_system)
-
-    // "adb (...)" rather than the method names, so the transport can't be confused
-    // with the start method shown next to it.
-    launchedByUsOverAdb() -> when (ShizukuSettings.getLastAdbTransport()) {
-        ShizukuSettings.ADB_TRANSPORT_TCP -> stringResource(R.string.home_status_adb_usb)
-        ShizukuSettings.ADB_TRANSPORT_TLS -> stringResource(R.string.home_status_adb_wireless)
-        else -> stringResource(R.string.transport_adb)
-    }
-
-    else -> stringResource(R.string.transport_adb)
-}
-
-/** True when the running server is one this app started over adb. */
-private fun launchedByUsOverAdb(): Boolean = when (ShizukuSettings.getRunningStartMethod()) {
-    ShizukuSettings.StartMethod.WIRELESS, ShizukuSettings.StartMethod.USB -> true
-    else -> false
-}
