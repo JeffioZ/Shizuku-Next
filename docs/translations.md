@@ -236,6 +236,80 @@ translator's work.
 If the licence had not been granted, the fallback was the arithmetic in the section above: 17
 languages at 3,411 words each is 57,987 and 18 is 61,398, so eight of the 23 would have had to go.
 
+## The six the exclusion was holding back
+
+Thirteen of the project's 48 target languages sat at **exactly 0%**, and the cause was not that
+nobody had got round to them. They were the same thirteen languages `excluded_target_languages`
+names in [`crowdin.yml`](../crowdin.yml), and that setting means what it says: the file is *not
+available for translation* into those languages. A translator opening the project for Hindi found
+no file at all. Five translators are on the project with access to every language, and six
+languages had nothing for them to open.
+
+The two lists being in step is what made it look deliberate: 35 mapped and shipping, 13 excluded
+and silent, and 35 + 13 is the project's 48. Nothing was out of sync; the list was simply doing
+what it said.
+
+Reading progress per language exposed the exclusion biting in a way nobody would guess from the
+totals - `preTranslateAppliedTo: 0` on all thirteen. AI pre-translation **had** already been run
+over exactly those languages, twice, and applied nothing, because a file excluded from a language
+has no target strings to fill. Both runs reported success. That is most of why the gap survived
+being looked at.
+
+Six of the thirteen are languages the app is genuinely missing, and all six were opened:
+
+| opened | folder | was |
+| --- | --- | --- |
+| `hi` | `values-hi` | Hindi, never opened |
+| `bn` | `values-bn` | Bengali, never opened |
+| `te` | `values-te` | Telugu, never opened |
+| `mr` | `values-mr` | Marathi, never opened |
+| `pa-IN` | `values-pa` | Punjabi, never opened |
+| `ur-IN` | `values-ur` | Urdu, never opened |
+
+Seven stay shut, and not one of them is a language this app is missing: `ru` and `ru-MD` against
+the `ru-BY` that ships as `values-ru`, `tr` against `tr-CY`, `es-ES` and `es-US` against `es-419`,
+`bn-IN` as Bengali a second time beside `bn`, and `en-IN`, which is English, the source. Opening a
+duplicate is the one edit to avoid here: they are unmapped, so the CLI falls back to Android's own
+placeholder, and `ru` resolves to `values-ru` - the folder `ru-BY` already writes. Two project
+languages, one file, last export wins.
+
+**No skeleton could be given, and none of the two mechanisms that fill strings automatically
+reaches these six:**
+
+| method | outcome |
+| --- | --- |
+| `mt` - Crowdin Translate, engine `879831` | works, and filled `pl`, `cs`, `fi`, `ja`, `no`, `pt-BR`, `ro`, `ru-BY`, `tr-CY`, `uk` and `zh-CN` - but it supports 24 languages, and Hindi, Bengali, Telugu, Marathi, Punjabi and Urdu are not among them |
+| `ai` - `POST /projects/935085/pre-translations`, `method: "ai"` | accepted with `202`, runs to `finished` in under a minute, applies **0** strings. Three times, the last of them with the project's prompt configured |
+
+The prompt was the first suspect and turned out not to be the cause.
+`/projects/935085/ai/settings` had `preTranslationAiPromptId: null`, and that field **is** writable
+through the API - a JSON Patch on the same endpoint, `[{"op":"replace","path":"/preTranslationAiPromptId","value":704135}]`,
+where `704135` is the prompt the project's own earlier runs used. It is validated, too: `999999999`
+and `1` are both refused with `notInArray`, so the value is a real prompt of this account and not a
+number Crowdin was going to ignore. The setting now holds `704135`, and the third run applied
+nothing anyway, in about the time it takes to look at 787 strings rather than translate them.
+
+So what is left is the provider behind the prompt, which lives at the organisation level and has no
+API of its own - `/ai/providers` and `/projects/935085/ai/providers` are both `404`. Connecting one
+is a web-interface step, and until it is done `method: "ai"` accepts the request, reports success
+and writes nothing, which is the failure being reported on Crowdin's own forum as *"pre-translation
+via AI skips all the strings"*.
+
+A third route exists and is a decision rather than a step: an MT engine that does cover them,
+such as Google Cloud Translation, added to the project with an account of its own. Crowdin
+Translate cannot, whatever is configured around it.
+
+So the six start where the other 35 did - an empty target field beside each of the 787 source
+strings, which is how every language here began, the tail ones sitting at 114 to 125 strings. What
+they needed was the door, not a head start.
+
+Two consequences for whoever picks one up. Its folder still has to exist in the repository before
+a translation file for it will merge, and the languages are mapped now, so the first nightly after
+somebody translates a string opens a pull request the check refuses: that one is merged **by
+hand**, as above. And until then nothing about the language is live - a language with no
+translations exports no file at all, which is why mapping all six costs nothing while they are
+empty.
+
 ## Checking progress without the web interface
 
 With a Crowdin personal access token in `CROWDIN_TOKEN` (Account → API tokens; the one for this
