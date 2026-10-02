@@ -133,7 +133,7 @@ exist. It was merged by hand, and that is the step every new language takes.
 
 ## Which languages ship
 
-The folders that ship are the ones with real content — **35 languages** now, from Russian at 468
+The folders that ship are the ones with real content — **36 languages** now, from Russian at 707
 strings and Japanese at 382 down to the tail at about 115, the ten the licence brought in sitting
 at about 118 each. The ~200 that were nothing but English were removed, which also shrank the app:
 `resources.arsc` fell from 3.7 MB to 1.1 MB, taking the release APK from 7.2 MB to 4.6 MB. The ten
@@ -266,12 +266,17 @@ Six of the thirteen are languages the app is genuinely missing, and all six were
 | `pa-IN` | `values-pa` | Punjabi, never opened |
 | `ur-IN` | `values-ur` | Urdu, never opened |
 
-Seven stay shut, and not one of them is a language this app is missing: `ru` and `ru-MD` against
-the `ru-BY` that ships as `values-ru`, `tr` against `tr-CY`, `es-ES` and `es-US` against `es-419`,
-`bn-IN` as Bengali a second time beside `bn`, and `en-IN`, which is English, the source. Opening a
-duplicate is the one edit to avoid here: they are unmapped, so the CLI falls back to Android's own
-placeholder, and `ru` resolves to `values-ru` - the folder `ru-BY` already writes. Two project
+Six stay shut, and not one of them is a language this app is missing: `ru-MD` against the `ru` that
+now ships as `values-ru`, `tr` against `tr-CY`, `es-ES` and `es-US` against `es-419`, `bn-IN` as
+Bengali a second time beside `bn`, and `en-IN`, which is English, the source. Opening a duplicate is
+the one edit to avoid here: they are unmapped, so the CLI falls back to Android's own placeholder,
+and `ru-MD` resolves to `values-ru-rRU` rather than the `values-ru` this app carries. Two project
 languages, one file, last export wins.
+
+`ru` was the seventh, and it turned out not to be a duplicate at all - it is the target that now
+fills `values-ru`, with `ru-BY` moved off to `values-ru-rBY`. That was issue #31, and it is the one
+case where opening a language meant moving a folder rather than adding one, so it is recorded in
+its own section below.
 
 **No skeleton could be given, and none of the two mechanisms that fill strings automatically
 reaches these six:**
@@ -309,6 +314,73 @@ somebody translates a string opens a pull request the check refuses: that one is
 hand**, as above. And until then nothing about the language is live - a language with no
 translations exports no file at all, which is why mapping all six costs nothing while they are
 empty.
+
+## The Russian that arrived as resource ids
+
+Two issues opened the same morning turned out to be one problem seen from two sides. **#31** was a
+Russian speaker who opened <https://crowdin.com/project/Shizuku-Next/ru> and found no `strings.xml`
+at all. **#29** was a contributor attaching a "Russian full translate for v14.0.9". Both come down
+to the same thing: this app's Russian ships from `values-ru`, and the target that had been writing
+that folder was `ru-BY`, "Russian, Belarus" - the plain `ru` target, the one the website sends a
+Russian speaker to, was excluded from the file and therefore empty.
+
+### The attached file is valid, and that is the problem
+
+It parses, it holds 881 `<string>` elements, it is UTF-8 without a BOM - and every name in it is a
+resource id, `string_7f100001` through `string_7f100405`. `0x7f` is this app's package and `0x10`
+is the string type, so it is a dump of a release APK's `resources.arsc`, with the names erased
+because `minifyEnabled` and `shrinkResources` are on for release in `manager/build.gradle`.
+
+As sent it matches **0 of the 789** keys in `manager/src/main/res/values/strings.xml`, so it would
+have translated nothing. [`ci/check-translations.py`](../ci/check-translations.py) would have
+accepted it - valid XML, more than twenty strings, nowhere near 90% English, and `values-ru`
+exists - and merged a file that changes no string in the app. That is the failure the check exists
+to catch and cannot, because every rule it applies is about the shape of a file rather than whether
+its keys are ones the app has.
+
+### Recovering it
+
+Resource ids are assigned in alphabetical order within a type, which is the trap: one string added
+anywhere in `values/strings.xml` shifts every id after it. Mapping the file's ids against the
+current source gives 36 placeholder mismatches and text such as `intents_regenerate` rendering as
+"sans-serif". They line up only against a build from the same tag, and the release for
+**v14.0.9-next** is published beside a debug APK built from the same commit, whose names survive.
+Going through that dump resolves all 881 entries, **718** of them this app's own strings (the rest
+are `abc_`/`androidx` library keys), with **0 placeholder mismatches**.
+
+The values need care for the same reason: `resources.arsc` holds them cooked. `Can\'t` is stored
+as `Can't`, `\n` as a real newline, and compiled markup as real child elements - so reading them
+with `ElementTree`'s `.text` stops at the first child, and all thirteen strings containing bold
+lost their tail. `home_usb_adb_needs_network` ended at "Подключитесь к Wi-Fi один раз или выберите ".
+Reading the raw inner XML keeps them: a source written as `<![CDATA[...]]>` keeps its markup, and
+one written with real tags has them stripped, which is what `getString()` returns for it anyway.
+
+### Seeding the target
+
+`POST /projects/935085/translations` is the documented way in and does not work for this. It
+accepts the upload - `201`, every time - and imports about one string per run, leaving progress at
+0%. The CLI works, in the configuration the workflow already uses:
+
+```bash
+crowdin upload translations -l ru -c crowdin.yml
+```
+
+That imported **708** strings in one run. One wrinkle is worth knowing: Crowdin's own Android code
+for `ru` is `ru-rRU`, so a seeding config needs `ru: ru` in `languages_mapping` to find `values-ru`
+- and is better off dropping the other 41 mappings, which would let a seeding run read one
+language's folder and write it into another's.
+
+The split, in the end:
+
+| target | folder | strings |
+| --- | --- | --- |
+| `ru` | `values-ru` | 707 - the folder the app's Russian ships from |
+| `ru-BY` | `values-ru-rBY` | 496, unchanged - moved rather than retranslated |
+
+`values-ru` went from 496 strings to 707, and the export of it is purely additive against what was
+committed: no string that was there before was dropped or retranslated. `values-ru-rBY` is
+line-for-line what `values-ru` used to hold, so the Belarus variant lost nothing in the move, and
+`ru` stays out of `excluded_target_languages`, which leaves six there against 42 mapped.
 
 ## Checking progress without the web interface
 

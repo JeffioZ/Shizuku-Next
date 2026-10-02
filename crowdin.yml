@@ -5,10 +5,11 @@ files:
   - source: manager/src/main/res/values/strings.xml
     translation: manager/src/main/res/values-%android_code%/%original_file_name%
 
-    # This is where the app's languages are decided, for the 41 of the project's target
+    # This is where the app's languages are decided, for the 42 of the project's target
     # languages that this app carries. Crowdin's targets are regional locales - Japanese is `ja` with the Android
-    # code `ja-rJP`, Russian is `ru-BY`, Indonesian's code is the legacy `in-rID`, German is
-    # `de-BE` - so Android's own placeholder would write values-ja-rJP and values-de-rBY.
+    # code `ja-rJP`, Russian is `ru` and its Belarus variant `ru-BY`, Indonesian's code is the
+    # legacy `in-rID`, German is `de-BE` - so Android's own placeholder would write
+    # values-ja-rJP, values-ru-rRU and values-de-rBY.
     # Each is named here instead, which is what makes the export land in the folder this app
     # ships. The format is Crowdin's language code: the code the placeholder should produce.
     #
@@ -49,7 +50,13 @@ files:
         pl: pl
         pt-BR: pt-rBR
         ro: ro
-        ru-BY: ru
+        # The app's Russian ships as `values-ru` and is translated in the project's plain `ru`
+        # target, which Crowdin's own Android code would name `ru-rRU`. The Belarus variant is
+        # kept as its own folder rather than being allowed to write over the bulk of the
+        # language: it was values-ru that the `ru-BY` target used to land in, and the two
+        # targets hold different translations of the same strings.
+        ru: ru
+        ru-BY: ru-rBY
         sl: sl
         sr-Cyrl-ME: sr
         sv-FI: sv
@@ -82,12 +89,18 @@ files:
     # because there is nothing that compares them: adding a target in Crowdin is otherwise
     # enough to start this happening again.
     #
-    # Seven are left, and none of them is a language this app is missing. Five are the same
-    # language arriving twice - `ru` and `ru-MD` against the `ru-BY` this app ships as
-    # values-ru, `tr` against `tr-CY`, `es-ES` and `es-US` against `es-419` - and because an
-    # unmapped target falls back to Android's placeholder, opening one of those would put two
-    # project languages on one folder and let the last export win. `bn-IN` is Bengali a second
-    # time beside the `bn` now mapped above, and `en-IN` is English, which is the source.
+    # Six are left, and none of them is a language this app is missing. Four are the same
+    # language arriving twice - `ru-MD` against the `ru` this app now ships as values-ru, `tr`
+    # against `tr-CY`, `es-ES` and `es-US` against `es-419` - and because an unmapped target
+    # falls back to Android's placeholder, opening one of those would put two project languages
+    # on one folder and let the last export win. `bn-IN` is Bengali a second time beside the
+    # `bn` now mapped above, and `en-IN` is English, which is the source.
+    #
+    # `ru` used to be held back here, and holding it back is what issue #31 was: the app's
+    # Russian ships from values-ru, the bulk of that translation was made in the `ru-BY` target,
+    # and the plain `ru` target - the one a Russian speaker opens on Crowdin - was excluded from
+    # this file and therefore had nothing to translate. It is now the target that fills values-ru,
+    # seeded from the translation contributed as issue #29.
     #
     # Note that removing a language from this list does not by itself make it translatable:
     # the CLI also wrote the list onto the file in Crowdin when it uploaded it, and only the
@@ -97,7 +110,6 @@ files:
       - en-IN
       - es-ES
       - es-US
-      - ru
       - ru-MD
       - tr
 
