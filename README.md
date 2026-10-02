@@ -255,7 +255,7 @@ a "Start (system)" card launches Shizuku under the system UID through the device
 <details>
 <summary><b>A failed system start explains itself, and says when it cannot</b></summary>
 
-the binary a device exploit runs is started by another app, so its output is not ours to read and a start that went wrong showed only "waiting for service" and then a timeout. It writes its own account of the attempt every step, every warning, the `errno` behind a failed exec, and the cgroup it was moved into to this app's external files directory, falling back to the app's media directory (`Android/media/<package>`, which exists to be reachable from outside the app and is what survives a write from another app's process) and then `/data/local/tmp`. The app prints that account when a start times out, and when there is no account it names the files it looked in, so a start that produced nothing says so rather than staying silent
+the binary a device exploit runs is started by another app, so its output is not ours to read and a start that went wrong showed only "waiting for service" and then a timeout. It writes its own account of the attempt every step, every warning, the `errno` behind a failed exec, and the cgroup it was moved into to this app's external files directory, falling back to the app's media directory (`Android/media/<package>`, which exists to be reachable from outside the app and is what survives a write from another app's process). The app prints that account when a start times out, and when there is no account it names the files it looked in, so a start that produced nothing says so rather than staying silent
 
 </details>
 

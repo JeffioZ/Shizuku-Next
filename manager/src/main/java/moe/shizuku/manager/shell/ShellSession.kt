@@ -95,6 +95,11 @@ class ShellSession {
      * the shell can always write. This is only where commands *start*: the shell runs as the
      * uid Shizuku runs as, so `cd /system`, `cd /sdcard` or (with root) `cd /data/data` are
      * all a `cd` away.
+     *
+     * Nothing of Shizuku's own is ever written there - not by this, not by the starter's log,
+     * not by anything else - because a file named after this app in a directory every app can
+     * list is one of the things other apps look for to decide a device runs Shizuku. What the
+     * user's own commands leave there is the user's doing.
      */
     fun openInPreferredDirectory(sink: (ShellLine) -> Unit): String {
         if (!ShizukuStateMachine.isRunning()) return cwd

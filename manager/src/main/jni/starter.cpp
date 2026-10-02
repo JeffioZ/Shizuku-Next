@@ -424,9 +424,6 @@ static void open_manager_log(const char *manager_path) {
     strncat(dir, "/files", sizeof(dir) - strlen(dir) - 1);
     mkdir(dir, 0775);
 
-    char fallback[PATH_MAX];
-    snprintf(fallback, sizeof(fallback), "/data/local/tmp/shizuku_starter.log");
-
     char candidates[2][PATH_MAX];
     snprintf(candidates[0], sizeof(candidates[0]), "%s/starter.log", dir);
 
@@ -448,12 +445,6 @@ static void open_manager_log(const char *manager_path) {
     const char *chosen = nullptr;
     for (int i = 0; i < 2 && chosen == nullptr; i++) {
         chosen = open_log(candidates[i], true) ? candidates[i] : nullptr;
-    }
-    if (chosen == nullptr) {
-        // Writabe for root and for the adb shell, not for the system uid: /data/local/tmp is
-        // group shell, and "other" may only traverse it. Kept because the root and adb paths
-        // can use it, and because it is readable over adb when the app's own directory is not.
-        chosen = open_log(fallback, true) ? fallback : nullptr;
     }
     if (s_manager_log == nullptr) {
         perrorf("warn: no writable place for the starter's log in %s\n", dir);
