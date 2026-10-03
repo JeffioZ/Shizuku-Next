@@ -1001,8 +1001,8 @@
 <string name="install_rollback">Keep a rollback</string>
 <string name="install_rollback_desc">Keep the previous version so you can restore it later.</string>
 
-<string name="install_ignore_dexopt">Ignore the dexopt profile</string>
-<string name="install_ignore_dexopt_desc">Do not use the app's profile when optimizing it.</string>
+    <string name="install_ignore_dexopt">Ignore the dexopt profile</string>
+    <string name="install_ignore_dexopt_desc">Do not use the app\'s profile when optimizing it.</string>
 
 <string name="install_dexopt">Dexopt</string>
 <string name="install_dexopt_default">Platform default</string>
