@@ -103,6 +103,7 @@ import moe.shizuku.manager.ui.screen.SettingsScreen
 import moe.shizuku.manager.ui.screen.ShellScreen
 import moe.shizuku.manager.ui.screen.StealthScreen
 import moe.shizuku.manager.ui.screen.TerminalScreen
+import moe.shizuku.manager.ui.screen.WifiPasswordsScreen
 import moe.shizuku.manager.ui.theme.LocalAmoledTheme
 import moe.shizuku.manager.ui.theme.ShizukuTheme
 
@@ -132,6 +133,9 @@ enum class Detail(
     DEVICE_INFO,
     FORCE_DARK,
     ACTIVITIES,
+
+    /** The saved wifi networks and their keys, read as the shell. */
+    WIFI_PASSWORDS,
     STEALTH,
     TERMINAL,
     INTENTS,
@@ -279,6 +283,11 @@ fun ShizukuApp() {
                             )
 
                             Detail.ACTIVITIES -> ActivitiesScreen(
+                                bottomPadding = 0.dp,
+                                onBack = { detail = null }
+                            )
+
+                            Detail.WIFI_PASSWORDS -> WifiPasswordsScreen(
                                 bottomPadding = 0.dp,
                                 onBack = { detail = null }
                             )

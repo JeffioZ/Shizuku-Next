@@ -933,4 +933,14 @@
     <string name="app_info_yes">Yes</string>
     <string name="app_info_no">No</string>
 
+    <string name="tab_wifi_passwords">Wi-Fi passwords</string>
+    <string name="wifi_passwords_show">Show password</string>
+    <string name="wifi_passwords_hide">Hide password</string>
+    <string name="wifi_passwords_copy">Copy password</string>
+    <string name="wifi_passwords_none">No password</string>
+    <string name="wifi_passwords_empty">No saved networks.</string>
+    <string name="wifi_passwords_needs_shizuku">Shizuku is not running, so there is no shell to read the saved networks with.</string>
+    <string name="wifi_passwords_failed">The wifi service did not answer. The log has what it said.</string>
+    <string name="wifi_passwords_unsupported">Reading the saved networks needs Android 9 or later, which is where the hidden wifi service can be reached from.</string>
+
 </resources>
