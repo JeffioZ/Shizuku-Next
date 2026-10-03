@@ -88,6 +88,7 @@ import kotlinx.coroutines.launch
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ui.screen.AppsScreen
 import moe.shizuku.manager.ui.screen.ActivitiesScreen
+import moe.shizuku.manager.ui.screen.FilesScreen
 import moe.shizuku.manager.ui.screen.ForceDarkScreen
 import moe.shizuku.manager.ui.screen.HomeScreen
 import moe.shizuku.manager.ui.screen.AppToggleFeature
@@ -136,6 +137,9 @@ enum class Detail(
 
     /** The saved wifi networks and their keys, read as the shell. */
     WIFI_PASSWORDS,
+
+    /** The filesystem, as the shell sees it: Android/data and what an app cannot open itself. */
+    FILES,
     STEALTH,
     TERMINAL,
     INTENTS,
@@ -288,6 +292,11 @@ fun ShizukuApp() {
                             )
 
                             Detail.WIFI_PASSWORDS -> WifiPasswordsScreen(
+                                bottomPadding = 0.dp,
+                                onBack = { detail = null }
+                            )
+
+                            Detail.FILES -> FilesScreen(
                                 bottomPadding = 0.dp,
                                 onBack = { detail = null }
                             )

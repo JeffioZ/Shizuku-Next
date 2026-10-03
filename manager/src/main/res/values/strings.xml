@@ -942,5 +942,47 @@
     <string name="wifi_passwords_needs_shizuku">Shizuku is not running, so there is no shell to read the saved networks with.</string>
     <string name="wifi_passwords_failed">The wifi service did not answer. The log has what it said.</string>
     <string name="wifi_passwords_unsupported">Reading the saved networks needs Android 9 or later, which is where the hidden wifi service can be reached from.</string>
+    <string name="tab_files">Files</string>
+    <string name="files_root_internal">Internal</string>
+    <string name="files_root_app_data">Data</string>
+    <string name="files_root_app_obb">Obb</string>
+    <string name="files_root_system">System</string>
+    <string name="files_root_tmp">Tmp</string>
+    <string name="files_root_root">Root</string>
+    <string name="files_empty">Nothing in this folder.</string>
+    <string name="files_all_hidden">Everything in this folder is hidden.</string>
+    <string name="files_sort">Sort</string>
+    <string name="files_sort_name">Sort by name</string>
+    <string name="files_sort_size">Sort by size</string>
+    <string name="files_sort_modified">Sort by date</string>
+    <string name="files_sort_ascending">Ascending</string>
+    <string name="files_sort_descending">Descending</string>
+    <string name="files_show_hidden">Show hidden files</string>
+    <string name="files_hide_hidden">Hide hidden files</string>
+    <string name="files_failed">%1$s could not be listed. No shell access, or the folder is missing.</string>
+    <string name="files_needs_shizuku">Shizuku is not running, so files cannot be read.</string>
+    <string name="files_preview_binary">This is not a text file, so it cannot be shown.</string>
+    <string name="files_preview_failed">Could not read this file.</string>
+    <string name="files_preview_truncated">Only the start of the file is shown.</string>
+
+    <string name="files_selected_count">%1$d selected</string>
+    <string name="files_action_select_all">Select all</string>
+    <string name="files_action_rename">Rename</string>
+    <string name="files_action_copy">Copy</string>
+    <string name="files_action_cut">Cut</string>
+    <string name="files_action_paste_copy">Paste here</string>
+    <string name="files_action_paste_move">Move here</string>
+    <string name="files_action_delete">Delete</string>
+    <string name="files_action_compress">Compress or extract</string>
+    <string name="files_action_new_folder">New folder</string>
+    <string name="files_dialog_compress">Zip name</string>
+    <string name="files_field_name">Name</string>
+    <string name="files_dialog_delete_title">Delete %1$d item(s)?</string>
+    <string name="files_dialog_delete_message">This removes them for good; there is no recycle bin here.</string>
+    <string name="files_working_copying">Copying</string>
+    <string name="files_working_moving">Moving</string>
+    <string name="files_working_deleting">Deleting</string>
+    <string name="files_working_compressing">Compressing</string>
+    <string name="files_working_extracting">Extracting</string>
 
 </resources>

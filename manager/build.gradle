@@ -29,6 +29,11 @@ android {
         viewBinding = true
         compose = true
         prefab = true
+        // The privileged file service is an AIDL interface rather than a hand-written binder
+        // call: it is the one place in this app where an object of ours is called *by* a
+        // process we did not write, and the generated marshalling is what keeps the two ends
+        // from disagreeing about the call.
+        aidl = true
     }
     testOptions {
         // The shell's suggestion rules are pure logic and are tested as such; this keeps the

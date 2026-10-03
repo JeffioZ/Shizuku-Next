@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AdminPanelSettings
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.Extension
+import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material.icons.outlined.ReceiptLong
 import androidx.compose.material.icons.outlined.Terminal
@@ -198,6 +199,7 @@ fun LabsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
         LabEntry(R.string.tab_force_dark, Icons.Outlined.DarkMode, Detail.FORCE_DARK),
         LabEntry(R.string.tab_activities, Icons.Outlined.Widgets, Detail.ACTIVITIES),
         LabEntry(R.string.tab_wifi_passwords, Icons.Outlined.Wifi, Detail.WIFI_PASSWORDS),
+        LabEntry(R.string.tab_files, Icons.Outlined.FolderOpen, Detail.FILES),
         LabEntry(R.string.lab_more_apps, Icons.Outlined.Extension, Detail.MORE_APPS)
     )
 
