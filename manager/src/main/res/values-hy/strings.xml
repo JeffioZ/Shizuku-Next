@@ -28,16 +28,10 @@
         «Մշակողի ընտրանքներ»\n- Միացրեք «USB վրիպազերծում» և «Անլար վրիպազերծում»\n- Հպեք «Անլար
         վրիպազերծում» բաժնի ձախ կողմին\n- Հպեք «Զուգակցել սարքը զուգակցման կոդով»\n- Մուտքագրեք
         զուգակցման կոդը ծանուցման մեջ</string>
-    <string name="dialog_adb_pairing_accessibility_permission">Android 14-ում Shizuku-ի
-        տեղադրումը/թարմացումը Package Installer-ի միջոցով չեղարկում է ^1 թույլտվությունը, որը
-        անհրաժեշտ է զուգավորման համար հասանելիության ծառայությունը միացնելու համար:\n\nԱյն
-        տրամադրելու համար գործարկեք հետևյալ ADB հրամանը՝\n\n^2\n\nՀրամանը գործարկելուց հետո կարող եք
-        շարունակել զուգավորման գործընթացը:\n\nՆշում. կարող եք շրջանցել սա՝ տեղադրելով/թարմացնելով
-        Shizuku-ն ADB-ի միջոցով:</string>
-    <string name="dialog_adb_pairing_accessibility_enable">Խնդրում ենք միացնել մատչելիության
-        ծառայությունը՝ զուգավորման գործընթացը սկսելու համար: Սա թույլ է տալիս Շիզուկուին հայտնաբերել
-        զույգավորման կոդը։\n\nՄատչելիության ծառայությունն անջատվելու է, երբ կոդը գտնվի կամ 1 րոպե
-        անց՝ էներգիան խնայելու համար:</string>
+    <!-- Goes after dialog_adb_pairing_accessibility_enable in the same dialog: what the greyed-out
+         row means, and both ways to open it. The App info menu is the only one available on a
+         phone with no computer attached, the app-ops command is the same app-op written from
+         outside the app, and both are named because either reader may be the one holding it. -->
     <string name="dialog_adb_pairing_accessibility_navigate">Խնդրում ենք սկսել զուգակցումը կատարելով
         հետևյալ քայլերը՝\n- Անցեք «Մշակողի ընտրանքներ»\n- Միացրեք «USB կարգաբերում» և «Անլար
         կարգաբերում»\n- Հպեք «Անլար կարգաբերում» բաժնի ձախ կողմին\n- Հպեք «Զուգակցել սարքը
@@ -119,6 +113,8 @@
     <string name="settings_start_on_boot">Սկսել boot-ից</string>
     <string name="settings_watchdog">Հսկիչ</string>
     <string name="settings_watchdog_summary">Ավտոմատ վերագործարկեք Շիզուկուն, եթե այն խափանվի</string>
+    <!-- One wording for every switch that is nothing but a settings write, so they all say the
+         same thing about the permission the write needs. -->
     <string name="settings_tcp_mode">TCP ռեժիմ</string>
     <string name="settings_tcp_mode_summary">"Թույլ է տալիս Shizuku-ին վերագործարկել առանց Wi-Fi-ի:
         (Shizuku-ն պետք է որ մեկ անգամ սկսել է վերագործարկումից հետո)"</string>
@@ -134,6 +130,17 @@
     <string name="settings_black_night_theme_summary">Օգտագործել սև տեսքը եթե գիշերային ռեժիմը
         միացված է</string>
     <string name="settings_help">Օգնություն</string>
+    <!--
+      A plural, not a plain string: most of the people on this wall are here for a single commit,
+      so the singular is read more often than the plural is.
+    -->
+    <!-- Which part of the project a contributor's commits touched, shown as a badge. -->
+    <!--
+      A contributor's summary is composed from what the credits generator found - the areas they
+      worked in, and the languages they translated into. There is deliberately no string per
+      person: a new contributor is described the moment the generator sees them, and %1$s/%2$s are
+      filled with the area names above and with language names the platform already localises.
+    -->
     <string name="settings_legacy_pairing">Ժառանգական զուգավորում</string>
     <string name="settings_legacy_pairing_summary">Մուտքագրեք զուգավորման կոդը երկխոսության մեջ
         ծանուցման փոխարեն</string>
@@ -204,6 +211,7 @@
     <string name="watchdog_shizuku_crashed_text">Watchdog-ը վերսկսեց ծառայությունը։ Սեղմեք ապագա
         վթարները կանխելու հնարավոր շտկումների մասին իմանալու համար:</string>
     <string name="watchdog_shizuku_crashed_action_turn_off_alerts">Անջատել ծանուցումները</string>
+    <string name="watchdog_given_up_action_start">Միացնել</string>
     <!-- Misc -->
     <string name="dialog_cannot_open_browser_title">Չհաջողվեց միացնել ինտերնետի ծրագիրը</string>
     <string name="toast_copied_to_clipboard">Պատճենվել է սեղմատախտակին</string>
@@ -222,4 +230,5 @@
     <!-- One app, and what it may do on the device -->
     <string name="app_op_mode_deny">Մերժել</string>
     <string name="app_action_enable">Թույլատրել</string>
+    <string name="install_location_auto">Ծրագրավորողի կարգավորումներ</string>
 </resources>

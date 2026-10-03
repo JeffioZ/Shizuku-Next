@@ -27,15 +27,10 @@
         „Опције за програмере“\n- Омогућите „USB отклањање грешака“ и „Бежично отклањање грешака“\n-
         Додирните леву страну „Бежично отклањање грешака“\n- Додирните „Упари уређај са кодом за
         упаривање“\n- Унесите код за упаривање у обавештење</string>
-    <string name="dialog_adb_pairing_accessibility_permission">На Андроиду 14, инсталирање/ажурирање
-        Шизукуа помоћу инсталера пакета опозива дозволу ^1, која је потребна за омогућавање услуге
-        приступачности за упаривање.\n\nДа бисте је доделили, покрените следећу ADB
-        команду:\n\n^2\n\nНакон покретања команде, можете наставити са процесом
-        упаривања.\n\nНапомена: ово можете заобићи инсталирањем/ажурирањем Шизукуа помоћу ADB-а.</string>
-    <string name="dialog_adb_pairing_accessibility_enable">Омогућите услугу приступачности да бисте
-        започели процес упаривања. Ово омогућава Шизукуу да детектује код за упаривање.\n\nУслуга
-        приступачности ће бити искључена када се пронађе код или након 1 минута ради уштеде
-        енергије.</string>
+    <!-- Goes after dialog_adb_pairing_accessibility_enable in the same dialog: what the greyed-out
+         row means, and both ways to open it. The App info menu is the only one available on a
+         phone with no computer attached, the app-ops command is the same app-op written from
+         outside the app, and both are named because either reader may be the one holding it. -->
     <string name="dialog_adb_pairing_accessibility_navigate">Почните упаривање пратећи следеће
         кораке:\n- Идите на „Опције за програмере“\n- Омогућите „USB отклањање грешака“ и „Бежично
         отклањање грешака“\n- Додирните леву страну „Бежично отклањање грешака“\n- Додирните „Упари
@@ -117,6 +112,8 @@
     <string name="settings_start_on_boot">Покрени при покретању</string>
     <string name="settings_watchdog">Чувар</string>
     <string name="settings_watchdog_summary">Аутоматски поново покрените Шизуку ако се сруши</string>
+    <!-- One wording for every switch that is nothing but a settings write, so they all say the
+         same thing about the permission the write needs. -->
     <string name="settings_tcp_mode">TCP режим</string>
     <string name="settings_tcp_mode_summary">"Омогућава Шизукуу да се поново покрене без Wi-Fi-ја.
         (Шизуку се морао једном покренути од поновног покретања)"</string>
@@ -133,6 +130,17 @@
         ноћни режим</string>
     <string name="settings_help">Помоћ</string>
     <string name="settings_report_bug">Пријави грешку</string>
+    <!--
+      A plural, not a plain string: most of the people on this wall are here for a single commit,
+      so the singular is read more often than the plural is.
+    -->
+    <!-- Which part of the project a contributor's commits touched, shown as a badge. -->
+    <!--
+      A contributor's summary is composed from what the credits generator found - the areas they
+      worked in, and the languages they translated into. There is deliberately no string per
+      person: a new contributor is described the moment the generator sees them, and %1$s/%2$s are
+      filled with the area names above and with language names the platform already localises.
+    -->
     <string name="settings_legacy_pairing">Упаривање са старим уређајима</string>
     <string name="settings_legacy_pairing_summary">Унесите код за упаривање у дијалогу уместо у
         обавештењу</string>
@@ -201,6 +209,7 @@
     <string name="watchdog_shizuku_crashed_text">Watchdog је поново покренуо услугу. Додирните да
         бисте сазнали више о потенцијалним решењима за спречавање будућих падова.</string>
     <string name="watchdog_shizuku_crashed_action_turn_off_alerts">Искључи упозорења</string>
+    <string name="watchdog_given_up_action_start">Почетак</string>
     <!-- Misc -->
     <string name="dialog_cannot_open_browser_title">Не могу да покренем прегледач</string>
     <string name="toast_copied_to_clipboard">Копирано у међуспремник</string>
@@ -219,4 +228,5 @@
     <!-- One app, and what it may do on the device -->
     <string name="app_op_mode_deny">Одбиј</string>
     <string name="app_action_enable">Омогући</string>
+    <string name="install_location_auto">Razvojne opcije programera</string>
 </resources>

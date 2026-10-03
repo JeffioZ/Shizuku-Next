@@ -40,16 +40,11 @@
         pași:\n- Navigați la „Opțiuni pentru dezvoltatori”\n- Activați „Depanare USB” și „Depanare
         wireless”\n- Atingeți partea stângă a opțiunii „Depanare wireless”\n- Atingeți „Asocieți
         dispozitivul cu cod de asociere”\n- Introduceți codul de asociere în notificare</string>
-    <string name="dialog_adb_pairing_accessibility_permission">Pe Android 14,
-        instalarea/actualizarea Shizuku cu ajutorul programului de instalare a pachetelor revocă
-        permisiunea ^1, necesară pentru activarea serviciului de accesibilitate pentru
-        asociere.\n\nPentru a o acorda, execută următoarea comandă ADB:\n\n^2\n\nDupă executarea
-        comenzii, poți continua procesul de asociere.\n\nNotă: poți ocoli acest lucru
-        instalând/actualizând Shizuku cu ADB.</string>
-    <string name="dialog_adb_pairing_accessibility_enable">Vă rugăm să activați serviciul de
-        accesibilitate pentru a începe procesul de asociere. Acest lucru permite dispozitivului
-        Shizuku să detecteze codul de asociere.\n\nServiciul de accesibilitate va fi dezactivat când
-        codul este găsit sau după 1 minut pentru a economisi energie.</string>
+    <!-- Goes after dialog_adb_pairing_accessibility_enable in the same dialog: what the greyed-out
+         row means, and both ways to open it. The App info menu is the only one available on a
+         phone with no computer attached, the app-ops command is the same app-op written from
+         outside the app, and both are named because either reader may be the one holding it. -->
+    <string name="dialog_adb_pairing_open_app_info">Informații aplicație</string>
     <string name="dialog_adb_pairing_accessibility_navigate">Vă rugăm să începeți asocierea urmând
         următorii pași:\n- Navigați la „Opțiuni pentru dezvoltatori”\n- Activați „Depanare USB” și
         „Depanare wireless”\n- Atingeți partea stângă a opțiunii „Depanare wireless”\n- Atingeți
@@ -499,6 +494,8 @@
     <string name="settings_unavailable_while_forcing_wireless">Indisponibil în timp ce porniți fără Wi-Fi este activat.</string>
     <string name="settings_force_wireless_debugging">Pornire fără Wi-Fi (experimental)</string>
     <string name="settings_force_wireless_debugging_summary">Încearcă pentru a porni Shizuku fără a corecta conexiunea WiFi sau debuggging-ul USB. Acest lucru dezactivează, de asemenea, așteptarea Wi-Fi și depanarea automată fără fir.</string>
+    <!-- One wording for every switch that is nothing but a settings write, so they all say the
+         same thing about the permission the write needs. -->
     <string name="state_on">Activat</string>
     <string name="state_off">Dezactivat</string>
     <string name="settings_persist_adb_port">Păstraţi portul ADB după repornire</string>
@@ -548,6 +545,18 @@
     <string name="permissions_battery_summary">Oprește Android să omoare Shizuku în fundal.</string>
     <string name="settings_help">Ajutor</string>
     <string name="settings_report_bug">Raportează o eroare</string>
+    <!--
+      A plural, not a plain string: most of the people on this wall are here for a single commit,
+      so the singular is read more often than the plural is.
+    -->
+    <!-- Which part of the project a contributor's commits touched, shown as a badge. -->
+    <string name="contributor_area_server">Server</string>
+    <!--
+      A contributor's summary is composed from what the credits generator found - the areas they
+      worked in, and the languages they translated into. There is deliberately no string per
+      person: a new contributor is described the moment the generator sees them, and %1$s/%2$s are
+      filled with the area names above and with language names the platform already localises.
+    -->
     <string name="settings_legacy_pairing">Împerechere moștenită</string>
     <string name="settings_legacy_pairing_summary">Introduceți codul de asociere într-o casetă de
         dialog în loc de o notificare</string>
@@ -713,6 +722,7 @@
     <string name="watchdog_shizuku_crashed_action_turn_off_alerts">Dezactivează alertele</string>
     <string name="watchdog_shizuku_recovered_title">Shizuku rulează din nou</string>
     <string name="watchdog_shizuku_recovered_text">Cântecul a început din nou după ce s-a oprit de la sine.</string>
+    <string name="watchdog_given_up_action_start">Pornire</string>
     <!-- Misc -->
     <string name="error">Eroare</string>
     <string name="off">Dezactivat</string>
@@ -857,4 +867,18 @@
     <string name="app_info_launcher">Intrare lansator</string>
     <string name="app_info_yes">Da</string>
     <string name="app_info_no">Nr</string>
+    <string name="files_root_app_data">Date</string>
+    <string name="files_root_system">Sistem</string>
+    <string name="files_root_root">Rădăcină</string>
+    <string name="files_sort">Sortează</string>
+    <string name="files_selected_count">%1$d selectat</string>
+    <string name="files_action_select_all">Selectează tot</string>
+    <string name="files_action_rename">Redenumire</string>
+    <string name="files_action_copy">Copiază</string>
+    <string name="files_action_delete">Ștergere</string>
+    <string name="files_field_name">Nume</string>
+    <string name="install_details_version">Versiune</string>
+    <string name="install_details_target">Target SDK</string>
+    <string name="install_details_installed">Instalat</string>
+    <string name="install_location_auto">Opțiuni dezvoltator</string>
 </resources>

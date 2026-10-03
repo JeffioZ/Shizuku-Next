@@ -35,8 +35,11 @@
     <string name="paring_code_is_wrong">ペアリングコードが間違っています。</string>
     <string name="cannot_connect_port">ワイヤレスデバッグサービスに接続できません。\n\nShizukuがすべてのファイアウォール、広告ブロック、VPNなどネットワークアクセスを制限できるアプリでホワイトリストに登録されていることを必ず確認してください。</string>
     <string name="dialog_adb_pairing_message">以下の手順でペアリングを開始してください。\n・「開発者向けオプション」に移動します。\n・「USBデバッグ」と「ワイヤレスデバッグ」を有効にします。\n・「ワイヤレスデバッグ」の左側をタップします。\n・「ペアリングコードでデバイスをペアリング」をタップします。\n・通知にペアリングコードを入力します</string>
-    <string name="dialog_adb_pairing_accessibility_permission">Android 14 では、パッケージ インストーラーを使用して Shizuku をインストール/更新すると、ペアリング用のアクセシビリティ サービスを有効にするために必要な ^1 権限が取り消されます。\n\nこれを許可するには、次の ADB コマンドを実行します：\n\n^2\n\nコマンドを実行したら、ペアリング プロセスを続行できます。\n\n注：ADB を使用して Shizuku をインストール/更新すると、これを回避できます。</string>
-    <string name="dialog_adb_pairing_accessibility_enable">自動ペアリング機能は、Shizuku のユーザー補助サービス（アクセシビリティサービス）を利用してシステムダイアログからコードを読み取るため、このサービスを有効にする必要があります。通常、Shizukuは自動的にこのサービスを有効化しますが、そのためには WRITE_SECURE_SETTINGS 権限が必要です。しかし、新規インストール直後の状態では、この権限はまだ付与されていません。\n\n次の画面でサービスを有効にするか、「手動（Manual）」の項目でコードを直接入力するか、あるいは以下のコマンドを実行して権限を付与してください：\n\nadb shell pm grant moe.shizuku.privileged.api android.permission.WRITE_SECURE_SETTINGS\n\nコードが検出された場合、または1分が経過した場合には、省電力のためサービスは自動的に停止します。</string>
+    <!-- Goes after dialog_adb_pairing_accessibility_enable in the same dialog: what the greyed-out
+         row means, and both ways to open it. The App info menu is the only one available on a
+         phone with no computer attached, the app-ops command is the same app-op written from
+         outside the app, and both are named because either reader may be the one holding it. -->
+    <string name="dialog_adb_pairing_open_app_info">アプリ情報</string>
     <string name="dialog_adb_pairing_accessibility_navigate">以下の手順に従ってペアリングを開始してください。\n・「開発者向けオプション」に移動します。\n・「USBデバッグ」と「ワイヤレスデバッグ」を有効にします。\n・「ワイヤレスデバッグ」の左側をタップします。\n・「ペアリングコードでデバイスをペアリング」をタップします。Shizukuはペアリングコードを自動的に検出します。</string>
     <string name="adb_pairing_requires_multi_window">最初に分割画面モードに入ってください。</string>
     <string name="adb_pairing_requires_multi_window_reason">このシステムはペアリングダイアログが常に見えることを求めています。分割画面モードを使うことが、このアプリとシステムのダイアログを同時に表示する唯一の方法です。</string>
@@ -56,8 +59,7 @@
     <string name="adb_pairing_tutorial_content_miui_2">そうでなければ、通知からペアリングコードを入力できない可能性があります。</string>
     <string name="adb_pairing_tutorial_content_finish">Shizuku アプリに戻って Shizuku を開始します。</string>
     <string name="adb_pairing_tutorial_content_network">Shizuku はローカルネットワークにアクセスする必要があります。ネットワークの権限によって制御されます。</string>
-    <string name="adb_pairing_tutorial_content_network_limation_not_foreground">
-        一部のシステム(MIUIなど)は、アプリがフォアグラウンドサービスを使っていても、見えないアプリがネットワークにアクセスすることを許可しません。そのようなシステムでは、しずくのバッテリー最適化機能を無効にしてください。</string>
+    <string name="adb_pairing_tutorial_content_network_limation_not_foreground">一部のシステム(MIUIなど)は、アプリがフォアグラウンドサービスを使っていても、見えないアプリがネットワークにアクセスすることを許可しません。そのようなシステムでは、しずくのバッテリー最適化機能を無効にしてください。</string>
     <!-- Home - Root -->
     <string name="home_root_title"><![CDATA[開始(Root化された端末の場合のみ)]]></string>
     <string name="home_root_description"><![CDATA[Magiskをお使いの場合は、 %1$sをお試しください。rootユーザーの場合、最終的にはShizukuに取って代わる予定です。ただし、既存のアプリケーションで %2$sを使用するには、少し変更が必要です。]]></string>
@@ -374,8 +376,8 @@
     <string name="settings_theme_light">ライトモード</string>
     <string name="settings_theme_dark">ダークモード</string>
     <string name="intents_description">自動化アプリを使って、これらのブロードキャストでShizukuを制御することができます。認証トークンは、\"auth\"追加で渡されなければなりません。</string>
-    <string name="intents_require_token">認証トークンが必要</string>
-    <string name="intents_require_token_summary">インテントの開始と停止には以下のトークンが必要です。トークンなしで送信するにはオフにします。</string>
+    <string name="intents_require_token">認証トークンを必須にする</string>
+    <string name="intents_require_token_summary">開始と停止インテントには以下のトークンが必要です。トークンなしで送信するにはオフにします。</string>
     <string name="intents_token">認証トークン</string>
     <string name="intents_copy">コピー</string>
     <string name="intents_regenerate">再生成</string>
@@ -456,6 +458,8 @@
     <string name="settings_unavailable_while_forcing_wireless">「Wi-Fiなしで開始」がオンのときは利用できません。</string>
     <string name="settings_force_wireless_debugging">Wi-Fiなしで開始 (実験的)</string>
     <string name="settings_force_wireless_debugging_summary">Wi-FiまたはUSBデバッグなしでShizukuを起動しようとします。また、「Wi-Fiを待つ」と「自動でワイヤレスデバッグをオフにする」はオフになります。</string>
+    <!-- One wording for every switch that is nothing but a settings write, so they all say the
+         same thing about the permission the write needs. -->
     <string name="state_on">オン</string>
     <string name="state_off">オフ</string>
     <string name="settings_persist_adb_port">再起動後はADB ポートを維持する</string>
@@ -472,8 +476,7 @@
     <string name="settings_tcp_mode">TCPモード</string>
     <string name="settings_tcp_mode_summary">"
         \"Wi-FiなしでShizukuを再起動できるようにします。（再起動後、Shizukuが一度起動している必要があります）\""</string>
-    <string name="settings_tcp_mode_dialog_close_port">"
-        \"TCPポートは直ちに閉じられます。TCPモードを再度オンにするにはWi-Fiが必要です。続行しますか？\""</string>
+    <string name="settings_tcp_mode_dialog_close_port">"TCPポートは直ちに閉じられます。TCPモードを再度オンにするにはWi-Fiが必要です。続行しますか？"</string>
     <string name="settings_restart_dialog_title">再起動が必要です</string>
     <string name="settings_restart_dialog_message">Shizukuはこの設定を適用するために再起動が必要です。</string>
     <string name="settings_restart_dialog_message_wifi_required"><![CDATA[<br><br><b>Wi-Fiは必須です。雫は走り続け、Wi-Fi接続を待ってからバックグラウンドで再起動する。</b>]]></string>
@@ -503,6 +506,18 @@
     <string name="permissions_battery_summary">バックグラウンドで Android が Shizuku を停止するのを阻止します。</string>
     <string name="settings_help">ヘルプ</string>
     <string name="settings_report_bug">バグを報告する</string>
+    <!--
+      A plural, not a plain string: most of the people on this wall are here for a single commit,
+      so the singular is read more often than the plural is.
+    -->
+    <!-- Which part of the project a contributor's commits touched, shown as a badge. -->
+    <string name="contributor_area_server">サーバー</string>
+    <!--
+      A contributor's summary is composed from what the credits generator found - the areas they
+      worked in, and the languages they translated into. There is deliberately no string per
+      person: a new contributor is described the moment the generator sees them, and %1$s/%2$s are
+      filled with the area names above and with language names the platform already localises.
+    -->
     <string name="settings_legacy_pairing">レガシーペアリング</string>
     <string name="settings_legacy_pairing_summary">通知ではなくダイアログでペアリングコードを入力します</string>
     <!-- Bug Report Dialog -->
@@ -662,6 +677,7 @@
     <string name="watchdog_shizuku_crashed_action_turn_off_alerts">アラートをオフにする</string>
     <string name="watchdog_shizuku_recovered_title">Shizuku が再び動作しています</string>
     <string name="watchdog_shizuku_recovered_text">見張り犬はそれ自体で停止した後、再びそれを開始しました。</string>
+    <string name="watchdog_given_up_action_start">開始</string>
     <!-- Misc -->
     <string name="error">エラー</string>
     <string name="off">オフ</string>
@@ -732,7 +748,7 @@
     <string name="app_op_project_media">画面をキャプチャする</string>
     <string name="app_op_project_media_note">録画を停止したり、画面に表示されているものをキャストしないようにします。</string>
     <string name="app_op_record_audio">音声の録音</string>
-    <string name="app_op_record_audio_note">許可が与えられた状態で録音を空にすることを拒否します 答えのニーズに応えられないアプリです</string>
+    <string name="app_op_record_audio_note">拒否を選択すると、権限自体は付与されたままになりますが、記録結果は空として返されるようになります。これは、拒否という回答を許容しないアプリにとって必要な挙動です。</string>
     <string name="app_op_camera">カメラを使用</string>
     <string name="app_op_camera_note">カメラのための同じアイデア:許可が残って、写真が到着しません。</string>
     <string name="app_op_vibrate">振動</string>
@@ -784,7 +800,7 @@
     <string name="app_battery_unrestricted">バッテリー最適化を無視する</string>
     <string name="app_battery_unrestricted_note">Doze 中はアクティブになりますが、バッテリーが多くなります。</string>
     <string name="app_section_network">ネットワーク</string>
-    <string name="app_network_needs_shizuku">アプリが届く可能性を変更するために、しずくを起動します。</string>
+    <string name="app_network_needs_shizuku">アプリが届く可能性を変更するために、Shizukuを起動します。</string>
     <string name="app_network_unsupported">このデバイスは、必要なファイアウォールを提供していません。</string>
     <string name="app_network_block">ネットワークへのアクセスをブロック</string>
     <string name="app_network_block_note">プラットフォームはトラフィックを低下させます。</string>
@@ -803,4 +819,18 @@
     <string name="app_info_launcher">ランチャーエントリ</string>
     <string name="app_info_yes">はい</string>
     <string name="app_info_no">いいえ</string>
+    <string name="files_root_app_data">データ</string>
+    <string name="files_root_system">システム</string>
+    <string name="files_root_root">Root</string>
+    <string name="files_sort">並べ換え</string>
+    <string name="files_selected_count">%1$d件選択済み</string>
+    <string name="files_action_select_all">すべて選択</string>
+    <string name="files_action_rename">名前を変更</string>
+    <string name="files_action_copy">コピー</string>
+    <string name="files_action_delete">削除</string>
+    <string name="files_field_name">名前</string>
+    <string name="install_details_version">バージョン</string>
+    <string name="install_details_target">ターゲット SDK</string>
+    <string name="install_details_installed">インストール日</string>
+    <string name="install_location_auto">開発者向けオプション</string>
 </resources>

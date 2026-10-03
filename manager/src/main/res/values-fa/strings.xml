@@ -27,14 +27,10 @@
         «گزینه‌های توسعه‌دهنده» بروید\n- «اشکال‌زدایی USB» و «اشکال‌زدایی بی‌سیم» را فعال کنید\n-
         روی سمت چپ «اشکال‌زدایی بی‌سیم» ضربه بزنید\n- روی «جفت کردن دستگاه با کد جفت‌سازی» ضربه
         بزنید\n- کد جفت‌سازی را در اعلان وارد کنید</string>
-    <string name="dialog_adb_pairing_accessibility_permission">در اندروید ۱۴، نصب/به‌روزرسانی
-        Shizuku با استفاده از Package Installer، مجوز ^1 را که برای فعال کردن سرویس دسترسی برای
-        جفت‌سازی لازم است، لغو می‌کند.\n\nبرای اعطای آن، دستور ADB زیر را اجرا کنید:\n\n^2\n\nپس از
-        اجرای دستور، می‌توانید فرآیند جفت‌سازی را ادامه دهید.\n\nتوجه: می‌توانید با نصب/به‌روزرسانی
-        Shizuku با ADB، از این مرحله عبور کنید.</string>
-    <string name="dialog_adb_pairing_accessibility_enable">لطفاً برای شروع فرآیند جفت‌سازی، سرویس
-        دسترسی را فعال کنید. این به شیزوکو اجازه می‌دهد تا کد جفت‌سازی را تشخیص دهد.\n\nسرویس دسترسی
-        هنگام یافتن کد یا پس از ۱ دقیقه برای صرفه‌جویی در مصرف انرژی خاموش می‌شود.</string>
+    <!-- Goes after dialog_adb_pairing_accessibility_enable in the same dialog: what the greyed-out
+         row means, and both ways to open it. The App info menu is the only one available on a
+         phone with no computer attached, the app-ops command is the same app-op written from
+         outside the app, and both are named because either reader may be the one holding it. -->
     <string name="dialog_adb_pairing_accessibility_navigate">لطفاً با انجام مراحل زیر، جفت‌سازی را
         شروع کنید:\n- به «گزینه‌های توسعه‌دهنده» بروید\n- «اشکال‌زدایی USB» و «اشکال‌زدایی بی‌سیم»
         را فعال کنید\n- روی سمت چپ «اشکال‌زدایی بی‌سیم» ضربه بزنید\n- روی «جفت‌سازی دستگاه با کد
@@ -116,6 +112,8 @@
     <string name="settings_watchdog">دیده‌بان</string>
     <string name="settings_watchdog_summary">در صورت خرابی، شیزوکو را به طور خودکار مجدداً راه
         اندازی کنید</string>
+    <!-- One wording for every switch that is nothing but a settings write, so they all say the
+         same thing about the permission the write needs. -->
     <string name="settings_tcp_mode">حالت TCP</string>
     <string name="settings_tcp_mode_summary">"به Shizuku اجازه می‌دهد بدون Wi-Fi دوباره راه‌اندازی
         شود. (Shizuku باید یک بار از زمان راه‌اندازی مجدد شروع شده باشد)"</string>
@@ -132,6 +130,17 @@
         استفاده کنید</string>
     <string name="settings_help">کمک</string>
     <string name="settings_report_bug">گزارش اشکال</string>
+    <!--
+      A plural, not a plain string: most of the people on this wall are here for a single commit,
+      so the singular is read more often than the plural is.
+    -->
+    <!-- Which part of the project a contributor's commits touched, shown as a badge. -->
+    <!--
+      A contributor's summary is composed from what the credits generator found - the areas they
+      worked in, and the languages they translated into. There is deliberately no string per
+      person: a new contributor is described the moment the generator sees them, and %1$s/%2$s are
+      filled with the area names above and with language names the platform already localises.
+    -->
     <string name="settings_legacy_pairing">جفت‌سازی قدیمی</string>
     <string name="settings_legacy_pairing_summary">کد جفت‌سازی را به جای اعلان، در یک کادر محاوره‌ای
         وارد کنید</string>
@@ -201,6 +210,7 @@
     <string name="watchdog_shizuku_crashed_text">واچ‌داگ سرویس را مجدداً راه‌اندازی کرد. برای کسب
         اطلاعات در مورد راه‌حل‌های احتمالی برای جلوگیری از خرابی‌های آینده، ضربه بزنید.</string>
     <string name="watchdog_shizuku_crashed_action_turn_off_alerts">خاموش کردن هشدارها</string>
+    <string name="watchdog_given_up_action_start">راه‌اندازی</string>
     <!-- Misc -->
     <string name="dialog_cannot_open_browser_title">نمی توان مرورگر را راه اندازی کرد</string>
     <string name="toast_copied_to_clipboard">در کلیپ بورد کپی شد</string>
@@ -219,4 +229,5 @@
     <!-- One app, and what it may do on the device -->
     <string name="app_op_mode_deny">رد</string>
     <string name="app_action_enable">فعال کردن</string>
+    <string name="install_location_auto">گزینه های توسعه دهنده</string>
 </resources>

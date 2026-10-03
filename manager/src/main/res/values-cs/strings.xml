@@ -35,8 +35,11 @@
     <string name="paring_code_is_wrong">Chybný kód pro párování.</string>
     <string name="cannot_connect_port">Nelze se připojit k bezdrátové ladicí službě.\n\nUjistěte se prosím, že je Shizuku na bílé listině ve všech firewallech, blokovačích reklam, VPN nebo podobných aplikacích, které mohou omezovat přístup k síti.</string>
     <string name="dialog_adb_pairing_message">Párování zahajte provedením následujících kroků:\n- Přejděte do sekce „Možnosti pro vývojáře“\n- Povolte „Ladění USB“ a „Bezdrátové ladění“\n- Klepněte na levou stranu sekce „Bezdrátové ladění“\n- Klepněte na „Spárovat zařízení s párovacím kódem“\n- Zadejte párovací kód z oznámení</string>
-    <string name="dialog_adb_pairing_accessibility_permission">V systému Android 14 instalace/aktualizace Shizuku pomocí instalačního programu balíčků ruší oprávnění ^1, které je vyžadováno k povolení služby přístupnosti pro párování.\n\nChcete-li jej udělit, spusťte následující příkaz ADB:\n\n^2\n\nPo spuštění příkazu můžete pokračovat v procesu párování.\n\nPoznámka: Tomuto se můžete vyhnout instalací/aktualizací Shizuku pomocí ADB.</string>
-    <string name="dialog_adb_pairing_accessibility_enable">Prosím, povolte službu přístupnosti pro zahájení procesu párování. To umožňuje Shizuku detekovat párovací kód.\n\nSlužba přístupnosti bude vypnuta po nalezení kódu nebo po 1 minutě, aby se šetřila energie.</string>
+    <!-- Goes after dialog_adb_pairing_accessibility_enable in the same dialog: what the greyed-out
+         row means, and both ways to open it. The App info menu is the only one available on a
+         phone with no computer attached, the app-ops command is the same app-op written from
+         outside the app, and both are named because either reader may be the one holding it. -->
+    <string name="dialog_adb_pairing_open_app_info">Informace o aplikaci</string>
     <string name="dialog_adb_pairing_accessibility_navigate">Párování spusťte provedením následujících kroků:\n- Přejděte do sekce „Možnosti pro vývojáře“\n- Povolte „Ladění USB“ a „Bezdrátové ladění“\n- Klepněte na levou stranu sekce „Bezdrátové ladění“\n- Klepněte na „Spárovat zařízení s párovacím kódem“. Shizuku automaticky detekuje párovací kód.</string>
     <string name="adb_pairing_requires_multi_window">Nejprve prosím přejděte do režimu rozdělené obrazovky (více oken).</string>
     <string name="adb_pairing_requires_multi_window_reason">Systém vyžaduje, aby byl dialog pro párování vždy viditelný. Použití režimu rozdělené obrazovky je jediný způsob, jak zajistit, aby tato aplikace a dialogové okno systému byly viditelné současně.</string>
@@ -461,6 +464,8 @@
     <string name="settings_unavailable_while_forcing_wireless">Nedostupné, když je zapnutý start bez Wi-Fi.</string>
     <string name="settings_force_wireless_debugging">Spustit bez Wi-Fi (experimentální)</string>
     <string name="settings_force_wireless_debugging_summary">Snaží se spustit Shizuku bez ladění Wi-Fi nebo USB. To také vypne čekání na Wi-Fi a automatické bezdrátové ladění.</string>
+    <!-- One wording for every switch that is nothing but a settings write, so they all say the
+         same thing about the permission the write needs. -->
     <string name="state_on">Zapnuto</string>
     <string name="state_off">Vypnuto</string>
     <string name="settings_persist_adb_port">Zachovat ADB port po restartu</string>
@@ -506,6 +511,18 @@
     <string name="permissions_battery_summary">Zastaví Android od zabíjení Šizuku na pozadí.</string>
     <string name="settings_help">Pomoc</string>
     <string name="settings_report_bug">Nahlásit chybu</string>
+    <!--
+      A plural, not a plain string: most of the people on this wall are here for a single commit,
+      so the singular is read more often than the plural is.
+    -->
+    <!-- Which part of the project a contributor's commits touched, shown as a badge. -->
+    <string name="contributor_area_server">Server</string>
+    <!--
+      A contributor's summary is composed from what the credits generator found - the areas they
+      worked in, and the languages they translated into. There is deliberately no string per
+      person: a new contributor is described the moment the generator sees them, and %1$s/%2$s are
+      filled with the area names above and with language names the platform already localises.
+    -->
     <string name="settings_legacy_pairing">Legacy párování</string>
     <string name="settings_legacy_pairing_summary">Zadejte párovací kód do dialogu místo oznámení</string>
     <!-- Bug Report Dialog -->
@@ -664,6 +681,7 @@
     <string name="watchdog_shizuku_crashed_action_turn_off_alerts">Vypnout upozornění</string>
     <string name="watchdog_shizuku_recovered_title">Shizuku je znovu spuštěn</string>
     <string name="watchdog_shizuku_recovered_text">Watchdog to znovu spustil poté, co se zastavil sám.</string>
+    <string name="watchdog_given_up_action_start">Spustit</string>
     <!-- Misc -->
     <string name="error">Chyba</string>
     <string name="off">Vypnuto</string>
@@ -805,4 +823,18 @@
     <string name="app_info_launcher">Položka spouštěče</string>
     <string name="app_info_yes">Ano</string>
     <string name="app_info_no">Ne</string>
+    <string name="files_root_app_data">Údaje</string>
+    <string name="files_root_system">Systém</string>
+    <string name="files_root_root">Root</string>
+    <string name="files_sort">Seřadit</string>
+    <string name="files_selected_count">%1$d vybráno</string>
+    <string name="files_action_select_all">Vybrat vše</string>
+    <string name="files_action_rename">Přejmenovat</string>
+    <string name="files_action_copy">Kopírovat</string>
+    <string name="files_action_delete">Vymazat</string>
+    <string name="files_field_name">Název</string>
+    <string name="install_details_version">Verze</string>
+    <string name="install_details_target">Target SDK</string>
+    <string name="install_details_installed">Nainstalováno</string>
+    <string name="install_location_auto">Možnosti vývojářů</string>
 </resources>

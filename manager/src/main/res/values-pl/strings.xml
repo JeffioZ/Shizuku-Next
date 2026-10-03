@@ -40,15 +40,11 @@
         Przejdź do „Opcji programisty”\n- Włącz „Debugowanie USB” i „Debugowanie bezprzewodowe”\n-
         Dotknij lewej strony „Debugowania bezprzewodowego”\n- Dotknij „Sparuj urządzenie za pomocą
         kodu parowania”\n- Wprowadź kod parowania w powiadomieniu</string>
-    <string name="dialog_adb_pairing_accessibility_permission">W systemie Android 14
-        instalacja/aktualizacja programu Shizuku za pomocą instalatora pakietów powoduje cofnięcie
-        uprawnienia ^1, które jest wymagane do włączenia usługi ułatwień dostępu w celu
-        parowania.\n\nAby je przyznać, uruchom następujące polecenie ADB:\n\n^2\n\nPo uruchomieniu
-        polecenia możesz kontynuować proces parowania.\n\nUwaga: możesz ominąć ten problem,
-        instalując/aktualizując program Shizuku za pomocą programu ADB.</string>
-    <string name="dialog_adb_pairing_accessibility_enable">Włącz usługę ułatwień dostępu, aby
-        rozpocząć proces parowania. Pozwoli to Shizuku wykryć kod parowania.\n\nUsługa zostanie
-        wyłączona po znalezieniu kodu lub po minucie, aby oszczędzać energię.</string>
+    <!-- Goes after dialog_adb_pairing_accessibility_enable in the same dialog: what the greyed-out
+         row means, and both ways to open it. The App info menu is the only one available on a
+         phone with no computer attached, the app-ops command is the same app-op written from
+         outside the app, and both are named because either reader may be the one holding it. -->
+    <string name="dialog_adb_pairing_open_app_info">Informacje o aplikacji</string>
     <string name="dialog_adb_pairing_accessibility_navigate">Rozpocznij parowanie, wykonując
         następujące kroki:\n- Przejdź do „Opcji programistycznych”\n- Włącz „Debugowanie USB” i
         „Debugowanie bezprzewodowe”\n- Dotknij lewej strony „Debugowania bezprzewodowego”\n- Dotknij
@@ -498,6 +494,8 @@
     <string name="settings_unavailable_while_forcing_wireless">Niedostępne podczas uruchamiania bez Wi-Fi jest włączone.</string>
     <string name="settings_force_wireless_debugging">Uruchom bez Wi-Fi (eksperymentalnie)</string>
     <string name="settings_force_wireless_debugging_summary">Próbuje uruchomić Shizuku bez debugowania Wi-Fi lub USB. Wyłącza to również automatyczne debugowanie Wi-Fi czekanie i bezprzewodowe debugowanie.</string>
+    <!-- One wording for every switch that is nothing but a settings write, so they all say the
+         same thing about the permission the write needs. -->
     <string name="state_on">Włączone</string>
     <string name="state_off">Wyłączony</string>
     <string name="settings_persist_adb_port">Zachowaj port ADB po ponownym uruchomieniu</string>
@@ -547,6 +545,18 @@
     <string name="permissions_battery_summary">Zatrzymuje Android zabijanie Shizuku w tle.</string>
     <string name="settings_help">Pomoc</string>
     <string name="settings_report_bug">Zgłoś błąd</string>
+    <!--
+      A plural, not a plain string: most of the people on this wall are here for a single commit,
+      so the singular is read more often than the plural is.
+    -->
+    <!-- Which part of the project a contributor's commits touched, shown as a badge. -->
+    <string name="contributor_area_server">Serwer</string>
+    <!--
+      A contributor's summary is composed from what the credits generator found - the areas they
+      worked in, and the languages they translated into. There is deliberately no string per
+      person: a new contributor is described the moment the generator sees them, and %1$s/%2$s are
+      filled with the area names above and with language names the platform already localises.
+    -->
     <string name="settings_legacy_pairing">Starsza metoda parowania</string>
     <string name="settings_legacy_pairing_summary">Wpisz kod parowania w oknie dialogowym zamiast w
         powiadomieniu</string>
@@ -714,6 +724,7 @@
     <string name="watchdog_shizuku_crashed_action_turn_off_alerts">Wyłącz alerty</string>
     <string name="watchdog_shizuku_recovered_title">Shizuku działa ponownie</string>
     <string name="watchdog_shizuku_recovered_text">Watchdog rozpoczął to ponownie po zatrzymaniu się przez siebie.</string>
+    <string name="watchdog_given_up_action_start">Uruchom</string>
     <!-- Misc -->
     <string name="error">Błąd</string>
     <string name="off">Wyłączony</string>
@@ -858,4 +869,18 @@
     <string name="app_info_launcher">Wpis Launcher</string>
     <string name="app_info_yes">Tak</string>
     <string name="app_info_no">Nie</string>
+    <string name="files_root_app_data">Dane</string>
+    <string name="files_root_system">System</string>
+    <string name="files_root_root">Główny</string>
+    <string name="files_sort">Sortuj</string>
+    <string name="files_selected_count">%1$d zaznaczone</string>
+    <string name="files_action_select_all">Zaznacz wszystkie</string>
+    <string name="files_action_rename">Zmień nazwę</string>
+    <string name="files_action_copy">Kopiuj</string>
+    <string name="files_action_delete">Usuń</string>
+    <string name="files_field_name">Nazwisko</string>
+    <string name="install_details_version">Wersja</string>
+    <string name="install_details_target">Target SDK</string>
+    <string name="install_details_installed">Zainstalowane</string>
+    <string name="install_location_auto">Opcje programisty</string>
 </resources>

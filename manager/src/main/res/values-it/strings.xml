@@ -9,9 +9,29 @@
     <!-- Home - Adb -->
     <!-- Home - Wireless Adb -->
     <string name="home_wireless_adb_title"><![CDATA[Avvia tramite Debug Wireless]]></string>
+    <string name="diagnostics_service">Servizio</string>
+    <string name="diagnostics_adb_port">Porta ADB</string>
+    <string name="diagnostics_wifi">Wi-Fi</string>
+    <string name="diagnostics_local_network">Rete locale</string>
+    <string name="diagnostics_battery">Ottimizzazione batteria</string>
+    <string name="diagnostics_app">App</string>
+    <string name="diagnostics_android">Android</string>
+    <string name="diagnostics_device">Dispositivo</string>
+    <string name="diagnostics_started_with">Avviato con</string>
+    <string name="diagnostics_default">Metodo predefinito</string>
+    <string name="diagnostics_root">Root</string>
+    <string name="diagnostics_granted">autorizzato</string>
+    <string name="diagnostics_missing">mancante</string>
+    <string name="diagnostics_not_required">non richiesto</string>
+    <string name="diagnostics_connected">connesso</string>
+    <string name="diagnostics_not_connected">non connesso</string>
     <!-- The platform says "not optimized" and Samsung says "unrestricted" for the same state,
          and "Battery optimization: not optimized" reads as a fault to anyone holding the phone.
          "unrestricted" says what the app did and what it is: left alone. -->
+    <string name="diagnostics_battery_optimized">ottimizzato</string>
+    <string name="diagnostics_available">disponibile</string>
+    <string name="diagnostics_unavailable">non disponibile</string>
+    <string name="diagnostics_closed">chiuso</string>
     <!-- Adb -->
     <string name="dialog_adb_port">Porta</string>
     <string name="dialog_adb_invalid_port">La porta è un numero intero compreso tra 1 e 65535.</string>
@@ -27,16 +47,11 @@
         Vai su \"Opzioni sviluppatore\"\n- Abilita \"Debug USB\" e \"Debug wireless\"\n- Tocca il
         lato sinistro di \"Debug wireless\"\n- Tocca \"Associa dispositivo con codice di
         associazione\"\n- Inserisci il codice di associazione nella notifica</string>
-    <string name="dialog_adb_pairing_accessibility_permission">Su Android 14,
-        l\'installazione/aggiornamento di Shizuku con Package Installer revoca l\'autorizzazione ^1,
-        necessaria per abilitare il servizio di accessibilità per l\'associazione.\n\nPer
-        concederla, esegui il seguente comando ADB:\n\n^2\n\nDopo aver eseguito il comando, puoi
-        continuare con il processo di associazione.\n\nNota: puoi aggirare questo problema
-        installando/aggiornando Shizuku con ADB.</string>
-    <string name="dialog_adb_pairing_accessibility_enable">Abilita il servizio di accessibilità per
-        avviare il processo di associazione. Questo permetterà a Shizuku di rilevare il codice di
-        associazione.\n\nIl servizio di accessibilità verrà disattivato quando il codice verrà
-        trovato o dopo 1 minuto per risparmiare energia.</string>
+    <!-- Goes after dialog_adb_pairing_accessibility_enable in the same dialog: what the greyed-out
+         row means, and both ways to open it. The App info menu is the only one available on a
+         phone with no computer attached, the app-ops command is the same app-op written from
+         outside the app, and both are named because either reader may be the one holding it. -->
+    <string name="dialog_adb_pairing_open_app_info">Informazioni app</string>
     <string name="dialog_adb_pairing_accessibility_navigate">Per avviare l\'associazione, procedere
         come segue:\n- Vai su \"Opzioni sviluppatore\"\n- Abilita \"Debug USB\" e \"Debug
         wireless\"\n- Tocca il lato sinistro di \"Debug wireless\"\n- Tocca \"Associa dispositivo
@@ -51,6 +66,7 @@
     <string name="adb_error_stop_tcp">Impossibile arrestare ADB su TCP</string>
     <string name="adb_pair_required">Esegui prima la fase di accoppiamento.</string>
     <string name="enable">Abilitare</string>
+    <string name="auto_pair_manual">Manuale</string>
     <string name="development_settings">Modalitá sviluppatore</string>
     <string name="notification_settings">Opzioni di notifica</string>
     <string name="adb_pairing_tutorial_content_notification">Una notifica da Shizuku ti aiuterà a
@@ -89,14 +105,53 @@
     <!-- Home - Learn more -->
     <!-- Home - Adb permissions limited -->
     <!-- Home - Dialogs -->
+    <string name="home_dialog_reboot_required_title">Riavvio necessario</string>
+    <string name="home_dialog_reboot_required_message">Per funzionare correttamente, Shizuku richiede un riavvio del dispositivo. Per continuare, riavvia il dispositivo.</string>
+    <string name="home_dialog_duplicate_app_detected_title">Rilevata app duplicata</string>
+    <string name="home_dialog_duplicate_app_detected_message">Un\'altra versione di questa app è installata nel dispositivo. Per continuare, disinstalla tutte le versioni duplicate e riavvia il dispositivo.</string>
+    <string name="home_dialog_button_exit">Esci</string>
     <!-- Application management -->
     <string name="app_management_dialog_adb_is_limited_title">Il permesso di adb è limitato</string>
     <string name="app_management_dialog_adb_is_limited_message"><![CDATA[È molto probabile che il fabbricante del tuo dispositivo limiti i permessi di adb.<p>Ci potrebbe essere una soluzione per il vostro dispositivo in <b><a href="%1$s">questo documento</a></b>.]]></string>
     <string name="app_management_toggle_all">Attiva/disattiva tutto</string>
+    <string name="app_management_search_hint">Cerca app</string>
+    <string name="app_management_sort">Ordina</string>
+    <string name="apps_needs_shizuku">Avvia Shizuku per visualizzare le app</string>
     <!-- Hiding: what apps can read about this device -->
+    <string name="hiding_gate">Abilitato</string>
+    <string name="hiding_gate_disabled">Disabilitato</string>
+    <string name="hiding_filter_shown">Visibile</string>
+    <string name="hiding_restore">Ripristina</string>
+    <string name="hiding_signal_developer_options">Opzioni sviluppatore</string>
+    <string name="hiding_signal_usb_debugging">Debug USB</string>
+    <string name="hiding_signal_wireless_debugging">Debug wireless</string>
+    <string name="hiding_signal_accessibility">Servizi di accessibilità</string>
+    <string name="hiding_signal_private_dns">DNS privato</string>
+    <string name="hiding_signal_vpn">VPN</string>
+    <string name="hiding_vpn_client">Client VPN da nascondere</string>
+    <string name="force_dark_gate">Forza modalità scura</string>
+    <string name="force_dark_gate_disabled">Forza modalità scura è disattivata</string>
+    <string name="force_dark_count">%1$d forzata</string>
+    <string name="force_dark_filter_forced">Forzata</string>
+    <string name="force_dark_filter_not">Non forzata</string>
+    <string name="activities_apps_count">%1$d app</string>
+    <string name="activities_count">%1$d attività</string>
+    <string name="activities_launcher">Launcher</string>
+    <string name="activities_exported">Esportato</string>
+    <string name="activities_not_exported">Non esportato</string>
+    <string name="activities_refused">Impossibile avviare l\'attività.</string>
+    <string name="activities_long_press">Mantieni premuta una riga per vedere il nome completo.</string>
+    <string name="activities_detail_package">Pacchetto</string>
+    <string name="activities_detail_activity">Attività</string>
+    <string name="activities_detail_state">Stato</string>
+    <string name="activities_open">Apri</string>
+    <string name="activities_copy">Copia</string>
+    <string name="activities_edit_as_intent">Modifica come intento</string>
+    <string name="activities_copied">Copiato</string>
     <string name="intent_start">Avvia</string>
     <string name="device_watchdog">Cane da guardia</string>
     <string name="log_capture_start">Avvia</string>
+    <string name="log_capture_choose_hint">Cerca app</string>
     <string name="action_start">Avvia</string>
     <string name="intents_start">Avvia</string>
     <!-- Terminal -->
@@ -119,6 +174,8 @@
     <string name="settings_start_on_boot">Avvia all\'avvio</string>
     <string name="settings_watchdog">Cane da guardia</string>
     <string name="settings_watchdog_summary">Riavvia automaticamente Shizuku se si blocca</string>
+    <!-- One wording for every switch that is nothing but a settings write, so they all say the
+         same thing about the permission the write needs. -->
     <string name="settings_tcp_mode">Modalità TCP</string>
     <string name="settings_tcp_mode_summary">"Permette a Shizuku di riavviarsi senza Wi-Fi. (Shizuku
         deve essere stato avviato una volta dopo il riavvio)"</string>
@@ -135,6 +192,18 @@
         abilitata</string>
     <string name="settings_help">Aiuto</string>
     <string name="settings_report_bug">Segnala un bug</string>
+    <!--
+      A plural, not a plain string: most of the people on this wall are here for a single commit,
+      so the singular is read more often than the plural is.
+    -->
+    <!-- Which part of the project a contributor's commits touched, shown as a badge. -->
+    <string name="contributor_area_app">App</string>
+    <!--
+      A contributor's summary is composed from what the credits generator found - the areas they
+      worked in, and the languages they translated into. There is deliberately no string per
+      person: a new contributor is described the moment the generator sees them, and %1$s/%2$s are
+      filled with the area names above and with language names the platform already localises.
+    -->
     <string name="settings_legacy_pairing">Abbinamento legacy</string>
     <string name="settings_legacy_pairing_summary">Inserisci il codice di associazione in una
         finestra di dialogo anziché in una notifica</string>
@@ -203,6 +272,7 @@
     <string name="watchdog_shizuku_crashed_text">Watchdog ha riavviato il servizio. Tocca per
         scoprire le possibili soluzioni per prevenire futuri arresti anomali.</string>
     <string name="watchdog_shizuku_crashed_action_turn_off_alerts">Disattiva gli avvisi</string>
+    <string name="watchdog_given_up_action_start">Avvia</string>
     <!-- Misc -->
     <string name="dialog_cannot_open_browser_title">Impossibile avviare il browser</string>
     <string name="toast_copied_to_clipboard">Copiato negli appunti</string>
@@ -219,7 +289,10 @@
     <string name="dialog_requesting_legacy_button_open_shizuku">Apri Shizuku</string>
     <string name="wadb_notification_attempt_now">Riprova</string>
     <!-- Manage tab -->
+    <string name="manage_search_hint">Cerca app</string>
     <!-- One app, and what it may do on the device -->
     <string name="app_op_mode_deny">Nega</string>
     <string name="app_action_enable">Abilitare</string>
+    <string name="files_sort">Ordina</string>
+    <string name="install_location_auto">Modalitá sviluppatore</string>
 </resources>

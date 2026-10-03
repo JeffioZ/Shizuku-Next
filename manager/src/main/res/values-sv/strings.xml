@@ -27,16 +27,10 @@
         Navigera till \"Utvecklaralternativ\"\n- Aktivera \"USB-felsökning\" och \"Trådlös
         felsökning\"\n- Tryck på vänster sida av \"Trådlös felsökning\"\n- Tryck på \"Para enhet med
         parkopplingskod\"\n- Ange parkopplingskoden i aviseringen</string>
-    <string name="dialog_adb_pairing_accessibility_permission">På Android 14 återkallas
-        ^1-behörigheten om du installerar/uppdaterar Shizuku med paketinstallationsprogrammet,
-        vilken krävs för att aktivera tillgänglighetstjänsten för parkoppling.\n\nKör följande
-        ADB-kommando för att bevilja den:\n\n^2\n\nEfter att du kört kommandot kan du fortsätta med
-        parkopplingsprocessen.\n\nObs: du kan kringgå detta genom att installera/uppdatera Shizuku
-        med ADB.</string>
-    <string name="dialog_adb_pairing_accessibility_enable">Aktivera tillgänglighetstjänsten för att
-        starta parkopplingsprocessen. Detta gör att Shizuku kan upptäcka
-        parkopplingskoden.\n\nTillgänglighetstjänsten stängs av när koden hittas eller efter 1 minut
-        för att spara energi.</string>
+    <!-- Goes after dialog_adb_pairing_accessibility_enable in the same dialog: what the greyed-out
+         row means, and both ways to open it. The App info menu is the only one available on a
+         phone with no computer attached, the app-ops command is the same app-op written from
+         outside the app, and both are named because either reader may be the one holding it. -->
     <string name="dialog_adb_pairing_accessibility_navigate">Börja parkopplingen genom att utföra
         följande steg:\n- Navigera till \"Utvecklaralternativ\"\n- Aktivera \"USB-felsökning\" och
         \"Trådlös felsökning\"\n- Tryck på vänster sida av \"Trådlös felsökning\"\n- Tryck på \"Para
@@ -114,6 +108,8 @@
     <string name="settings_start_on_boot">Starta vid uppstart</string>
     <string name="settings_watchdog">Vakthund</string>
     <string name="settings_watchdog_summary">Starta om Shizuku automatiskt om den kraschar</string>
+    <!-- One wording for every switch that is nothing but a settings write, so they all say the
+         same thing about the permission the write needs. -->
     <string name="settings_tcp_mode">TCP-läge</string>
     <string name="settings_tcp_mode_summary">"Tillåter att Shizuku startas om utan Wi-Fi. (Shizuku
         måste ha startats en gång sedan omstarten)"</string>
@@ -130,6 +126,17 @@
         aktiverat</string>
     <string name="settings_help">Hjälp</string>
     <string name="settings_report_bug">Rapportera ett fel</string>
+    <!--
+      A plural, not a plain string: most of the people on this wall are here for a single commit,
+      so the singular is read more often than the plural is.
+    -->
+    <!-- Which part of the project a contributor's commits touched, shown as a badge. -->
+    <!--
+      A contributor's summary is composed from what the credits generator found - the areas they
+      worked in, and the languages they translated into. There is deliberately no string per
+      person: a new contributor is described the moment the generator sees them, and %1$s/%2$s are
+      filled with the area names above and with language names the platform already localises.
+    -->
     <string name="settings_legacy_pairing">Äldre parning</string>
     <string name="settings_legacy_pairing_summary">Ange parkopplingskoden i en dialogruta istället
         för en avisering</string>
@@ -212,4 +219,5 @@
     <!-- One app, and what it may do on the device -->
     <string name="app_op_mode_deny">Förneka</string>
     <string name="app_action_enable">Aktivera</string>
+    <string name="install_location_auto">Utvecklaralternativ</string>
 </resources>

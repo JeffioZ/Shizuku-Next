@@ -27,15 +27,10 @@
         ไปที่ \"ตัวเลือกสำหรับนักพัฒนา\"\n- เปิดใช้งาน \"การแก้จุดบกพร่อง USB\" และ
         \"การแก้จุดบกพร่องแบบไร้สาย\"\n- แตะด้านซ้ายของ \"การแก้จุดบกพร่องแบบไร้สาย\"\n- แตะ
         \"จับคู่อุปกรณ์ด้วยรหัสจับคู่\"\n- ป้อนรหัสจับคู่ในข้อความแจ้งเตือน</string>
-    <string name="dialog_adb_pairing_accessibility_permission">ใน Android 14 การติดตั้ง/อัปเดต
-        Shizuku ด้วย Package Installer จะเพิกถอนสิทธิ์ ^1
-        ซึ่งจำเป็นสำหรับการเปิดใช้งานบริการการเข้าถึงสำหรับการจับคู่\n\nหากต้องการให้สิทธิ์นั้น
-        ให้เรียกใช้คำสั่ง ADB ต่อไปนี้:\n\n^2\n\nหลังจากเรียกใช้คำสั่งแล้ว
-        คุณสามารถดำเนินการจับคู่ต่อได้\n\nหมายเหตุ: คุณสามารถข้ามขั้นตอนนี้ได้โดยการติดตั้ง/อัปเดต
-        Shizuku ด้วย ADB</string>
-    <string name="dialog_adb_pairing_accessibility_enable">กรุณาเปิดใช้งานบริการการเข้าถึงเพื่อเริ่มขั้นตอนการจับคู่
-        ซึ่งจะทำให้ Shizuku สามารถตรวจจับรหัสการจับคู่ได้\n\nบริการการเข้าถึงจะถูกปิดเมื่อพบรหัส
-        หรือหลังจาก 1 นาที เพื่อประหยัดพลังงาน</string>
+    <!-- Goes after dialog_adb_pairing_accessibility_enable in the same dialog: what the greyed-out
+         row means, and both ways to open it. The App info menu is the only one available on a
+         phone with no computer attached, the app-ops command is the same app-op written from
+         outside the app, and both are named because either reader may be the one holding it. -->
     <string name="dialog_adb_pairing_accessibility_navigate">กรุณาเริ่มจับคู่โดยดำเนินการตามขั้นตอนต่อไปนี้:\n-
         ไปที่ \"ตัวเลือกสำหรับนักพัฒนา\"\n- เปิดใช้งาน \"การแก้จุดบกพร่อง USB\" และ
         \"การแก้จุดบกพร่องแบบไร้สาย\"\n- แตะด้านซ้ายของ \"การแก้จุดบกพร่องแบบไร้สาย\"\n- แตะ
@@ -113,6 +108,8 @@
     <string name="settings_start_on_boot">เริ่มต้นเมื่อบูตเครื่อง</string>
     <string name="settings_watchdog">สุนัขเฝ้าบ้าน</string>
     <string name="settings_watchdog_summary">รีสตาร์ทชิซูกุโดยอัตโนมัติหากเกิดการขัดข้อง</string>
+    <!-- One wording for every switch that is nothing but a settings write, so they all say the
+         same thing about the permission the write needs. -->
     <string name="settings_tcp_mode">โหมด TCP</string>
     <string name="settings_tcp_mode_summary">"ช่วยให้ชิซึกุสามารถรีสตาร์ทได้โดยไม่ต้องใช้ Wi-Fi
         (ชิซึกุต้องเริ่มใหม่ครั้งหนึ่งหลังจากรีบูต)"</string>
@@ -127,6 +124,17 @@
     <string name="settings_black_night_theme_summary">ใช้ธีมสีดำสนิทหากธีมมืดถูกเปิดอยู่</string>
     <string name="settings_help">ช่วย</string>
     <string name="settings_report_bug">รายงานจุดบกพร่อง</string>
+    <!--
+      A plural, not a plain string: most of the people on this wall are here for a single commit,
+      so the singular is read more often than the plural is.
+    -->
+    <!-- Which part of the project a contributor's commits touched, shown as a badge. -->
+    <!--
+      A contributor's summary is composed from what the credits generator found - the areas they
+      worked in, and the languages they translated into. There is deliberately no string per
+      person: a new contributor is described the moment the generator sees them, and %1$s/%2$s are
+      filled with the area names above and with language names the platform already localises.
+    -->
     <string name="settings_legacy_pairing">การจับคู่แบบมรดก</string>
     <string name="settings_legacy_pairing_summary">ป้อนรหัสการจับคู่ในกล่องโต้ตอบแทนการแจ้งเตือน</string>
     <!-- Bug Report Dialog -->
@@ -193,6 +201,7 @@
     <string name="watchdog_shizuku_crashed_text">Watchdog ได้รีสตาร์ทบริการแล้ว
         แตะเพื่อดูวิธีแก้ไขที่อาจเกิดขึ้นเพื่อป้องกันปัญหาขัดข้องในอนาคต</string>
     <string name="watchdog_shizuku_crashed_action_turn_off_alerts">ปิดการแจ้งเตือน</string>
+    <string name="watchdog_given_up_action_start">เริ่ม</string>
     <!-- Misc -->
     <string name="dialog_cannot_open_browser_title">ไม่สามารถเปิดบราวเซอร์</string>
     <string name="toast_copied_to_clipboard">คัดลอกไปยังคลิปบอร์ดแล้ว</string>
@@ -211,4 +220,5 @@
     <!-- One app, and what it may do on the device -->
     <string name="app_op_mode_deny">ปฏิเสธ</string>
     <string name="app_action_enable">เปิดใช้งาน</string>
+    <string name="install_location_auto">ตัวเลือกสำหรับนักพัฒนาแอป</string>
 </resources>

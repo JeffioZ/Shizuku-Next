@@ -28,16 +28,10 @@
         „Drahtloses Debugging“.\n– Tippen Sie links neben „Drahtloses Debugging“.\n– Tippen Sie auf
         „Gerät mit Kopplungscode koppeln“.\n– Geben Sie den Kopplungscode aus der Benachrichtigung
         ein.</string>
-    <string name="dialog_adb_pairing_accessibility_permission">Auf Android 14, Shizuku mit dem
-        Package Installer zu installieren/aktualisieren, widerruft die ^1-Berechtigung, die benötigt
-        wird, um den Accessibility Service für Paare zu aktivieren.\n\nUm es zu gewähren, führen Sie
-        folgenden ADB-Befehl aus:\n\n^2\n\nNach dem Ausführen des Befehls, Sie können mit dem
-        Paarungsprozess fortfahren.\n\nHinweis: Sie können dies umgehen, indem Sie Shizuku mit ADB
-        installieren/aktualisieren.</string>
-    <string name="dialog_adb_pairing_accessibility_enable">Bitte aktivieren Sie den
-        Barrierefreiheitsdienst, um den Paarungsprozess zu starten. Dadurch kann Shizuku den
-        Paarungscode erkennen.\n\nDer Barrierefreiheitsdienst wird abgeschaltet, sobald der Code
-        gefunden wird oder nach einer Minute, um Energie zu sparen.</string>
+    <!-- Goes after dialog_adb_pairing_accessibility_enable in the same dialog: what the greyed-out
+         row means, and both ways to open it. The App info menu is the only one available on a
+         phone with no computer attached, the app-ops command is the same app-op written from
+         outside the app, and both are named because either reader may be the one holding it. -->
     <string name="dialog_adb_pairing_accessibility_navigate">Bitte starten Sie die Kopplung mit den
         folgenden Schritten:\n– Navigieren Sie zu „Entwickleroptionen“.\n– Aktivieren Sie
         „USB-Debugging“ und „Drahtloses Debugging“.\n– Tippen Sie links neben „Drahtloses
@@ -124,6 +118,8 @@
     <string name="settings_watchdog">Wachhund</string>
     <string name="settings_watchdog_summary">Shizuku wird automatisch neu gestartet, falls es
         abstürzt.</string>
+    <!-- One wording for every switch that is nothing but a settings write, so they all say the
+         same thing about the permission the write needs. -->
     <string name="settings_tcp_mode">TCP-Modus</string>
     <string name="settings_tcp_mode_summary">"Ermöglicht es Shizuku, ohne WLAN neu zu starten.
         (Shizuku muss seit dem Reboot einmal angefangen haben)"</string>
@@ -140,6 +136,17 @@
         Nachtmodus aktiviert ist</string>
     <string name="settings_help">Hilfe</string>
     <string name="settings_report_bug">Melde einen Fehler</string>
+    <!--
+      A plural, not a plain string: most of the people on this wall are here for a single commit,
+      so the singular is read more often than the plural is.
+    -->
+    <!-- Which part of the project a contributor's commits touched, shown as a badge. -->
+    <!--
+      A contributor's summary is composed from what the credits generator found - the areas they
+      worked in, and the languages they translated into. There is deliberately no string per
+      person: a new contributor is described the moment the generator sees them, and %1$s/%2$s are
+      filled with the area names above and with language names the platform already localises.
+    -->
     <string name="settings_legacy_pairing">Legacy-Paarung</string>
     <string name="settings_legacy_pairing_summary">Geben Sie den Paarungscode in einem Dialog statt
         in einer Benachrichtigung ein</string>
@@ -212,6 +219,7 @@
         Tippen Sie, um sich über mögliche Korrekturen zu informieren, die zukünftige Abstürze
         verhindern.</string>
     <string name="watchdog_shizuku_crashed_action_turn_off_alerts">Alarme ausschalten</string>
+    <string name="watchdog_given_up_action_start">Anfangen</string>
     <!-- Misc -->
     <string name="dialog_cannot_open_browser_title">Browser starten nicht möglich</string>
     <string name="toast_copied_to_clipboard">In die Zwischenablage kopiert</string>
@@ -231,4 +239,5 @@
     <!-- One app, and what it may do on the device -->
     <string name="app_op_mode_deny">Verweigern</string>
     <string name="app_action_enable">Ermöglichen</string>
+    <string name="install_location_auto">Entwickleroptionen</string>
 </resources>

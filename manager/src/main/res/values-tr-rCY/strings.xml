@@ -38,15 +38,11 @@
         başlatın:\n- \"Geliştirici Seçenekleri\"ne gidin\n- \"USB hata ayıklama\" ve \"Kablosuz hata
         ayıklama\"yı etkinleştirin\n- \"Kablosuz hata ayıklama\"nın sol tarafına dokunun\n- \"Cihazı
         eşleştirme koduyla eşleştir\"e dokunun\n- Bildirimde eşleştirme kodunu girin</string>
-    <string name="dialog_adb_pairing_accessibility_permission">Android 14\'te, Shizuku\'yu Paket
-        Yükleyici ile yüklemek/güncellemek, eşleştirme için erişilebilirlik hizmetini etkinleştirmek
-        için gerekli olan ^1 iznini iptal eder.\n\nBu izni vermek için aşağıdaki ADB komutunu
-        çalıştırın:\n\n^2\n\nKomutu çalıştırdıktan sonra eşleştirme işlemine devam
-        edebilirsiniz.\n\nNot: Bunu ADB ile Shizuku\'yu yükleyerek/güncelleyerek atlayabilirsiniz.</string>
-    <string name="dialog_adb_pairing_accessibility_enable">Eşleştirme işlemini başlatmak için lütfen
-        erişilebilirlik hizmetini etkinleştirin. Bu, Shizuku\'nun eşleştirme kodunu algılamasını
-        sağlar.\n\nKod bulunduğunda veya enerji tasarrufu için 1 dakika sonra erişilebilirlik
-        hizmeti kapatılacaktır.</string>
+    <!-- Goes after dialog_adb_pairing_accessibility_enable in the same dialog: what the greyed-out
+         row means, and both ways to open it. The App info menu is the only one available on a
+         phone with no computer attached, the app-ops command is the same app-op written from
+         outside the app, and both are named because either reader may be the one holding it. -->
+    <string name="dialog_adb_pairing_open_app_info">Uygulama bilgileri</string>
     <string name="dialog_adb_pairing_accessibility_navigate">Lütfen aşağıdaki adımları uygulayarak
         eşleştirmeyi başlatın:\n- \"Geliştirici Seçenekleri\"ne gidin\n- \"USB hata ayıklama\" ve
         \"Kablosuz hata ayıklama\"yı etkinleştirin\n- \"Kablosuz hata ayıklama\"nın sol tarafına
@@ -360,6 +356,8 @@
     <string name="settings_unavailable_while_forcing_wireless">Wi-Fi olmadan başlatma seçeneği açıkken kullanılamaz.</string>
     <string name="settings_force_wireless_debugging">Wi-Fi olmadan başlat (deneysel)</string>
     <string name="settings_force_wireless_debugging_summary">Wi-Fi veya USB hata ayıklama kullanılmadan Shizuku başlatılmaya çalışılır. Bu işlem, Wi-Fi bekleme süresini ve otomatik kablosuz hata ayıklamayı da devre dışı bırakır.</string>
+    <!-- One wording for every switch that is nothing but a settings write, so they all say the
+         same thing about the permission the write needs. -->
     <string name="state_on">Açık</string>
     <string name="state_off">Kapalı</string>
     <string name="settings_persist_adb_port">Yeniden başlatma sonrasında ADB portunu koru</string>
@@ -407,6 +405,17 @@
     <string name="permissions_battery_summary">Android\'in Shizuku\'yu arka planda sonlandırmasını engeller.</string>
     <string name="settings_help">Yardım</string>
     <string name="settings_report_bug">Bir hata bildirin</string>
+    <!--
+      A plural, not a plain string: most of the people on this wall are here for a single commit,
+      so the singular is read more often than the plural is.
+    -->
+    <!-- Which part of the project a contributor's commits touched, shown as a badge. -->
+    <!--
+      A contributor's summary is composed from what the credits generator found - the areas they
+      worked in, and the languages they translated into. There is deliberately no string per
+      person: a new contributor is described the moment the generator sees them, and %1$s/%2$s are
+      filled with the area names above and with language names the platform already localises.
+    -->
     <string name="settings_legacy_pairing">Miras eşleştirmesi</string>
     <string name="settings_legacy_pairing_summary">Eşleştirme kodunu bildirim yerine bir iletişim
         kutusuna girin</string>
@@ -572,6 +581,7 @@
     <string name="watchdog_shizuku_crashed_action_turn_off_alerts">Uyarıları Kapat</string>
     <string name="watchdog_shizuku_recovered_title">Shizuku yeniden çalışıyor</string>
     <string name="watchdog_shizuku_recovered_text">Kendiliğinden durduktan sonra Watchdog onu tekrar başlattı.</string>
+    <string name="watchdog_given_up_action_start">Başlat</string>
     <!-- Misc -->
     <string name="error">Hata</string>
     <string name="off">Kapalı</string>
@@ -716,4 +726,17 @@
     <string name="app_info_launcher">Başlatıcı ögesi</string>
     <string name="app_info_yes">Evet</string>
     <string name="app_info_no">Hayır</string>
+    <string name="files_root_system">Sistem</string>
+    <string name="files_root_root">Root</string>
+    <string name="files_sort">Sırala</string>
+    <string name="files_selected_count">%1$d seçildi</string>
+    <string name="files_action_select_all">Tümünü seç</string>
+    <string name="files_action_rename">Yeniden adlandır</string>
+    <string name="files_action_copy">Kopyala</string>
+    <string name="files_action_delete">Sil</string>
+    <string name="files_field_name">Ad</string>
+    <string name="install_details_version">Sürüm</string>
+    <string name="install_details_target">Hedef SDK</string>
+    <string name="install_details_installed">Yüklendi</string>
+    <string name="install_location_auto">Geliştirici seçenekleri</string>
 </resources>

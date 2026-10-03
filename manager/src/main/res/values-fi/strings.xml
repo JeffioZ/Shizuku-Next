@@ -40,15 +40,11 @@
         Siirry kohtaan \"Kehittäjäasetukset\"\n- Ota käyttöön \"USB-virheenkorjaus\" ja \"Langaton
         virheenkorjaus\"\n- Napauta \"Langaton virheenkorjaus\" -kohdan vasenta puolta\n- Napauta
         \"Yhdistä laite pariliitoskoodilla\"\n- Syötä pariliitoskoodi ilmoitukseen</string>
-    <string name="dialog_adb_pairing_accessibility_permission">Android 14:ssä Shizukun
-        asentaminen/päivittäminen pakettiasentajalla peruuttaa ^1-käyttöoikeuden, jota tarvitaan
-        pariliitoksen esteettömyyspalvelun käyttöönottoon.\n\nMyöntääksesi käyttöoikeuden, suorita
-        seuraava ADB-komento:\n\n^2\n\nKomennon suorittamisen jälkeen voit jatkaa pariliitoksen
-        muodostamista.\n\nHuomautus: voit ohittaa tämän asentamalla/päivittämällä Shizukun ADB:llä.</string>
-    <string name="dialog_adb_pairing_accessibility_enable">Ole hyvä ja ota saavutettavuuspalvelu
-        käyttöön aloittaaksesi paritusprosessin. Tämä mahdollistaa Shizukun tunnistaa
-        parituskoodin.\n\nEsteettömyyspalvelu kytketään pois päältä, kun koodi löytyy, tai minuutin
-        kuluttua energian säästämiseksi.</string>
+    <!-- Goes after dialog_adb_pairing_accessibility_enable in the same dialog: what the greyed-out
+         row means, and both ways to open it. The App info menu is the only one available on a
+         phone with no computer attached, the app-ops command is the same app-op written from
+         outside the app, and both are named because either reader may be the one holding it. -->
+    <string name="dialog_adb_pairing_open_app_info">Sovelluksen tiedot</string>
     <string name="dialog_adb_pairing_accessibility_navigate">Aloita pariliitos suorittamalla
         seuraavat vaiheet:\n- Siirry kohtaan \"Kehittäjäasetukset\"\n- Ota käyttöön
         \"USB-virheenkorjaus\" ja \"Langaton virheenkorjaus\"\n- Napauta \"Langaton virheenkorjaus\"
@@ -499,6 +495,8 @@
     <string name="settings_unavailable_while_forcing_wireless">Ei käytettävissä, kun käynnistät ilman Wi-Fi-yhteyttä.</string>
     <string name="settings_force_wireless_debugging">Käynnistä ilman Wi-Fi-yhteyttä (kokeellinen)</string>
     <string name="settings_force_wireless_debugging_summary">Yrittää käynnistää Shizukun ilman Wi-Fi- tai USB-vianetsintää. Tämä poistaa myös Wi-Fi-yhteyden odottamisen ja automaattisen langattoman vianjäljityksen.</string>
+    <!-- One wording for every switch that is nothing but a settings write, so they all say the
+         same thing about the permission the write needs. -->
     <string name="state_on">Päällä</string>
     <string name="state_off">Pois</string>
     <string name="settings_persist_adb_port">Pidä ADB-portti uudelleenkäynnistyksen jälkeen</string>
@@ -548,6 +546,18 @@
     <string name="permissions_battery_summary">Pysäyttää Android tappamasta Shizukua taustalla.</string>
     <string name="settings_help">Apua</string>
     <string name="settings_report_bug">Ilmoita bugi</string>
+    <!--
+      A plural, not a plain string: most of the people on this wall are here for a single commit,
+      so the singular is read more often than the plural is.
+    -->
+    <!-- Which part of the project a contributor's commits touched, shown as a badge. -->
+    <string name="contributor_area_server">Palvelin</string>
+    <!--
+      A contributor's summary is composed from what the credits generator found - the areas they
+      worked in, and the languages they translated into. There is deliberately no string per
+      person: a new contributor is described the moment the generator sees them, and %1$s/%2$s are
+      filled with the area names above and with language names the platform already localises.
+    -->
     <string name="settings_legacy_pairing">Perintöpari</string>
     <string name="settings_legacy_pairing_summary">Syötä parituskoodi dialogiin ilmoituksen sijaan</string>
     <!-- Bug Report Dialog -->
@@ -712,6 +722,7 @@
     <string name="watchdog_shizuku_crashed_action_turn_off_alerts">Sammuta hälytykset</string>
     <string name="watchdog_shizuku_recovered_title">Shizuku on käynnissä uudelleen</string>
     <string name="watchdog_shizuku_recovered_text">Watchdog aloitti sen jälleen sen jälkeen, kun se pysähtyi itse.</string>
+    <string name="watchdog_given_up_action_start">Aloittaa</string>
     <!-- Misc -->
     <string name="error">Virhe</string>
     <string name="off">Pois</string>
@@ -856,4 +867,18 @@
     <string name="app_info_launcher">Käynnistimen syöttö</string>
     <string name="app_info_yes">Kyllä</string>
     <string name="app_info_no">Ei</string>
+    <string name="files_root_app_data">Tiedot</string>
+    <string name="files_root_system">Järjestelmä</string>
+    <string name="files_root_root">Juuri</string>
+    <string name="files_sort">Järjestä</string>
+    <string name="files_selected_count">%1$d valittu</string>
+    <string name="files_action_select_all">Valitse kaikki</string>
+    <string name="files_action_rename">Uudelleennimeä</string>
+    <string name="files_action_copy">Kopioi</string>
+    <string name="files_action_delete">Poista</string>
+    <string name="files_field_name">Nimi</string>
+    <string name="install_details_version">Versio</string>
+    <string name="install_details_target">Target SDK</string>
+    <string name="install_details_installed">Asennettu</string>
+    <string name="install_location_auto">Kehittäjävaihtoehdot</string>
 </resources>

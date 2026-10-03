@@ -29,15 +29,10 @@
         மற்றும் \"வயர்லெஸ் பிழைத்திருத்தம்\" என்பதை இயக்கவும்\n- \"வயர்லெஸ் பிழைத்திருத்தம்\" இன்
         இடது பக்கத்தைத் தட்டவும்\n- \"இணைப்பு குறியீட்டுடன் சாதனத்தை இணை\" என்பதைத் தட்டவும்\n-
         அறிவிப்பில் இணைத்தல் குறியீட்டை உள்ளிடவும்</string>
-    <string name="dialog_adb_pairing_accessibility_permission">Android 14 இல், தொகுப்பு நிறுவி மூலம்
-        Shizuku ஐ நிறுவுதல்/புதுப்பித்தல், இணைப்பதற்கான அணுகல் சேவையை இயக்க தேவையான ^1 அனுமதியை
-        ரத்து செய்கிறது.\n\nஇதை வழங்க, பின்வரும் ADB கட்டளையை இயக்கவும்:\n\n^2\n\nகட்டளையை இயக்கிய
-        பிறகு, நீங்கள் இணைத்தல் செயல்முறையைத் தொடரலாம்.\n\nகுறிப்பு: ADB மூலம் Shizuku ஐ
-        நிறுவுதல்/புதுப்பித்தல் மூலம் இதை நீங்கள் புறக்கணிக்கலாம்.</string>
-    <string name="dialog_adb_pairing_accessibility_enable">இணைத்தல் செயல்முறையைத் தொடங்க அணுகல்
-        சேவையை இயக்கவும். இது ஷிசுகுவை இணைத்தல் குறியீட்டைக் கண்டறிய அனுமதிக்கிறது.\n\nகுறியீடு
-        கண்டுபிடிக்கப்பட்டதும் அல்லது 1 நிமிடத்திற்குப் பிறகு ஆற்றலைச் சேமிக்க அணுகல் சேவை
-        முடக்கப்படும்.</string>
+    <!-- Goes after dialog_adb_pairing_accessibility_enable in the same dialog: what the greyed-out
+         row means, and both ways to open it. The App info menu is the only one available on a
+         phone with no computer attached, the app-ops command is the same app-op written from
+         outside the app, and both are named because either reader may be the one holding it. -->
     <string name="dialog_adb_pairing_accessibility_navigate">பின்வரும் படிகளைச் செய்வதன் மூலம்
         இணைக்கத் தொடங்குங்கள்:\n- \"டெவலப்பர் விருப்பங்கள்\" என்பதற்குச் செல்லவும்\n- \"USB
         பிழைத்திருத்தம்\" மற்றும் \"வயர்லெஸ் பிழைத்திருத்தம்\" என்பதை இயக்கவும்\n- \"வயர்லெஸ்
@@ -123,6 +118,8 @@
     <string name="settings_start_on_boot">துவக்கத்தில் தொடங்கு</string>
     <string name="settings_watchdog">கண்காணிப்பு நாய்</string>
     <string name="settings_watchdog_summary">ஷிசுகு செயலிழந்தால் தானாகவே மறுதொடக்கம் செய்யுங்கள்.</string>
+    <!-- One wording for every switch that is nothing but a settings write, so they all say the
+         same thing about the permission the write needs. -->
     <string name="settings_tcp_mode">TCP பயன்முறை</string>
     <string name="settings_tcp_mode_summary">"Wi-Fi இல்லாமல் Shizukuவை மறுதொடக்கம் செய்ய
         அனுமதிக்கிறது. (மறுதொடக்கம் செய்யப்பட்டதிலிருந்து Shizuku ஒரு முறை தொடங்கியிருக்க வேண்டும்)"</string>
@@ -139,6 +136,17 @@
         கருப்பொருளைப் பயன்படுத்தவும்.</string>
     <string name="settings_help">உதவி</string>
     <string name="settings_report_bug">பிழையைப் புகாரளிக்கவும்</string>
+    <!--
+      A plural, not a plain string: most of the people on this wall are here for a single commit,
+      so the singular is read more often than the plural is.
+    -->
+    <!-- Which part of the project a contributor's commits touched, shown as a badge. -->
+    <!--
+      A contributor's summary is composed from what the credits generator found - the areas they
+      worked in, and the languages they translated into. There is deliberately no string per
+      person: a new contributor is described the moment the generator sees them, and %1$s/%2$s are
+      filled with the area names above and with language names the platform already localises.
+    -->
     <string name="settings_legacy_pairing">லெகஸி இணைத்தல்</string>
     <string name="settings_legacy_pairing_summary">அறிவிப்புக்குப் பதிலாக உரையாடலில் இணைத்தல்
         குறியீட்டை உள்ளிடவும்.</string>
@@ -210,6 +218,7 @@
     <string name="watchdog_shizuku_crashed_text">வாட்ச்டாக் சேவையை மீண்டும் தொடங்கியது. எதிர்கால
         விபத்துகளைத் தடுப்பதற்கான சாத்தியமான திருத்தங்களைப் பற்றி அறிய தட்டவும்.</string>
     <string name="watchdog_shizuku_crashed_action_turn_off_alerts">விழிப்பூட்டல்களை முடக்கு</string>
+    <string name="watchdog_given_up_action_start">தொடங்கு</string>
     <!-- Misc -->
     <string name="dialog_cannot_open_browser_title">உலாவியைத் தொடங்க முடியவில்லை.</string>
     <string name="toast_copied_to_clipboard">நகலகத்துக்கு நகலெடுக்கப்பட்டது</string>
@@ -229,4 +238,5 @@
     <!-- One app, and what it may do on the device -->
     <string name="app_op_mode_deny">மறுக்கவும்</string>
     <string name="app_action_enable">இயக்கு</string>
+    <string name="install_location_auto">டெவலப்பர் விருப்பங்கள்</string>
 </resources>

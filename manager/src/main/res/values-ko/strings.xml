@@ -25,12 +25,10 @@
     <string name="dialog_adb_pairing_message">다음 단계를 수행하여 페어링을 시작하세요.\n- \"개발자 옵션\"으로 이동합니다.\n-
         \"USB 디버깅\" 및 \"무선 디버깅\"을 활성화합니다.\n- \"무선 디버깅\"의 왼쪽을 탭합니다.\n- \"페어링 코드로 장치 페어링\"을 탭합니다.\n-
         알림에 페어링 코드를 입력합니다.</string>
-    <string name="dialog_adb_pairing_accessibility_permission">Android 14에서 패키지 설치 관리자를 사용하여
-        Shizuku를 설치/업데이트하면 페어링을 위한 접근성 서비스를 활성화하는 데 필요한 ^1 권한이 취소됩니다.\n\n이 권한을 부여하려면 다음 ADB 명령을
-        실행하세요.\n\n^2\n\n명령을 실행한 후 페어링 프로세스를 계속 진행할 수 있습니다.\n\n참고: ADB를 사용하여 Shizuku를 설치/업데이트하면 이 문제를
-        해결할 수 있습니다.</string>
-    <string name="dialog_adb_pairing_accessibility_enable">페어링 과정을 시작하려면 접근성 서비스를 활성화하세요. 이렇게 하면
-        Shizuku가 페어링 코드를 감지할 수 있습니다.\n\n코드를 찾거나 1분 후에 에너지 절약을 위해 접근성 서비스가 꺼집니다.</string>
+    <!-- Goes after dialog_adb_pairing_accessibility_enable in the same dialog: what the greyed-out
+         row means, and both ways to open it. The App info menu is the only one available on a
+         phone with no computer attached, the app-ops command is the same app-op written from
+         outside the app, and both are named because either reader may be the one holding it. -->
     <string name="dialog_adb_pairing_accessibility_navigate">다음 단계를 수행하여 페어링을 시작하세요.\n- \"개발자 옵션\"으로
         이동합니다.\n- \"USB 디버깅\" 및 \"무선 디버깅\"을 활성화합니다.\n- \"무선 디버깅\"의 왼쪽을 탭합니다.\n- \"페어링 코드로 기기 페어링\"을
         탭합니다. Shizuku가 자동으로 페어링 코드를 감지합니다.</string>
@@ -99,6 +97,8 @@
     <string name="settings_start_on_boot">부팅 시 시작</string>
     <string name="settings_watchdog">지키는 개</string>
     <string name="settings_watchdog_summary">Shizuku가 충돌하면 자동으로 다시 시작합니다.</string>
+    <!-- One wording for every switch that is nothing but a settings write, so they all say the
+         same thing about the permission the write needs. -->
     <string name="settings_tcp_mode">TCP 모드</string>
     <string name="settings_tcp_mode_summary">"Shizuku가 Wi-Fi 없이 재시작할 수 있도록 합니다. (Shizuku는 재부팅 후 한 번
         시작되어야 합니다.)"</string>
@@ -113,6 +113,17 @@
     <string name="settings_black_night_theme_summary">어두운 테마가 사용될 때 검은 테마를 사용</string>
     <string name="settings_help">돕다</string>
     <string name="settings_report_bug">버그 신고</string>
+    <!--
+      A plural, not a plain string: most of the people on this wall are here for a single commit,
+      so the singular is read more often than the plural is.
+    -->
+    <!-- Which part of the project a contributor's commits touched, shown as a badge. -->
+    <!--
+      A contributor's summary is composed from what the credits generator found - the areas they
+      worked in, and the languages they translated into. There is deliberately no string per
+      person: a new contributor is described the moment the generator sees them, and %1$s/%2$s are
+      filled with the area names above and with language names the platform already localises.
+    -->
     <string name="settings_legacy_pairing">레거시 페어링</string>
     <string name="settings_legacy_pairing_summary">알림 대신 대화 상자에 페어링 코드를 입력하세요.</string>
     <!-- Bug Report Dialog -->
@@ -176,6 +187,7 @@
     <string name="watchdog_shizuku_crashed_text">Watchdog이 서비스를 다시 시작했습니다. 향후 충돌을 방지하기 위한 잠재적인 수정
         사항을 알아보려면 탭하세요.</string>
     <string name="watchdog_shizuku_crashed_action_turn_off_alerts">알림 끄기</string>
+    <string name="watchdog_given_up_action_start">시작</string>
     <!-- Misc -->
     <string name="dialog_cannot_open_browser_title">브라우저를 실행할 수 없음</string>
     <string name="toast_copied_to_clipboard">클립보드에 복사됨</string>
@@ -193,4 +205,5 @@
     <!-- One app, and what it may do on the device -->
     <string name="app_op_mode_deny">거부</string>
     <string name="app_action_enable">할 수 있게 하다</string>
+    <string name="install_location_auto">개발자 옵션</string>
 </resources>

@@ -27,16 +27,10 @@
         et le « Débogage sans fil »\n- Appuyez sur le côté gauche de « Débogage sans fil »\n-
         Appuyez sur « Jumeler l\'appareil avec le code de jumelage »\n- Saisissez le code de
         jumelage affiché dans la notification</string>
-    <string name="dialog_adb_pairing_accessibility_permission">Sur Android 14, l\'installation ou la
-        mise à jour de Shizuku via le gestionnaire de paquets révoque l\'autorisation ^1, nécessaire
-        à l\'activation du service d\'accessibilité pour le jumelage.\n\nPour l\'accorder, exécutez
-        la commande ADB suivante :\n\n^2\n\nUne fois la commande exécutée, vous pouvez poursuivre le
-        processus de jumelage.\n\nRemarque : vous pouvez contourner cette restriction en installant
-        ou en mettant à jour Shizuku via ADB.</string>
-    <string name="dialog_adb_pairing_accessibility_enable">Veuillez activer le service
-        d’accessibilité pour lancer le processus d’appairage. Cela permet à Shizuku de détecter le
-        code d’appairage.\n\nLe service d’accessibilité sera désactivé dès que le code sera trouvé
-        ou après 1 minute pour économiser de l’énergie.</string>
+    <!-- Goes after dialog_adb_pairing_accessibility_enable in the same dialog: what the greyed-out
+         row means, and both ways to open it. The App info menu is the only one available on a
+         phone with no computer attached, the app-ops command is the same app-op written from
+         outside the app, and both are named because either reader may be the one holding it. -->
     <string name="dialog_adb_pairing_accessibility_navigate">Veuillez commencer le jumelage en
         suivant les étapes suivantes :\n- Accédez à « Options pour les développeurs »\n- Activez
         « Débogage USB » et « Débogage sans fil »\n- Appuyez sur le côté gauche de « Débogage sans
@@ -121,6 +115,8 @@
     <string name="settings_start_on_boot">Démarrez au démarrage</string>
     <string name="settings_watchdog">Chien de garde</string>
     <string name="settings_watchdog_summary">Redémarrage automatique de Shizuku en cas de plantage</string>
+    <!-- One wording for every switch that is nothing but a settings write, so they all say the
+         same thing about the permission the write needs. -->
     <string name="settings_tcp_mode">Mode TCP</string>
     <string name="settings_tcp_mode_summary">"Permet à Shizuku de redémarrer sans Wi-Fi. (Shizuku a
         dû commencer une fois depuis le reboot)"</string>
@@ -137,6 +133,17 @@
         est activé</string>
     <string name="settings_help">Aide</string>
     <string name="settings_report_bug">Signaler un bug</string>
+    <!--
+      A plural, not a plain string: most of the people on this wall are here for a single commit,
+      so the singular is read more often than the plural is.
+    -->
+    <!-- Which part of the project a contributor's commits touched, shown as a badge. -->
+    <!--
+      A contributor's summary is composed from what the credits generator found - the areas they
+      worked in, and the languages they translated into. There is deliberately no string per
+      person: a new contributor is described the moment the generator sees them, and %1$s/%2$s are
+      filled with the area names above and with language names the platform already localises.
+    -->
     <string name="settings_legacy_pairing">Appariement héritier</string>
     <string name="settings_legacy_pairing_summary">Saisissez le code d’appairement dans une boîte de
         dialogue au lieu d’une notification</string>
@@ -206,6 +213,7 @@
     <string name="watchdog_shizuku_crashed_text">Watchdog a relancé le service. Appuyez pour
         connaître les solutions potentielles afin d’éviter de futurs plantages.</string>
     <string name="watchdog_shizuku_crashed_action_turn_off_alerts">Désactivez les alertes</string>
+    <string name="watchdog_given_up_action_start">Démarrer</string>
     <!-- Misc -->
     <string name="dialog_cannot_open_browser_title">Impossible de lancer le navigateur</string>
     <string name="toast_copied_to_clipboard">Copié dans le presse-papiers</string>
@@ -226,4 +234,5 @@
     <!-- One app, and what it may do on the device -->
     <string name="app_op_mode_deny">Refuser</string>
     <string name="app_action_enable">Activer</string>
+    <string name="install_location_auto">Options pour les développeurs</string>
 </resources>

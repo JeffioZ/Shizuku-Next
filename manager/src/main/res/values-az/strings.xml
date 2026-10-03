@@ -28,15 +28,10 @@
         debugging\" və \"Wireless debugging\"i aktiv edin\n- \"Simsiz debugging\" bölməsinin sol
         tərəfinə toxunun\n- \"Cihazı cütləşdirmə kodu ilə qoş\" düyməsini basın\n- Bildirişdə
         cütləşdirmə kodunu daxil edin</string>
-    <string name="dialog_adb_pairing_accessibility_permission">Android 14-də, Paket Quraşdırıcısı
-        ilə Shizuku-nu quraşdırmaq/yeniləmək, cütləşmə üçün əlçatanlıq xidmətini aktivləşdirmək üçün
-        tələb olunan ^1 icazəsini ləğv edir.\n\nBunu etmək üçün aşağıdakı ADB əmrini
-        işlədin:\n\n^2\n\nƏmri işlətdikdən sonra cütləşmə prosesinə davam edə bilərsiniz.\n\nQeyd:
-        Shizuku-nu ADB ilə quraşdırmaq/yeniləməklə bunu keçə bilərsiniz.</string>
-    <string name="dialog_adb_pairing_accessibility_enable">Zəhmət olmasa, cütləşdirmə prosesini
-        başlatmaq üçün əlçatanlıq xidmətini aktiv edin. Bu, Shizukuya cütləşdirmə kodunu aşkar
-        etməyə imkan verir.\n\nƏlçatanlıq xidməti kod tapıldıqda və ya enerji qənaəti üçün 1 dəqiqə
-        sonra söndürüləcək.</string>
+    <!-- Goes after dialog_adb_pairing_accessibility_enable in the same dialog: what the greyed-out
+         row means, and both ways to open it. The App info menu is the only one available on a
+         phone with no computer attached, the app-ops command is the same app-op written from
+         outside the app, and both are named because either reader may be the one holding it. -->
     <string name="dialog_adb_pairing_accessibility_navigate">Zəhmət olmasa, cütləşdirməyə aşağıdakı
         addımları yerinə yetirməklə başlayın:\n- \"İnkişaf etdirici Seçimləri\"nə keçid edin\n-
         \"USB debugging\" və \"Wireless debugging\"i aktiv edin\n- \"Simsiz debugging\" bölməsinin
@@ -120,6 +115,8 @@
     <string name="settings_watchdog">Nəzarətçi</string>
     <string name="settings_watchdog_summary">Shizuku qəzaya uğradıqda onu avtomatik olaraq yenidən
         başladın</string>
+    <!-- One wording for every switch that is nothing but a settings write, so they all say the
+         same thing about the permission the write needs. -->
     <string name="settings_tcp_mode">TCP rejimi</string>
     <string name="settings_tcp_mode_summary">"Bu, Shizuku-nun Wi-Fi olmadan yenidən başlamasına
         imkan verir. (Shizuku yenidən başladıqdan sonra bir dəfə başlamış olmalıdır)"</string>
@@ -136,6 +133,17 @@
         istifadə edin</string>
     <string name="settings_help">Kömək edin</string>
     <string name="settings_report_bug">Bir səhv bildir</string>
+    <!--
+      A plural, not a plain string: most of the people on this wall are here for a single commit,
+      so the singular is read more often than the plural is.
+    -->
+    <!-- Which part of the project a contributor's commits touched, shown as a badge. -->
+    <!--
+      A contributor's summary is composed from what the credits generator found - the areas they
+      worked in, and the languages they translated into. There is deliberately no string per
+      person: a new contributor is described the moment the generator sees them, and %1$s/%2$s are
+      filled with the area names above and with language names the platform already localises.
+    -->
     <string name="settings_legacy_pairing">İrs cütlüyü</string>
     <string name="settings_legacy_pairing_summary">Cütləşdirmə kodunu bildiriş əvəzinə dialoqda
         daxil edin</string>
@@ -207,6 +215,7 @@
     <string name="watchdog_shizuku_crashed_text">Watchdog xidməti yenidən başladıb. Gələcək
         çöküşlərin qarşısını almaq üçün mümkün düzəlişlər barədə məlumat almaq üçün toxunun.</string>
     <string name="watchdog_shizuku_crashed_action_turn_off_alerts">Siqnalları Söndür</string>
+    <string name="watchdog_given_up_action_start">Başlat</string>
     <!-- Misc -->
     <string name="dialog_cannot_open_browser_title">Brauzeri başlatmaq mümkün deyil</string>
     <string name="toast_copied_to_clipboard">Buferə kopyalandı</string>
@@ -225,4 +234,5 @@
     <!-- One app, and what it may do on the device -->
     <string name="app_op_mode_deny">Ləğv et</string>
     <string name="app_action_enable">Aktiv et</string>
+    <string name="install_location_auto">Tərtibatçı seçimləri</string>
 </resources>

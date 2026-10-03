@@ -27,16 +27,10 @@
         Developer\"\n- Paganahin ang \"USB debugging\" at \"Wireless debugging\"\n- I-tap ang
         kaliwang bahagi ng \"Wireless debugging\"\n- I-tap ang \"Ipares ang aparato na may code ng
         pagpapares\"\n- Ipasok ang code ng pagpapares sa abiso</string>
-    <string name="dialog_adb_pairing_accessibility_permission">Sa Android 14, ang
-        pag-install/pag-update ng Shizuku gamit ang Package Installer ay nagpapawalang-bisa sa
-        pahintulot na ^1, na kinakailangan upang paganahin ang serbisyo ng accessibility para sa
-        pagpapares.\n\nPara ibigay ito, patakbuhin ang sumusunod na utos ng ADB:\n\n^2\n\nPagkatapos
-        patakbuhin ang utos, maaari ka nang magpatuloy sa proseso ng pagpapares.\n\nPaalala: maaari
-        mo itong iwasan sa pamamagitan ng pag-install/pag-update ng Shizuku gamit ang ADB.</string>
-    <string name="dialog_adb_pairing_accessibility_enable">Mangyaring paganahin ang serbisyo ng
-        pag-access upang simulan ang proseso ng pagpapares. Pinapayagan nito si Shizuku na makita
-        ang code ng pagpapares.\n\nAng serbisyo sa pag-access ay papatayin kapag natagpuan ang code
-        o pagkatapos ng 1 minuto upang makatipid ng enerhiya.</string>
+    <!-- Goes after dialog_adb_pairing_accessibility_enable in the same dialog: what the greyed-out
+         row means, and both ways to open it. The App info menu is the only one available on a
+         phone with no computer attached, the app-ops command is the same app-op written from
+         outside the app, and both are named because either reader may be the one holding it. -->
     <string name="dialog_adb_pairing_accessibility_navigate">Mangyaring simulan ang pagpapares sa
         pamamagitan ng pagsasagawa ng mga sumusunod na hakbang:\n- Mag-navigate sa \"Mga Pagpipilian
         sa Developer\"\n- Paganahin ang \"USB debugging\" at \"Wireless debugging\"\n- I-tap ang
@@ -120,6 +114,8 @@
     <string name="settings_start_on_boot">Magsimula sa boot</string>
     <string name="settings_watchdog">Tagapagbantay</string>
     <string name="settings_watchdog_summary">Awtomatikong i-restart ang Shizuku kung nag-crash ito</string>
+    <!-- One wording for every switch that is nothing but a settings write, so they all say the
+         same thing about the permission the write needs. -->
     <string name="settings_tcp_mode_summary">"Pinapayagan ang Shizuku na mag-restart nang walang
         Wi-Fi. (Siguro minsan nang nagsimula si Shizuku mula nang mag-reboot)"</string>
     <string name="settings_tcp_mode_dialog_close_port">"Agad na isasara ang TCP port. Kakailanganin
@@ -134,6 +130,17 @@
         ang panggabing mode</string>
     <string name="settings_help">Tulong</string>
     <string name="settings_report_bug">Mag-ulat ng isang bug</string>
+    <!--
+      A plural, not a plain string: most of the people on this wall are here for a single commit,
+      so the singular is read more often than the plural is.
+    -->
+    <!-- Which part of the project a contributor's commits touched, shown as a badge. -->
+    <!--
+      A contributor's summary is composed from what the credits generator found - the areas they
+      worked in, and the languages they translated into. There is deliberately no string per
+      person: a new contributor is described the moment the generator sees them, and %1$s/%2$s are
+      filled with the area names above and with language names the platform already localises.
+    -->
     <string name="settings_legacy_pairing">Pagpapares ng pamana</string>
     <string name="settings_legacy_pairing_summary">Ipasok ang code ng pagpapares sa isang dialog sa
         halip na isang abiso</string>
@@ -205,6 +212,7 @@
         upang malaman ang tungkol sa mga potensyal na pag-aayos upang maiwasan ang mga pag-crash sa
         hinaharap.</string>
     <string name="watchdog_shizuku_crashed_action_turn_off_alerts">I-off ang Mga Alerto</string>
+    <string name="watchdog_given_up_action_start">Simulan</string>
     <!-- Misc -->
     <string name="dialog_cannot_open_browser_title">Hindi mabuksan ang browser</string>
     <string name="toast_copied_to_clipboard">Kinopya sa clipboard</string>
@@ -225,4 +233,5 @@
     <!-- One app, and what it may do on the device -->
     <string name="app_op_mode_deny">Tanggihan</string>
     <string name="app_action_enable">Paganahin</string>
+    <string name="install_location_auto">Mga opsyon ng developer</string>
 </resources>

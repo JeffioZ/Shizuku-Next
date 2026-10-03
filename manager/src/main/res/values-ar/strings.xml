@@ -27,13 +27,10 @@
         التالية:\n- انتقل إلى \"خيارات المطور\"\n- قم بتمكين \"تصحيح أخطاء USB\" و\"تصحيح الأخطاء
         اللاسلكية\"\n- انقر على الجانب الأيسر من \"تصحيح الأخطاء اللاسلكية\"\n- انقر على \"إقران
         الجهاز برمز الاقتران\"\n- أدخل رمز الاقتران في الإشعار</string>
-    <string name="dialog_adb_pairing_accessibility_permission">في نظام Android 14، يؤدي تثبيت/تحديث
-        تطبيق Shizuku باستخدام مُثبِّت الحزم إلى إلغاء إذن ^1، وهو الإذن المطلوب لتفعيل خدمة إمكانية
-        الوصول للاقتران.\n\nلمنحه، شغِّل أمر ADB التالي:\n\n^2\n\nبعد تشغيل الأمر، يمكنك متابعة
-        عملية الاقتران.\n\nملاحظة: يمكنك تجاوز هذا الإجراء بتثبيت/تحديث Shizuku باستخدام ADB.</string>
-    <string name="dialog_adb_pairing_accessibility_enable">يرجى تفعيل خدمة إمكانية الوصول لبدء عملية
-        الاقتران. هذا يسمح لـ Shizuku باكتشاف رمز الاقتران.\n\nسيتم إيقاف خدمة إمكانية الوصول عند
-        العثور على الرمز أو بعد دقيقة واحدة لتوفير الطاقة.</string>
+    <!-- Goes after dialog_adb_pairing_accessibility_enable in the same dialog: what the greyed-out
+         row means, and both ways to open it. The App info menu is the only one available on a
+         phone with no computer attached, the app-ops command is the same app-op written from
+         outside the app, and both are named because either reader may be the one holding it. -->
     <string name="dialog_adb_pairing_accessibility_navigate">يرجى بدء عملية الاقتران من خلال تنفيذ
         الخطوات التالية:\n- انتقل إلى \"خيارات المطور\"\n- قم بتمكين \"تصحيح أخطاء USB\" و\"تصحيح
         الأخطاء اللاسلكية\"\n- انقر على الجانب الأيسر من \"تصحيح الأخطاء اللاسلكية\"\n- انقر على
@@ -116,6 +113,8 @@
     <string name="settings_start_on_boot">البدء عند التمهيد</string>
     <string name="settings_watchdog">مراقب</string>
     <string name="settings_watchdog_summary">إعادة تشغيل Shizuku تلقائيًا في حالة تعطله</string>
+    <!-- One wording for every switch that is nothing but a settings write, so they all say the
+         same thing about the permission the write needs. -->
     <string name="settings_tcp_mode">وضع TCP</string>
     <string name="settings_tcp_mode_summary">"يسمح لـ Shizuku بإعادة التشغيل دون اتصال Wi-Fi. (يجب
         أن يكون Shizuku قد بدأ مرة واحدة بعد إعادة التشغيل)"</string>
@@ -131,6 +130,17 @@
         بالجهاز مفعل</string>
     <string name="settings_help">يساعد</string>
     <string name="settings_report_bug">الإبلاغ عن خطأ</string>
+    <!--
+      A plural, not a plain string: most of the people on this wall are here for a single commit,
+      so the singular is read more often than the plural is.
+    -->
+    <!-- Which part of the project a contributor's commits touched, shown as a badge. -->
+    <!--
+      A contributor's summary is composed from what the credits generator found - the areas they
+      worked in, and the languages they translated into. There is deliberately no string per
+      person: a new contributor is described the moment the generator sees them, and %1$s/%2$s are
+      filled with the area names above and with language names the platform already localises.
+    -->
     <string name="settings_legacy_pairing">الاقتران القديم</string>
     <string name="settings_legacy_pairing_summary">أدخل رمز الاقتران في مربع حوار بدلاً من الإشعار</string>
     <!-- Bug Report Dialog -->
@@ -198,6 +208,7 @@
     <string name="watchdog_shizuku_crashed_text">أعاد برنامج المراقبة تشغيل الخدمة. انقر لمعرفة
         المزيد عن الحلول الممكنة لمنع الأعطال المستقبلية.</string>
     <string name="watchdog_shizuku_crashed_action_turn_off_alerts">إيقاف التنبيهات</string>
+    <string name="watchdog_given_up_action_start">البدء بالتشغيل</string>
     <!-- Misc -->
     <string name="dialog_cannot_open_browser_title">لا يمكن بدء المتصفح</string>
     <string name="toast_copied_to_clipboard">تم نسخها إلى الحافظة</string>
@@ -216,4 +227,5 @@
     <!-- One app, and what it may do on the device -->
     <string name="app_op_mode_deny">منع</string>
     <string name="app_action_enable">يُمكَِن</string>
+    <string name="install_location_auto">خيارات للمطور</string>
 </resources>

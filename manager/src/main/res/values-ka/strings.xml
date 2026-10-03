@@ -29,15 +29,10 @@
         შესრულებით:\n- გადადით „დეველოპერის პარამეტრებზე“\n- ჩართეთ „USB გამართვა“ და „უკაბელო
         გამართვა“\n- შეეხეთ „უკაბელო გამართვის“ მარცხენა მხარეს\n- შეეხეთ „მოწყობილობის დაწყვილება
         დაწყვილების კოდით“\n- შეიყვანეთ დაწყვილების კოდი შეტყობინებაში</string>
-    <string name="dialog_adb_pairing_accessibility_permission">Android 14-ზე, Shizuku-ს
-        ინსტალაცია/განახლება პაკეტის ინსტალატორით აუქმებს ^1 ნებართვას, რომელიც აუცილებელია
-        დაწყვილებისთვის ხელმისაწვდომობის სერვისის ჩასართავად.\n\nმის მისანიჭებლად, შეასრულეთ შემდეგი
-        ADB ბრძანება:\n\n^2\n\nბრძანების შესრულების შემდეგ, შეგიძლიათ გააგრძელოთ დაწყვილების
-        პროცესი.\n\nშენიშვნა: ამის გვერდის ავლა შეგიძლიათ Shizuku-ს ADB-ით ინსტალაციით/განახლებით.</string>
-    <string name="dialog_adb_pairing_accessibility_enable">გთხოვთ, ჩართოთ ხელმისაწვდომობის სერვისი
-        დაწყვილების პროცესის დასაწყებად. ეს საშუალებას აძლევს Shizuku-ს აღმოაჩინოს დაწყვილების
-        კოდი.\n\nხელმისაწვდომობის სერვისი გამორთულია კოდის პოვნისას ან 1 წუთის შემდეგ ენერგიის
-        დაზოგვის მიზნით.</string>
+    <!-- Goes after dialog_adb_pairing_accessibility_enable in the same dialog: what the greyed-out
+         row means, and both ways to open it. The App info menu is the only one available on a
+         phone with no computer attached, the app-ops command is the same app-op written from
+         outside the app, and both are named because either reader may be the one holding it. -->
     <string name="dialog_adb_pairing_accessibility_navigate">დაწყვილება დაიწყეთ შემდეგი ნაბიჯების
         შესრულებით:\n- გადადით „დეველოპერის პარამეტრებზე“\n- ჩართეთ „USB გამართვა“ და „უკაბელო
         გამართვა“\n- შეეხეთ „უკაბელო გამართვის“ მარცხენა მხარეს\n- შეეხეთ „მოწყობილობის დაწყვილების
@@ -120,6 +115,8 @@
     <string name="settings_start_on_boot">ჩატვირთვისას დაწყება</string>
     <string name="settings_watchdog">მაკონტროლებელი</string>
     <string name="settings_watchdog_summary">ავტომატური გადატვირთვა Shizuku-სთვის, თუ ის გაითიშება</string>
+    <!-- One wording for every switch that is nothing but a settings write, so they all say the
+         same thing about the permission the write needs. -->
     <string name="settings_tcp_mode">TCP რეჟიმი</string>
     <string name="settings_tcp_mode_summary">"საშუალებას აძლევს Shizuku-ს გადატვირთოს Wi-Fi-ის
         გარეშე. (შიზუკუ გადატვირთვის შემდეგ ერთხელ უნდა დაიწყოს)"</string>
@@ -136,6 +133,17 @@
         ჩართულია</string>
     <string name="settings_help">დახმარება</string>
     <string name="settings_report_bug">შეატყობინეთ ხარვეზს</string>
+    <!--
+      A plural, not a plain string: most of the people on this wall are here for a single commit,
+      so the singular is read more often than the plural is.
+    -->
+    <!-- Which part of the project a contributor's commits touched, shown as a badge. -->
+    <!--
+      A contributor's summary is composed from what the credits generator found - the areas they
+      worked in, and the languages they translated into. There is deliberately no string per
+      person: a new contributor is described the moment the generator sees them, and %1$s/%2$s are
+      filled with the area names above and with language names the platform already localises.
+    -->
     <string name="settings_legacy_pairing">მემკვიდრეობის დაწყვილება</string>
     <string name="settings_legacy_pairing_summary">შეიყვანეთ დაწყვილების კოდი დიალოგში შეტყობინების
         ნაცვლად</string>
@@ -205,6 +213,7 @@
     <string name="watchdog_shizuku_crashed_text">Watchdog-მა განაახლა სერვისი. შეეხეთ პოტენციურ
         გამოსწორებებს, რათა თავიდან აიცილოთ მომავალი ავარიები.</string>
     <string name="watchdog_shizuku_crashed_action_turn_off_alerts">გამორთეთ შეტყობინებები</string>
+    <string name="watchdog_given_up_action_start">დაწყება</string>
     <!-- Misc -->
     <string name="dialog_cannot_open_browser_title">ბრაუზერის გაშვება შეუძლებელია</string>
     <string name="toast_copied_to_clipboard">კოპირებულია ბუფერში</string>
@@ -224,4 +233,5 @@
     <!-- One app, and what it may do on the device -->
     <string name="app_op_mode_deny">უარყოფა</string>
     <string name="app_action_enable">ჩართვა</string>
+    <string name="install_location_auto">დეველოპერის პარამეტრები</string>
 </resources>

@@ -29,15 +29,10 @@
         inalámbrica\"\n- Toque el lado izquierdo de \"Depuración inalámbrica\"\n- Toque \"Emparejar
         dispositivo con código de emparejamiento\"\n- Ingrese el código de emparejamiento en la
         notificación</string>
-    <string name="dialog_adb_pairing_accessibility_permission">En Android 14, instalar o actualizar
-        Shizuku con el instalador de paquetes revoca el permiso ^1, que es necesario para habilitar
-        el servicio de accesibilidad para el emparejamiento.\n\nPara otorgarlo, ejecute el siguiente
-        comando ADB:\n\n^2\n\nDespués de ejecutar el comando, puede continuar con el proceso de
-        emparejamiento.\n\nNota: puede omitir esto instalando o actualizando Shizuku con ADB.</string>
-    <string name="dialog_adb_pairing_accessibility_enable">Habilita el servicio de accesibilidad
-        para iniciar el proceso de emparejamiento. Esto permite que Shizuku detecte el código de
-        emparejamiento.\n\nEl servicio de accesibilidad se desactivará cuando se encuentre el código
-        o después de 1 minuto para ahorrar energía.</string>
+    <!-- Goes after dialog_adb_pairing_accessibility_enable in the same dialog: what the greyed-out
+         row means, and both ways to open it. The App info menu is the only one available on a
+         phone with no computer attached, the app-ops command is the same app-op written from
+         outside the app, and both are named because either reader may be the one holding it. -->
     <string name="dialog_adb_pairing_accessibility_navigate">Para iniciar el emparejamiento, siga
         estos pasos:\n- Vaya a \"Opciones de desarrollador\"\n- Habilite \"Depuración USB\" y
         \"Depuración inalámbrica\"\n- Toque el lado izquierdo de \"Depuración inalámbrica\"\n- Toque
@@ -121,6 +116,8 @@
     <string name="settings_start_on_boot">Iniciar al arrancar</string>
     <string name="settings_watchdog">Perro guardián</string>
     <string name="settings_watchdog_summary">Reiniciar automáticamente Shizuku si falla</string>
+    <!-- One wording for every switch that is nothing but a settings write, so they all say the
+         same thing about the permission the write needs. -->
     <string name="settings_tcp_mode">Modo TCP</string>
     <string name="settings_tcp_mode_summary">"Permite que Shizuku se reinicie sin Wi-Fi. (Shizuku
         debe haberse iniciado una vez desde el reinicio)."</string>
@@ -137,6 +134,17 @@
         está habilitado</string>
     <string name="settings_help">Ayuda</string>
     <string name="settings_report_bug">Informar de un error</string>
+    <!--
+      A plural, not a plain string: most of the people on this wall are here for a single commit,
+      so the singular is read more often than the plural is.
+    -->
+    <!-- Which part of the project a contributor's commits touched, shown as a badge. -->
+    <!--
+      A contributor's summary is composed from what the credits generator found - the areas they
+      worked in, and the languages they translated into. There is deliberately no string per
+      person: a new contributor is described the moment the generator sees them, and %1$s/%2$s are
+      filled with the area names above and with language names the platform already localises.
+    -->
     <string name="settings_legacy_pairing">Emparejamiento heredado</string>
     <string name="settings_legacy_pairing_summary">Introduzca el código de emparejamiento en un
         cuadro de diálogo en lugar de una notificación</string>
@@ -206,6 +214,7 @@
     <string name="watchdog_shizuku_crashed_text">El servicio de vigilancia se reinició. Toca para
         conocer posibles soluciones para evitar futuras fallas.</string>
     <string name="watchdog_shizuku_crashed_action_turn_off_alerts">Desactivar alertas</string>
+    <string name="watchdog_given_up_action_start">Iniciar</string>
     <!-- Misc -->
     <string name="dialog_cannot_open_browser_title">No se puede iniciar el explorador</string>
     <string name="toast_copied_to_clipboard">Copiado al portapapeles</string>
@@ -225,4 +234,5 @@
     <!-- One app, and what it may do on the device -->
     <string name="app_op_mode_deny">Denegar</string>
     <string name="app_action_enable">Permitir</string>
+    <string name="install_location_auto">Opciones para desarrolladores</string>
 </resources>

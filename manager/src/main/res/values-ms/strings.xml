@@ -28,16 +28,10 @@
         USB\" dan \"Penyahpepijatan tanpa wayar\"\n- Ketik sebelah kiri \"Penyahpepijatan tanpa
         wayar\"\n- Ketik \"Pasangkan peranti dengan kod berpasangan\"\n- Masukkan kod gandingan
         dalam pemberitahuan</string>
-    <string name="dialog_adb_pairing_accessibility_permission">Pada Android 14, memasang/mengemas
-        kini Shizuku dengan Package Installer akan membatalkan kebenaran ^1, yang diperlukan untuk
-        mendayakan perkhidmatan kebolehcapaian bagi pemasangan.\n\nUntuk memberikannya, jalankan
-        arahan ADB berikut:\n\n^2\n\nSelepas menjalankan arahan, anda boleh meneruskan proses
-        pemasangan.\n\nNota: anda boleh memintas ini dengan memasang/mengemas kini Shizuku dengan
-        ADB.</string>
-    <string name="dialog_adb_pairing_accessibility_enable">Sila dayakan perkhidmatan kebolehaksesan
-        untuk memulakan proses berpasangan. Ini membolehkan Shizuku mengesan kod
-        berpasangan.\n\nPerkhidmatan kebolehaksesan akan dimatikan apabila kod ditemui atau selepas
-        1 minit untuk menjimatkan tenaga.</string>
+    <!-- Goes after dialog_adb_pairing_accessibility_enable in the same dialog: what the greyed-out
+         row means, and both ways to open it. The App info menu is the only one available on a
+         phone with no computer attached, the app-ops command is the same app-op written from
+         outside the app, and both are named because either reader may be the one holding it. -->
     <string name="dialog_adb_pairing_accessibility_navigate">Sila mulakan berpasangan dengan
         melakukan langkah berikut:\n- Navigasi ke \"Pilihan Pembangun\"\n- Dayakan \"penyahpepijatan
         USB\" dan \"Penyahpepijatan wayarles\"\n- Ketik sebelah kiri \"Penyahpepijatan wayarles\"\n-
@@ -120,6 +114,8 @@
     <string name="settings_start_on_boot">Mulakan semasa but</string>
     <string name="settings_watchdog">Pengawas</string>
     <string name="settings_watchdog_summary">Mulakan semula Shizuku secara automatik jika ia ranap</string>
+    <!-- One wording for every switch that is nothing but a settings write, so they all say the
+         same thing about the permission the write needs. -->
     <string name="settings_tcp_mode">mod TCP</string>
     <string name="settings_tcp_mode_summary">"Membenarkan Shizuku memulakan semula tanpa Wi-Fi.
         (Shizuku mesti bermula sekali sejak but semula)"</string>
@@ -136,6 +132,17 @@
         didayakan</string>
     <string name="settings_help">Tolong</string>
     <string name="settings_report_bug">Laporkan pepijat</string>
+    <!--
+      A plural, not a plain string: most of the people on this wall are here for a single commit,
+      so the singular is read more often than the plural is.
+    -->
+    <!-- Which part of the project a contributor's commits touched, shown as a badge. -->
+    <!--
+      A contributor's summary is composed from what the credits generator found - the areas they
+      worked in, and the languages they translated into. There is deliberately no string per
+      person: a new contributor is described the moment the generator sees them, and %1$s/%2$s are
+      filled with the area names above and with language names the platform already localises.
+    -->
     <string name="settings_legacy_pairing">Gandingan warisan</string>
     <string name="settings_legacy_pairing_summary">Masukkan kod gandingan dalam dialog dan bukannya
         pemberitahuan</string>
@@ -204,6 +211,7 @@
     <string name="watchdog_shizuku_crashed_text">Pengawas memulakan semula perkhidmatan. Ketik untuk
         mengetahui tentang kemungkinan pembetulan untuk mengelakkan ranap masa hadapan.</string>
     <string name="watchdog_shizuku_crashed_action_turn_off_alerts">Matikan Makluman</string>
+    <string name="watchdog_given_up_action_start">Mulakan</string>
     <!-- Misc -->
     <string name="dialog_cannot_open_browser_title">Tidak boleh memulakan penyemak imbas</string>
     <string name="toast_copied_to_clipboard">Disalin ke papan keratan</string>
@@ -222,4 +230,5 @@
     <!-- One app, and what it may do on the device -->
     <string name="app_op_mode_deny">Nafikan</string>
     <string name="app_action_enable">Dayakan</string>
+    <string name="install_location_auto">Pilihan pemaju</string>
 </resources>

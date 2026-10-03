@@ -27,16 +27,10 @@
         uit te voer:\n- Navigeer na \"Ontwikkelaaropsies\"\n- Aktiveer \"USB-ontfouting\" en
         \"Draadlose ontfouting\"\n- Tik die linkerkant van \"Draadlose ontfouting\"\n- Tik \"Koppel
         toestel met paringskode\"\n- Voer die paringskode in die kennisgewing in</string>
-    <string name="dialog_adb_pairing_accessibility_permission">Op Android 14 herroep die
-        installering/opdatering van Shizuku met die Pakketinstalleerder die ^1-toestemming, wat
-        vereis word om die toeganklikheidsdiens vir paring te aktiveer.\n\nOm dit toe te staan, voer
-        die volgende ADB-opdrag uit:\n\n^2\n\nNadat u die opdrag uitgevoer het, kan u voortgaan met
-        die paringsproses.\n\nLet wel: u kan dit omseil deur Shizuku met ADB te installeer/op te
-        dateer.</string>
-    <string name="dialog_adb_pairing_accessibility_enable">Aktiveer asseblief die
-        toeganklikheidsdiens om die paringsproses te begin. Dit laat Shizuku toe om die paringskode
-        op te spoor.\n\nDie toeganklikheidsdiens sal afgeskakel word wanneer die kode gevind word of
-        na 1 minuut om energie te bespaar.</string>
+    <!-- Goes after dialog_adb_pairing_accessibility_enable in the same dialog: what the greyed-out
+         row means, and both ways to open it. The App info menu is the only one available on a
+         phone with no computer attached, the app-ops command is the same app-op written from
+         outside the app, and both are named because either reader may be the one holding it. -->
     <string name="dialog_adb_pairing_accessibility_navigate">Begin asseblief met paring deur die
         volgende stappe uit te voer:\n- Navigeer na \"Ontwikkelaaropsies\"\n- Aktiveer
         \"USB-ontfouting\" en \"Draadlose ontfouting\"\n- Tik die linkerkant van \"Draadlose
@@ -120,6 +114,8 @@
     <string name="settings_start_on_boot">Begin met opstart</string>
     <string name="settings_watchdog">Waghond</string>
     <string name="settings_watchdog_summary">Herbegin Shizuku outomaties as dit vasval</string>
+    <!-- One wording for every switch that is nothing but a settings write, so they all say the
+         same thing about the permission the write needs. -->
     <string name="settings_tcp_mode">TCP-modus</string>
     <string name="settings_tcp_mode_summary">"Laat Shizuku toe om te herbegin sonder Wi-Fi. (Shizuku
         moes een keer sedert herbegin begin het)"</string>
@@ -136,6 +132,17 @@
         geaktiveer is</string>
     <string name="settings_help">Hulp</string>
     <string name="settings_report_bug">Rapporteer \'n fout</string>
+    <!--
+      A plural, not a plain string: most of the people on this wall are here for a single commit,
+      so the singular is read more often than the plural is.
+    -->
+    <!-- Which part of the project a contributor's commits touched, shown as a badge. -->
+    <!--
+      A contributor's summary is composed from what the credits generator found - the areas they
+      worked in, and the languages they translated into. There is deliberately no string per
+      person: a new contributor is described the moment the generator sees them, and %1$s/%2$s are
+      filled with the area names above and with language names the platform already localises.
+    -->
     <string name="settings_legacy_pairing">Ouerskap-paring</string>
     <string name="settings_legacy_pairing_summary">Voer die paringskode in \'n dialoog in plaas van
         \'n kennisgewing in</string>
@@ -205,6 +212,7 @@
     <string name="watchdog_shizuku_crashed_text">Waghond het die diens herbegin. Tik om meer te wete
         te kom oor moontlike oplossings om toekomstige ineenstortings te voorkom.</string>
     <string name="watchdog_shizuku_crashed_action_turn_off_alerts">Skakel waarskuwings af</string>
+    <string name="watchdog_given_up_action_start">Begin</string>
     <!-- Misc -->
     <string name="dialog_cannot_open_browser_title">Kan nie blaaier begin nie</string>
     <string name="toast_copied_to_clipboard">Na knipbord gekopieer</string>
@@ -223,4 +231,5 @@
     <!-- One app, and what it may do on the device -->
     <string name="app_op_mode_deny">Weier</string>
     <string name="app_action_enable">Aktiveer</string>
+    <string name="install_location_auto">Ontwikkelaaropsies</string>
 </resources>

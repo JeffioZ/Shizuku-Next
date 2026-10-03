@@ -41,16 +41,11 @@
         fios\"\n- Toque no lado esquerdo de \"Depuração sem fios\"\n- Toque em \"Emparelhar
         dispositivo com código de emparelhamento\"\n- Introduza o código de emparelhamento na
         notificação</string>
-    <string name="dialog_adb_pairing_accessibility_permission">No Android 14, a
-        instalação/atualização do Shizuku com o Instalador de Pacotes revoga a permissão ^1,
-        necessária para ativar o serviço de acessibilidade para o emparelhamento.\n\nPara a
-        conceder, execute o seguinte comando ADB:\n\n^2\n\nApós executar o comando, pode continuar
-        com o processo de emparelhamento.\n\nNota: pode contornar isto instalando/atualizando o
-        Shizuku com o ADB.</string>
-    <string name="dialog_adb_pairing_accessibility_enable">Por favor, ative o serviço de
-        acessibilidade para iniciar o processo de emparelhamento. Isto permite que o Shizuku detete
-        o código de emparelhamento.\n\nO serviço de acessibilidade será desativado quando o código
-        for encontrado ou após 1 minuto para poupar energia.</string>
+    <!-- Goes after dialog_adb_pairing_accessibility_enable in the same dialog: what the greyed-out
+         row means, and both ways to open it. The App info menu is the only one available on a
+         phone with no computer attached, the app-ops command is the same app-op written from
+         outside the app, and both are named because either reader may be the one holding it. -->
+    <string name="dialog_adb_pairing_open_app_info">Informações do app</string>
     <string name="dialog_adb_pairing_accessibility_navigate">Para iniciar o emparelhamento, siga os
         seguintes passos:\n- Aceda a \"Opções de programador\"\n- Ative \"Depuração USB\" e
         \"Depuração sem fios\"\n- Toque no lado esquerdo de \"Depuração sem fios\"\n- Toque em
@@ -501,6 +496,8 @@
     <string name="settings_unavailable_while_forcing_wireless">Indisponível enquanto Iniciar sem Wi-Fi está ativado.</string>
     <string name="settings_force_wireless_debugging">Iniciar sem Wi-Fi (experimental)</string>
     <string name="settings_force_wireless_debugging_summary">Tenta iniciar o Shizuku sem Wi-Fi ou depuração USB. Isso também desativa a espera por Wi-Fi e a depuração automática sem fio.</string>
+    <!-- One wording for every switch that is nothing but a settings write, so they all say the
+         same thing about the permission the write needs. -->
     <string name="state_on">Ligado</string>
     <string name="state_off">Desligado</string>
     <string name="settings_persist_adb_port">Manter a porta do ADB após reiniciar</string>
@@ -550,6 +547,18 @@
     <string name="permissions_battery_summary">Para o Android de matar Shizuku em segundo plano.</string>
     <string name="settings_help">Ajuda</string>
     <string name="settings_report_bug">Reportar um bug</string>
+    <!--
+      A plural, not a plain string: most of the people on this wall are here for a single commit,
+      so the singular is read more often than the plural is.
+    -->
+    <!-- Which part of the project a contributor's commits touched, shown as a badge. -->
+    <string name="contributor_area_server">Servidor</string>
+    <!--
+      A contributor's summary is composed from what the credits generator found - the areas they
+      worked in, and the languages they translated into. There is deliberately no string per
+      person: a new contributor is described the moment the generator sees them, and %1$s/%2$s are
+      filled with the area names above and with language names the platform already localises.
+    -->
     <string name="settings_legacy_pairing">Emparelhamento legado</string>
     <string name="settings_legacy_pairing_summary">Introduza o código de emparelhamento numa caixa
         de diálogo em vez de uma notificação.</string>
@@ -713,6 +722,7 @@
     <string name="watchdog_shizuku_crashed_action_turn_off_alerts">Desativar alertas</string>
     <string name="watchdog_shizuku_recovered_title">Shizuku está sendo executado novamente</string>
     <string name="watchdog_shizuku_recovered_text">Watchdog o começou de novo depois de parar por si só.</string>
+    <string name="watchdog_given_up_action_start">Iniciar</string>
     <!-- Misc -->
     <string name="error">ERRO</string>
     <string name="off">Desligado</string>
@@ -858,4 +868,18 @@
     <string name="app_info_launcher">Lançador de referências</string>
     <string name="app_info_yes">sim</string>
     <string name="app_info_no">Não</string>
+    <string name="files_root_app_data">Dado</string>
+    <string name="files_root_system">SISTEMA</string>
+    <string name="files_root_root">raiz</string>
+    <string name="files_sort">Ordenar</string>
+    <string name="files_selected_count">%1$d selecionado</string>
+    <string name="files_action_select_all">Selecionar todos</string>
+    <string name="files_action_rename">Renomear</string>
+    <string name="files_action_copy">copiar</string>
+    <string name="files_action_delete">excluir</string>
+    <string name="files_field_name">Nome:</string>
+    <string name="install_details_version">Versão</string>
+    <string name="install_details_target">Target SDK</string>
+    <string name="install_details_installed">Instalado</string>
+    <string name="install_location_auto">Opções do desenvolvedor</string>
 </resources>

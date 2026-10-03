@@ -41,14 +41,11 @@
         \"Налагодження бездротового зв\'язку\"\n- Натисніть ліву частину розділу \"Налагодження
         бездротового зв\'язку\"\n- Натисніть \"Спів\'язати пристрій за допомогою коду
         сполучення\"\n- Введіть код сполучення зі сповіщення</string>
-    <string name="dialog_adb_pairing_accessibility_permission">На Android 14 встановлення/оновлення
-        Shizuku за допомогою інсталятора пакетів скасовує дозвіл ^1, який потрібен для ввімкнення
-        служби доступності для сполучення.\n\nЩоб надати його, виконайте таку команду
-        ADB:\n\n^2\n\nПісля виконання команди ви можете продовжити процес сполучення.\n\nПримітка:
-        ви можете обійти це, встановивши/оновивши Shizuku за допомогою ADB.</string>
-    <string name="dialog_adb_pairing_accessibility_enable">Будь ласка, увімкніть службу доступності,
-        щоб розпочати процес сполучення. Це дозволить Shizuku виявити код сполучення.\n\nСлужба
-        доступності буде вимкнена після знаходження коду або через 1 хвилину для економії енергії.</string>
+    <!-- Goes after dialog_adb_pairing_accessibility_enable in the same dialog: what the greyed-out
+         row means, and both ways to open it. The App info menu is the only one available on a
+         phone with no computer attached, the app-ops command is the same app-op written from
+         outside the app, and both are named because either reader may be the one holding it. -->
+    <string name="dialog_adb_pairing_open_app_info">Про програму</string>
     <string name="dialog_adb_pairing_accessibility_navigate">Будь ласка, розпочніть сполучення,
         виконавши такі кроки:\n- Перейдіть до розділу \"Параметри розробника\"\n- Увімкніть
         \"Налагодження USB\" та \"Налагодження бездротового зв\'язку\"\n- Натисніть ліву частину
@@ -492,6 +489,8 @@
     <string name="settings_unavailable_while_forcing_wireless">Недоступно при запуску без увімкненого Wi-Fi.</string>
     <string name="settings_force_wireless_debugging">Запуск без Wi-Fi (експериментальний)</string>
     <string name="settings_force_wireless_debugging_summary">Запуск Shizuku без налагодження по Wi-Fi або USB. Також вимикає очікування Wi-Fi та автоматичне бездротове налагодження.</string>
+    <!-- One wording for every switch that is nothing but a settings write, so they all say the
+         same thing about the permission the write needs. -->
     <string name="state_on">Увімк</string>
     <string name="state_off">Вимкнено</string>
     <string name="settings_persist_adb_port">Залишити порт ADB після перезавантаження</string>
@@ -541,6 +540,18 @@
     <string name="permissions_battery_summary">Зупиняє Android вбивати Сідзуку у фоновому режимі.</string>
     <string name="settings_help">Допомога</string>
     <string name="settings_report_bug">Повідомити про помилку</string>
+    <!--
+      A plural, not a plain string: most of the people on this wall are here for a single commit,
+      so the singular is read more often than the plural is.
+    -->
+    <!-- Which part of the project a contributor's commits touched, shown as a badge. -->
+    <string name="contributor_area_server">Сервер</string>
+    <!--
+      A contributor's summary is composed from what the credits generator found - the areas they
+      worked in, and the languages they translated into. There is deliberately no string per
+      person: a new contributor is described the moment the generator sees them, and %1$s/%2$s are
+      filled with the area names above and with language names the platform already localises.
+    -->
     <string name="settings_legacy_pairing">Сполучення зі старими пристроями</string>
     <string name="settings_legacy_pairing_summary">Введіть код сполучення в діалоговому вікні, а не
         в сповіщенні</string>
@@ -708,6 +719,7 @@
     <string name="watchdog_shizuku_crashed_action_turn_off_alerts">Вимкнути сповіщення</string>
     <string name="watchdog_shizuku_recovered_title">Сідзуку знову працює</string>
     <string name="watchdog_shizuku_recovered_text">Сторож знову почав його перестати сам по собі.</string>
+    <string name="watchdog_given_up_action_start">Запуск</string>
     <!-- Misc -->
     <string name="error">Помилка</string>
     <string name="off">Вимкнено</string>
@@ -851,4 +863,17 @@
     <string name="app_info_launcher">Створити запис лаунчера</string>
     <string name="app_info_yes">Так</string>
     <string name="app_info_no">Ні</string>
+    <string name="files_root_app_data">Дані</string>
+    <string name="files_root_system">Система</string>
+    <string name="files_root_root">Корінь</string>
+    <string name="files_sort">Упорядкувати</string>
+    <string name="files_action_select_all">Виділити все</string>
+    <string name="files_action_rename">Перейменувати</string>
+    <string name="files_action_copy">Копія</string>
+    <string name="files_action_delete">Видалити</string>
+    <string name="files_field_name">Ім\'я</string>
+    <string name="install_details_version">Версія</string>
+    <string name="install_details_target">Target SDK</string>
+    <string name="install_details_installed">Встановлено</string>
+    <string name="install_location_auto">Параметри розробника</string>
 </resources>

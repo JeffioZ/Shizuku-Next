@@ -28,15 +28,10 @@
         »Brezžično odpravljanje napak«\n- Dotaknite se leve strani »Brezžično odpravljanje napak«\n-
         Dotaknite se »Seznani napravo s kodo za združevanje«\n- V obvestilo vnesite kodo za
         združevanje</string>
-    <string name="dialog_adb_pairing_accessibility_permission">V sistemu Android 14
-        namestitev/posodabljanje programa Shizuku z namestitvenim programom paketov prekliče
-        dovoljenje ^1, ki je potrebno za omogočanje storitve dostopnosti za seznanjanje.\n\nČe ga
-        želite odobriti, zaženite naslednji ukaz ADB:\n\n^2\n\nPo zagonu ukaza lahko nadaljujete s
-        postopkom seznanjanja.\n\nOpomba: temu se lahko izognete tako, da namestite/posodobite
-        program Shizuku z ADB.</string>
-    <string name="dialog_adb_pairing_accessibility_enable">Za začetek postopka seznanjanja omogočite
-        storitev dostopnosti. To bo Shizuku omogočilo zaznavanje kode za seznanjanje.\n\nStoritev
-        dostopnosti se bo izklopila, ko bo koda najdena, ali po 1 minuti, da se prihrani energija.</string>
+    <!-- Goes after dialog_adb_pairing_accessibility_enable in the same dialog: what the greyed-out
+         row means, and both ways to open it. The App info menu is the only one available on a
+         phone with no computer attached, the app-ops command is the same app-op written from
+         outside the app, and both are named because either reader may be the one holding it. -->
     <string name="dialog_adb_pairing_accessibility_navigate">Začnite z združevanjem tako, da
         izvedete naslednje korake:\n- Pomaknite se do »Možnosti za razvijalce«\n- Omogočite
         »Odpravljanje napak USB« in »Odpravljanje napak brezžično«\n- Dotaknite se leve strani
@@ -120,6 +115,8 @@
     <string name="settings_start_on_boot">Zaženi ob zagonu</string>
     <string name="settings_watchdog">Nadzorni pes</string>
     <string name="settings_watchdog_summary">Samodejni ponovni zagon Shizukuja, če se sesuje</string>
+    <!-- One wording for every switch that is nothing but a settings write, so they all say the
+         same thing about the permission the write needs. -->
     <string name="settings_tcp_mode">Način TCP</string>
     <string name="settings_tcp_mode_summary">"Omogoča Shizuku, da se ponovno zažene brez Wi-Fi-ja.
         (Shizuku je morala enkrat začeti od ponovnega zagona)"</string>
@@ -136,6 +133,17 @@
         črno temo</string>
     <string name="settings_help">Pomoč</string>
     <string name="settings_report_bug">Prijavite napako</string>
+    <!--
+      A plural, not a plain string: most of the people on this wall are here for a single commit,
+      so the singular is read more often than the plural is.
+    -->
+    <!-- Which part of the project a contributor's commits touched, shown as a badge. -->
+    <!--
+      A contributor's summary is composed from what the credits generator found - the areas they
+      worked in, and the languages they translated into. There is deliberately no string per
+      person: a new contributor is described the moment the generator sees them, and %1$s/%2$s are
+      filled with the area names above and with language names the platform already localises.
+    -->
     <string name="settings_legacy_pairing">Zapuščina parov</string>
     <string name="settings_legacy_pairing_summary">Namesto obvestila vnesite kodo za povezovanje v
         pogovorno okno</string>
@@ -203,6 +211,7 @@
     <string name="watchdog_shizuku_crashed_text">Watchdog je ponovno zagnal storitev. Tapnite, da
         izveste o možnih popravkih za preprečevanje prihodnjih zrušitev.</string>
     <string name="watchdog_shizuku_crashed_action_turn_off_alerts">Izklopite opozorila</string>
+    <string name="watchdog_given_up_action_start">Začni</string>
     <!-- Misc -->
     <string name="dialog_cannot_open_browser_title">Brskalnika ni mogoče zagnati</string>
     <string name="toast_copied_to_clipboard">Kopirano v odložišče</string>
@@ -221,4 +230,5 @@
     <!-- One app, and what it may do on the device -->
     <string name="app_op_mode_deny">Zavrni</string>
     <string name="app_action_enable">Omogoči</string>
+    <string name="install_location_auto">Možnosti za razvijalce</string>
 </resources>

@@ -29,8 +29,11 @@
     <string name="paring_code_is_wrong">Неверный код сопряжения.</string>
     <string name="cannot_connect_port">Не удалось подключиться к службе беспроводной отладки.\n\nУбедитесь, что Shizuku разрешён в брандмауэре, блокировщике рекламы, VPN и других подобных приложениях, которые могут ограничивать доступ к сети.</string>
     <string name="dialog_adb_pairing_message">Чтобы начать сопряжение, выполните следующие действия:\n- Откройте «Параметры разработчика»\n- Включите «Отладку по USB» и «Беспроводную отладку»\n- Нажмите левую часть пункта «Беспроводная отладка»\n- Нажмите «Сопрячь устройство с кодом сопряжения»\n- Введите код сопряжения в уведомлении</string>
-    <string name="dialog_adb_pairing_accessibility_permission">В Android 14 установка или обновление Shizuku через установщик пакетов отзывает разрешение ^1, необходимое для включения службы специальных возможностей для сопряжения.\n\nЧтобы выдать его, выполните следующую команду ADB:\n\n^2\n\nПосле выполнения команды можно продолжить сопряжение.\n\nПримечание: этого можно избежать, если устанавливать или обновлять Shizuku через ADB.</string>
-    <string name="dialog_adb_pairing_accessibility_enable">При автоматическом сопряжении код считывается из системного диалога через службу специальных возможностей Shizuku, поэтому её необходимо включить. Обычно Shizuku включает её самостоятельно, но для этого требуется разрешение WRITE_SECURE_SETTINGS, которого ещё нет у только что установленного приложения.\n\nВключите службу на следующем экране, введите код вручную в разделе «Вручную» или один раз выдайте разрешение:\n\nadb shell pm grant moe.shizuku.privileged.api android.permission.WRITE_SECURE_SETTINGS\n\nСлужба отключается после обнаружения кода или через минуту для экономии заряда.</string>
+    <!-- Goes after dialog_adb_pairing_accessibility_enable in the same dialog: what the greyed-out
+         row means, and both ways to open it. The App info menu is the only one available on a
+         phone with no computer attached, the app-ops command is the same app-op written from
+         outside the app, and both are named because either reader may be the one holding it. -->
+    <string name="dialog_adb_pairing_open_app_info">Информация о приложении</string>
     <string name="dialog_adb_pairing_accessibility_navigate">Чтобы начать сопряжение, выполните следующие действия:\n- Откройте «Параметры разработчика»\n- Включите «Отладку по USB» и «Беспроводную отладку»\n- Нажмите левую часть пункта «Беспроводная отладка»\n- Нажмите «Сопрячь устройство с кодом сопряжения». Shizuku автоматически обнаружит код сопряжения.</string>
     <string name="adb_pairing_requires_multi_window">Сначала включите режим разделённого экрана.</string>
     <string name="adb_pairing_requires_multi_window_reason">Система требует, чтобы диалог сопряжения всегда оставался видимым. Режим разделённого экрана — единственный способ одновременно отображать это приложение и системный диалог.</string>
@@ -245,6 +248,8 @@
     <string name="settings_unavailable_while_forcing_wireless">Недоступно, пока включён запуск без Wi-Fi.</string>
     <string name="settings_force_wireless_debugging">Запуск без Wi-Fi (экспериментальная функция)</string>
     <string name="settings_force_wireless_debugging_summary">Пытается запустить Shizuku без Wi-Fi или отладки по USB. При этом также отключаются ожидание Wi-Fi и автоматическая беспроводная отладка.</string>
+    <!-- One wording for every switch that is nothing but a settings write, so they all say the
+         same thing about the permission the write needs. -->
     <string name="state_off">Выключено</string>
     <string name="settings_persist_adb_port">Сохранять порт ADB после перезагрузки</string>
     <string name="settings_persist_adb_port_summary">Оставляет порт ADB открытым после каждой перезагрузки, чтобы Shizuku мог запускаться без Wi-Fi или точки доступа.</string>
@@ -286,6 +291,17 @@
     <string name="permissions_battery_summary">Не позволяет Android завершать работу Shizuku в фоновом режиме.</string>
     <string name="settings_help">Помощь</string>
     <string name="settings_report_bug">Сообщить об ошибке</string>
+    <!--
+      A plural, not a plain string: most of the people on this wall are here for a single commit,
+      so the singular is read more often than the plural is.
+    -->
+    <!-- Which part of the project a contributor's commits touched, shown as a badge. -->
+    <!--
+      A contributor's summary is composed from what the credits generator found - the areas they
+      worked in, and the languages they translated into. There is deliberately no string per
+      person: a new contributor is described the moment the generator sees them, and %1$s/%2$s are
+      filled with the area names above and with language names the platform already localises.
+    -->
     <string name="settings_legacy_pairing">Устаревшее сопряжение</string>
     <string name="settings_legacy_pairing_summary">Вводить код сопряжения в диалоге вместо уведомления</string>
     <!-- Bug Report Dialog -->
@@ -425,6 +441,7 @@
     <string name="watchdog_shizuku_crashed_title">Недавно произошёл сбой Shizuku</string>
     <string name="watchdog_shizuku_crashed_text">Сторожевой таймер перезапустил Shizuku. Нажмите, чтобы узнать, как предотвратить сбои.</string>
     <string name="watchdog_shizuku_crashed_action_turn_off_alerts">Отключить уведомления</string>
+    <string name="watchdog_given_up_action_start">Запустить</string>
     <!-- Misc -->
     <string name="error">Ошибка</string>
     <string name="off">Выключено</string>
@@ -543,4 +560,16 @@
     <string name="app_info_launcher">Запись в лаунчере</string>
     <string name="app_info_yes">Да</string>
     <string name="app_info_no">Нет</string>
+    <string name="files_root_system">Система</string>
+    <string name="files_sort">Сортировка</string>
+    <string name="files_selected_count">Выбрано: %1$d</string>
+    <string name="files_action_select_all">Выбрать все</string>
+    <string name="files_action_rename">Переименовать</string>
+    <string name="files_action_copy">Копировать</string>
+    <string name="files_action_delete">Удалить</string>
+    <string name="files_field_name">Название</string>
+    <string name="install_details_version">Версия</string>
+    <string name="install_details_target">Целевой SDK</string>
+    <string name="install_details_installed">Установлено</string>
+    <string name="install_location_auto">Автоматически</string>
 </resources>

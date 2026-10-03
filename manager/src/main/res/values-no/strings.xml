@@ -40,15 +40,11 @@
         til \"Utvikleralternativer\"\n- Aktiver \"USB-feilsøking\" og \"Trådløs feilsøking\"\n-
         Trykk på venstre side av \"Trådløs feilsøking\"\n- Trykk på \"Par enhet med paringskode\"\n-
         Skriv inn paringskoden i varselet</string>
-    <string name="dialog_adb_pairing_accessibility_permission">På Android 14 vil
-        installasjon/oppdatering av Shizuku med pakkeinstallasjonsprogrammet oppheve ^1-tillatelsen,
-        som er nødvendig for å aktivere tilgjengelighetstjenesten for paring.\n\nFor å gi den, kjør
-        følgende ADB-kommando:\n\n^2\n\nEtter at du har kjørt kommandoen, kan du fortsette med
-        paringsprosessen.\n\nMerk: Du kan omgå dette ved å installere/oppdatere Shizuku med ADB.</string>
-    <string name="dialog_adb_pairing_accessibility_enable">Vennligst aktiver
-        tilgjengelighetstjenesten for å starte paringsprosessen. Dette lar Shizuku oppdage
-        paringskoden.\n\nTilgjengelighetstjenesten slås av når koden blir funnet, eller etter 1
-        minutt for å spare energi.</string>
+    <!-- Goes after dialog_adb_pairing_accessibility_enable in the same dialog: what the greyed-out
+         row means, and both ways to open it. The App info menu is the only one available on a
+         phone with no computer attached, the app-ops command is the same app-op written from
+         outside the app, and both are named because either reader may be the one holding it. -->
+    <string name="dialog_adb_pairing_open_app_info">Info om app</string>
     <string name="dialog_adb_pairing_accessibility_navigate">Start paringen ved å utføre følgende
         trinn:\n– Naviger til «Utvikleralternativer»\n– Aktiver «USB-feilsøking» og «Trådløs
         feilsøking»\n– Trykk på venstre side av «Trådløs feilsøking»\n– Trykk på «Par enhet med
@@ -496,6 +492,8 @@
     <string name="settings_unavailable_while_forcing_wireless">Utilgjengelig når Wi-Fi startes uten at Wi-Fi er på.</string>
     <string name="settings_force_wireless_debugging">Start uten Wi-Fi (eksperimentell)</string>
     <string name="settings_force_wireless_debugging_summary">Prøver å starte Shizuku uten Wi-Fi eller USB feilretting. Det skrur også av Wi-Fi vente og automatisk trådløs feilsøking.</string>
+    <!-- One wording for every switch that is nothing but a settings write, so they all say the
+         same thing about the permission the write needs. -->
     <string name="state_on">På</string>
     <string name="state_off">Av</string>
     <string name="settings_persist_adb_port">Behold ADB port etter omstart</string>
@@ -545,6 +543,18 @@
     <string name="permissions_battery_summary">Stopper Android fra å drepe Shizuku i bakgrunnen.</string>
     <string name="settings_help">Hjelp</string>
     <string name="settings_report_bug">Rapporter en feil</string>
+    <!--
+      A plural, not a plain string: most of the people on this wall are here for a single commit,
+      so the singular is read more often than the plural is.
+    -->
+    <!-- Which part of the project a contributor's commits touched, shown as a badge. -->
+    <string name="contributor_area_server">Tjener</string>
+    <!--
+      A contributor's summary is composed from what the credits generator found - the areas they
+      worked in, and the languages they translated into. There is deliberately no string per
+      person: a new contributor is described the moment the generator sees them, and %1$s/%2$s are
+      filled with the area names above and with language names the platform already localises.
+    -->
     <string name="settings_legacy_pairing">Legacy-paring</string>
     <string name="settings_legacy_pairing_summary">Skriv inn paringskoden i en dialogboks i stedet
         for i en varsling</string>
@@ -709,6 +719,7 @@
     <string name="watchdog_shizuku_crashed_action_turn_off_alerts">Slå av varsler</string>
     <string name="watchdog_shizuku_recovered_title">Shizuku kjører igjen</string>
     <string name="watchdog_shizuku_recovered_text">Vakthund startet det igjen etter at det stoppet av seg selv.</string>
+    <string name="watchdog_given_up_action_start">Begynn</string>
     <!-- Misc -->
     <string name="error">Feil</string>
     <string name="off">Av</string>
@@ -853,4 +864,18 @@
     <string name="app_info_launcher">Visning av Launcher</string>
     <string name="app_info_yes">Ja</string>
     <string name="app_info_no">Nei</string>
+    <string name="files_root_app_data">Data</string>
+    <string name="files_root_system">Systemadministrasjon</string>
+    <string name="files_root_root">Rot</string>
+    <string name="files_sort">Sorter</string>
+    <string name="files_selected_count">%1$d valgt</string>
+    <string name="files_action_select_all">Velg alle</string>
+    <string name="files_action_rename">Omdøp</string>
+    <string name="files_action_copy">Kopier</string>
+    <string name="files_action_delete">Slett</string>
+    <string name="files_field_name">Navn</string>
+    <string name="install_details_version">Versjon</string>
+    <string name="install_details_target">Target SDK</string>
+    <string name="install_details_installed">Installert</string>
+    <string name="install_location_auto">Utvikleralternativer</string>
 </resources>
