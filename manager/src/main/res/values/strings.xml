@@ -985,4 +985,83 @@
     <string name="files_working_compressing">Compressing</string>
     <string name="files_working_extracting">Extracting</string>
 
+<string name="tab_install">App installer</string>
+<string name="install_no_file">No package chosen</string>
+<string name="install_choose">Choose</string>
+<string name="install_choose_hint">APK, APKS, or XAPK file</string>
+<string name="install_action">Install</string>
+<string name="install_running">Installing\u2026</string>
+<string name="install_done">Installed.</string>
+
+<string name="install_options_heading">Install options</string>
+
+<string name="install_instant">Install as an instant app</string>
+<string name="install_instant_desc">Runs without installing the full app or adding it to the launcher.</string>
+
+<string name="install_rollback">Keep a rollback</string>
+<string name="install_rollback_desc">Keep the previous version so you can restore it later.</string>
+
+<string name="install_ignore_dexopt">Ignore the dexopt profile</string>
+<string name="install_ignore_dexopt_desc">Do not use the app's profile when optimizing it.</string>
+
+<string name="install_dexopt">Dexopt</string>
+<string name="install_dexopt_default">Platform default</string>
+<string name="install_dexopt_verify">verify</string>
+<string name="install_dexopt_quicken">quicken</string>
+<string name="install_dexopt_speed_profile">speed-profile</string>
+<string name="install_dexopt_speed">speed</string>
+<string name="install_dexopt_everything">everything</string>
+
+<string name="install_referrer">Referrer</string>
+<string name="install_referrer_desc">The URI that tells the app where the install came from.</string>
+
+<string name="install_details_reading">Reading the package\u2026</string>
+<string name="install_details_unreadable">This file is not a valid app package.</string>
+<string name="install_details_version">Version</string>
+<string name="install_details_target">Target SDK</string>
+<string name="install_details_permissions">Permissions (%1$d)</string>
+<string name="install_details_installed">Installed</string>
+<string name="install_details_not_installed">Not installed</string>
+<string name="install_details_not_installed_note">There is no installed app to replace.</string>
+<string name="install_details_update">Newer than the installed version.</string>
+<string name="install_details_downgrade">Older than the installed %1$s \u2014 allow a downgrade.</string>
+<string name="install_details_same">Same version as the installed app.</string>
+
+<string name="install_option_unsupported">Not supported on this Android version</string>
+<string name="install_failed">Failed: %1$s</string>
+<string name="install_could_not_read">Could not read that file.</string>
+
+<string name="install_replace">Replace the installed app</string>
+<string name="install_replace_desc">Keep its data and update it.</string>
+
+<string name="install_downgrade">Allow a downgrade</string>
+<string name="install_downgrade_desc">Install an older version over a newer one.</string>
+
+<string name="install_grant_all">Grant every permission</string>
+<string name="install_grant_all_desc">Grant all permissions the app requests during install.</string>
+
+<string name="install_allow_test">Allow test packages</string>
+<string name="install_allow_test_desc">Allow apps marked as test or debug builds.</string>
+
+<string name="install_keep_running">Do not kill the app</string>
+<string name="install_keep_running_desc">Keep the app running while it is replaced.</string>
+
+<string name="install_skip_verification">Skip verification</string>
+<string name="install_skip_verification_desc">Skip the package verification check.</string>
+
+<string name="install_bypass_sdk">Bypass the target SDK block</string>
+<string name="install_bypass_sdk_desc">Allow apps that target an Android version too old to install normally.</string>
+
+<string name="install_user">Install for</string>
+<string name="install_user_current">This user</string>
+<string name="install_user_all">All users</string>
+
+<string name="install_location">Where</string>
+<string name="install_location_auto">Automatic</string>
+<string name="install_location_internal">Internal storage</string>
+<string name="install_location_shared">Shared storage</string>
+
+<string name="install_spoof_source">Spoof install source</string>
+<string name="install_spoof_source_desc">The package Android is told installed this app.</string>
+
 </resources>

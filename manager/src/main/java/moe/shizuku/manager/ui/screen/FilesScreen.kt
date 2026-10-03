@@ -83,6 +83,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import moe.shizuku.manager.BuildConfig
 import moe.shizuku.manager.R
+import moe.shizuku.manager.files.FileKind
 import moe.shizuku.manager.files.FileOperations
 import moe.shizuku.manager.files.PrivilegedFiles
 import moe.shizuku.manager.files.icon
@@ -165,6 +166,11 @@ fun FilesScreen(bottomPadding: Dp, onBack: () -> Unit) {
     var progress by remember { mutableStateOf<FileOperations.Progress?>(null) }
     val cancelling = remember { AtomicBoolean(false) }
 
+    // Installing is the one thing a package is for, so tapping one goes to the installer rather
+    // than through "open with" - which would offer a package installer the system has to ask
+    // about, where this runs the command itself.
+    var installing by remember { mutableStateOf<String?>(null) }
+
     val selecting = selected.isNotEmpty()
 
     /**
@@ -221,6 +227,20 @@ fun FilesScreen(bottomPadding: Dp, onBack: () -> Unit) {
             compareByDescending<PrivilegedFiles.Entry> { it.directory }
                 .then(if (descending) by.reversed() else by)
         )
+    }
+
+    installing?.let { file ->
+        InstallerScreen(
+            path = file,
+            bottomPadding = bottomPadding,
+            onBack = {
+                installing = null
+                // An install can replace the package under it, so the listing is read again on
+                // the way back rather than left as it was.
+                version++
+            }
+        )
+        return
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -505,9 +525,14 @@ fun FilesScreen(bottomPadding: Dp, onBack: () -> Unit) {
                             // The app's own back arrow rather than an up arrow: this row and the
                             // button in the bar do the same thing one level apart, and they read
                             // as the same control when they are drawn as the same mark.
+                            //
+                            // Where it goes is not written beside it: the path at the top of the
+                            // screen is where you are, and its last part is the folder this row
+                            // leaves for - saying it twice is what made this row read as a second
+                            // heading rather than as a way out.
                             icon = Icons.AutoMirrored.Filled.ArrowBack,
                             name = "..",
-                            detail = parent,
+                            detail = null,
                             selected = false,
                             selecting = selecting,
                             onClick = { path = parent },
@@ -528,6 +553,7 @@ fun FilesScreen(bottomPadding: Dp, onBack: () -> Unit) {
                             when {
                                 selecting -> selected = toggle(selected, full)
                                 entry.directory -> path = full
+                                kindOf(entry.name, false) == FileKind.PACKAGE -> installing = full
                                 !openWith(context, full, entry.name) ->
                                     preview = Preview.Loading(full)
                             }

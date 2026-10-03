@@ -92,6 +92,7 @@ import moe.shizuku.manager.ui.screen.FilesScreen
 import moe.shizuku.manager.ui.screen.ForceDarkScreen
 import moe.shizuku.manager.ui.screen.HomeScreen
 import moe.shizuku.manager.ui.screen.AppToggleFeature
+import moe.shizuku.manager.ui.screen.InstallerScreen
 import moe.shizuku.manager.ui.screen.IntentsScreen
 import moe.shizuku.manager.ui.screen.DeviceInfoScreen
 import moe.shizuku.manager.ui.screen.LabsScreen
@@ -140,6 +141,9 @@ enum class Detail(
 
     /** The filesystem, as the shell sees it: Android/data and what an app cannot open itself. */
     FILES,
+
+    /** Installing a package with the flags a terminal would need a cable for. */
+    INSTALL,
     STEALTH,
     TERMINAL,
     INTENTS,
@@ -297,6 +301,12 @@ fun ShizukuApp() {
                             )
 
                             Detail.FILES -> FilesScreen(
+                                bottomPadding = 0.dp,
+                                onBack = { detail = null }
+                            )
+
+                            Detail.INSTALL -> InstallerScreen(
+                                path = null,
                                 bottomPadding = 0.dp,
                                 onBack = { detail = null }
                             )
