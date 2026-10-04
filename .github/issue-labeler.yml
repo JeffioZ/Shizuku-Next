@@ -22,7 +22,9 @@ mode-manual:
   - '### Mode\s+manual\s+### '
 
 # The description is the one field of the form nothing requires, so an issue can arrive with it
-# empty - and then the header is followed straight away by the next one. The end of the body
-# counts as well, for a report that left every optional field alone.
+# empty - and GitHub writes an empty field not as nothing but as `_No response_`, which is what
+# this has to look for: matching the header being followed straight away by the next one never
+# fired on a real issue, so the label went missing on exactly the reports it was for. The second
+# alternative is a body that ends at that header.
 needs-info:
-  - '### Issue Description\s*(?:### |$)'
+  - '### Issue Description\s*(?:_No response_|### |$)'
