@@ -33,6 +33,7 @@ import moe.shizuku.manager.R
 import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.manage.Hiding
 import moe.shizuku.manager.service.HidingWatchService
+import moe.shizuku.manager.start.PhantomProcessKiller
 import moe.shizuku.manager.start.StartMethodGuard
 import moe.shizuku.manager.start.hasPermission
 import moe.shizuku.manager.start.hasWriteSecureSettings
@@ -182,6 +183,14 @@ internal fun buildDiagnostics(
                 )
         )
         appendLine("${context.getString(R.string.diagnostics_hiding)}: ${onOff(hidingActive)}")
+        // Whether the platform is allowed to reap the processes an app started. It belongs in
+        // this block because it is the one setting that decides whether a server started at boot
+        // survives, and a report that arrives without it cannot be read: "the server dies after a
+        // few seconds" is a different problem depending on this line.
+        appendLine(
+            "${context.getString(R.string.diagnostics_phantom)}: " +
+                onOff(!PhantomProcessKiller.isMonitorDisabled(context))
+        )
         appendLine(
             "${context.getString(R.string.diagnostics_root)}: " +
                 context.getString(

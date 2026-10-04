@@ -38,6 +38,7 @@
     <string name="diagnostics_started_with">Started with</string>
     <string name="diagnostics_default">Default method</string>
     <string name="diagnostics_hiding">Hiding</string>
+    <string name="diagnostics_phantom">Process killer</string>
     <string name="diagnostics_root">Root</string>
     <string name="diagnostics_granted">granted</string>
     <string name="diagnostics_missing">missing</string>
