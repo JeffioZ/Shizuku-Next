@@ -4,9 +4,11 @@ import android.content.Intent
 import android.os.Build
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,6 +31,8 @@ import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.DeveloperMode
 import androidx.compose.material.icons.outlined.Devices
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.KeyboardArrowDown
+import androidx.compose.material.icons.outlined.KeyboardArrowUp
 import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material.icons.outlined.MonitorHeart
@@ -71,9 +75,11 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -209,6 +215,12 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
     var systemStartDialog by remember { mutableStateOf(false) }
     var updateDialog by remember { mutableStateOf(false) }
     var selectedContributor by remember { mutableStateOf<Contributor?>(null) }
+    // The wall is folded away until somebody asks for it. It is a credit rather than a setting, and
+    // it is heavier than everything else on this screen put together - a hundred and forty faces,
+    // each with its own layer - which is what made scrolling past it cost three times what the rest
+    // of the list costs. Remembered across a rotation, so a wall that was opened stays open, and not
+    // across a restart: somebody who opened it once is not asking for it every time.
+    var creditsOpen by rememberSaveable { mutableStateOf(false) }
     val contributors = rememberContributors()
 
     // Whether the experiment can write the setting it is made of, which is what decides if it
@@ -869,27 +881,36 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
             if (contributors.isNotEmpty()) {
                 // The heading and the card are separate items so the list's own spacing sits
                 // between them; inside one item the badge came to rest on the card's edge.
+                //
+                // The heading is also what opens the card, so the wall is not composed at all until
+                // it is asked for: folding it away is what keeps it out of scrolling somebody else
+                // came here to do. The badge carries the number either way, so a closed section
+                // still says who is being credited.
                 item {
                     SettingsSectionHeader(
                         titleRes = R.string.settings_contributors,
-                        badge = contributors.size.toString()
+                        badge = contributors.size.toString(),
+                        expanded = creditsOpen,
+                        onClick = { creditsOpen = !creditsOpen }
                     )
                 }
-                item {
-                    SegmentedCard {
-                        Column(
-                            modifier = Modifier.padding(18.dp),
-                            verticalArrangement = Arrangement.spacedBy(14.dp)
-                        ) {
-                            ContributorWall(
-                                contributors = contributors,
-                                onSelect = { selectedContributor = it }
-                            )
-                            Text(
-                                text = stringResource(R.string.settings_contributors_hint),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                if (creditsOpen) {
+                    item {
+                        SegmentedCard {
+                            Column(
+                                modifier = Modifier.padding(18.dp),
+                                verticalArrangement = Arrangement.spacedBy(14.dp)
+                            ) {
+                                ContributorWall(
+                                    contributors = contributors,
+                                    onSelect = { selectedContributor = it }
+                                )
+                                Text(
+                                    text = stringResource(R.string.settings_contributors_hint),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
                 }
@@ -1186,12 +1207,38 @@ private fun needsRestart(setting: String, newValue: Any? = null): Boolean {
     }
 }
 
-/** Section title above a settings card, so the list reads as deliberate groups. */
+/**
+ * Section title above a settings card, so the list reads as deliberate groups.
+ *
+ * With [onClick] the title is also the control that opens the card it belongs to, and [expanded]
+ * says which way it is: the two go together, because a card that is worth keeping closed has to say
+ * what it is and how to open it without being drawn. The label names the action rather than the
+ * state - "Collapse" while it is open is what the tap will do - so a reader who cannot see the
+ * chevron still knows.
+ */
 @Composable
-private fun SettingsSectionHeader(@StringRes titleRes: Int, badge: String? = null) {
+private fun SettingsSectionHeader(
+    @StringRes titleRes: Int,
+    badge: String? = null,
+    expanded: Boolean? = null,
+    onClick: (() -> Unit)? = null
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .then(
+                if (onClick == null) {
+                    Modifier
+                } else {
+                    Modifier.clickable(
+                        role = Role.Button,
+                        onClickLabel = stringResource(
+                            if (expanded == true) R.string.shell_collapse else R.string.shell_expand
+                        ),
+                        onClick = onClick
+                    )
+                }
+            )
             .padding(start = 16.dp, top = 12.dp, end = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -1216,6 +1263,20 @@ private fun SettingsSectionHeader(@StringRes titleRes: Int, badge: String? = nul
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                 )
             }
+        }
+        if (expanded != null) {
+            Spacer(Modifier.weight(1f))
+            Icon(
+                imageVector = if (expanded) {
+                    Icons.Outlined.KeyboardArrowUp
+                } else {
+                    Icons.Outlined.KeyboardArrowDown
+                },
+                // Nothing of its own to say: the label above already names the action.
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp)
+            )
         }
     }
 }

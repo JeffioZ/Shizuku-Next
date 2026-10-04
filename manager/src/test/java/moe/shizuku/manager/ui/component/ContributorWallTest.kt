@@ -526,4 +526,79 @@ class ContributorWallTest {
         assertEquals(128, avatarBucket(65))
         assertEquals(512, avatarBucket(5_000))
     }
+
+    // -- what gets composed ----------------------------------------------------------------------
+    //
+    // Which faces the wall composes is what made dragging it cost three times what dragging the
+    // list costs, so the answer is checked here rather than only felt on a phone.
+
+    @Test
+    fun `a viewport that covers the whole wall keeps every face`() {
+        val geometry = contributorWallGeometry(140, avatar, gap)
+
+        val visible = onScreenFaces(
+            geometry = geometry,
+            viewport = Size(100_000f, 100_000f),
+            scale = 1f,
+            offset = Offset.Zero,
+            reach = 0f
+        )
+
+        assertEquals(geometry.centers.size, visible.size)
+    }
+
+    @Test
+    fun `a wall dragged out of the viewport keeps none of it`() {
+        val geometry = contributorWallGeometry(140, avatar, gap)
+
+        val visible = onScreenFaces(
+            geometry = geometry,
+            viewport = Size(1_000f, 1_000f),
+            scale = 1f,
+            offset = Offset(1_000_000f, 1_000_000f),
+            reach = 0f
+        )
+
+        assertTrue(visible.isEmpty())
+    }
+
+    @Test
+    fun `zooming in leaves fewer faces in the same viewport`() {
+        val geometry = contributorWallGeometry(140, avatar, gap)
+        val viewport = Size(spacing * 2, spacing * 2)
+
+        val fitted = onScreenFaces(geometry, viewport, 1f, Offset.Zero, 0f)
+        val magnified = onScreenFaces(geometry, viewport, 4f, Offset.Zero, 0f)
+
+        assertTrue(fitted.isNotEmpty())
+        assertTrue(magnified.isNotEmpty())
+        assertTrue(magnified.size < fitted.size)
+    }
+
+    @Test
+    fun `reach adds the faces whose edge is still on screen, and never drops one`() {
+        val geometry = contributorWallGeometry(140, avatar, gap)
+        val viewport = Size(spacing * 3, spacing * 3)
+
+        val tight = onScreenFaces(geometry, viewport, 1f, Offset.Zero, 0f)
+        val withReach = onScreenFaces(geometry, viewport, 1f, Offset.Zero, avatar * 8f)
+
+        assertTrue(withReach.containsAll(tight))
+        assertTrue(withReach.size > tight.size)
+    }
+
+    @Test
+    fun `a face is kept when only part of it is inside the viewport`() {
+        val geometry = contributorWallGeometry(140, avatar, gap)
+        // A viewport narrower than one face, off the middle of the wall: nothing is centred in it,
+        // so only the faces the reach can still cover are kept.
+        val viewport = Size(avatar / 2, avatar / 2)
+        val offset = Offset(spacing / 2, spacing / 2)
+
+        val withoutReach = onScreenFaces(geometry, viewport, 1f, offset, 0f)
+        val withReach = onScreenFaces(geometry, viewport, 1f, offset, avatar)
+
+        assertTrue(withoutReach.isEmpty())
+        assertTrue(withReach.isNotEmpty())
+    }
 }

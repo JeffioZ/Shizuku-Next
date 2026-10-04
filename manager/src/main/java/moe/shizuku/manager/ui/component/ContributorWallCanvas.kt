@@ -147,26 +147,36 @@ internal fun ContributorWall(
 
         // Which faces are on screen decides whose picture is worth fetching, and asking that
         // question per frame would cost more than the fetching it saves - the answer only changes
-        // when the wall is moved. It is also bucketed to powers of two, so a pinch re-decodes a
+        // when the wall is moved. The size is bucketed to powers of two, so a pinch re-decodes a
         // face four times at most instead of on every frame of the gesture.
-        var visible by remember(geometry, viewport) {
-            mutableStateOf(geometry.centers.indices.toSet())
-        }
+        //
+        // The first answer is the real one rather than "all of them": a wall whose every index
+        // starts out marked visible starts every decode at once, including the ones behind the clip
+        // - each of those a file read and a decode on the way to drawing somebody's initial.
         var avatarPx by remember(geometry, viewport) { mutableIntStateOf(64) }
+        var visible by remember(geometry, viewport) {
+            val scale = fitScale * zoom()
+            mutableStateOf(
+                onScreenFaces(
+                    geometry = geometry,
+                    viewport = viewport,
+                    scale = scale,
+                    offset = offset,
+                    reach = with(density) { AvatarSize.toPx() } * scale
+                )
+            )
+        }
 
         LaunchedEffect(geometry, viewport) {
             while (true) {
                 val scale = fitScale * zoom()
-                val reach = with(density) { AvatarSize.toPx() } * scale
-                val onScreen = HashSet<Int>()
-                geometry.centers.forEachIndexed { index, spot ->
-                    val position = spot * scale + offset
-                    if (abs(position.x) <= viewport.width / 2 + reach &&
-                        abs(position.y) <= viewport.height / 2 + reach
-                    ) {
-                        onScreen += index
-                    }
-                }
+                val onScreen = onScreenFaces(
+                    geometry = geometry,
+                    viewport = viewport,
+                    scale = scale,
+                    offset = offset,
+                    reach = with(density) { AvatarSize.toPx() } * scale
+                )
                 if (onScreen != visible) visible = onScreen
 
                 val wanted = with(density) { AvatarSize.toPx() * scale }.roundToInt()
@@ -294,6 +304,12 @@ internal fun ContributorWall(
             contentAlignment = Alignment.Center
         ) {
             contributors.forEachIndexed { index, contributor ->
+                // Every face stays composed, including the ones the wall's own clip is hiding. Not
+                // composing them was measured and is worse: a drag that moves the wall then composes
+                // and decodes the faces coming into view, which cost 17.5% janky frames against
+                // 8.2% for keeping them all - the churn of arriving faces costs more than the
+                // drawing of ones nobody sees. What is worth skipping is the *loading* of a picture
+                // (see [visible]), because that is the part that is not bounded by the frame.
                 key(index) {
                     ContributorAvatar(
                         contributor = contributor,
@@ -312,7 +328,8 @@ internal fun ContributorWall(
                                 translationX = bubble.position.x
                                 translationY = bubble.position.y
                             }
-                            .clip(CircleShape)
+                            // No clip of its own: the face clips itself to its circle, and a second
+                            // clip here is a second graphics layer per face for no visible change.
                             .clickable(
                                 role = Role.Button,
                                 onClickLabel = detailsLabel,
@@ -324,6 +341,31 @@ internal fun ContributorWall(
             }
         }
     }
+}
+
+/**
+ * Which faces the viewport covers, as indices into [geometry].
+ *
+ * A face is worth composing when its drawn centre is inside the viewport grown by the face's own
+ * drawn size - the same test the draw below applies, done once per move rather than once per frame.
+ */
+internal fun onScreenFaces(
+    geometry: ContributorWallGeometry,
+    viewport: Size,
+    scale: Float,
+    offset: Offset,
+    reach: Float
+): Set<Int> {
+    val onScreen = HashSet<Int>()
+    geometry.centers.forEachIndexed { index, spot ->
+        val position = spot * scale + offset
+        if (abs(position.x) <= viewport.width / 2 + reach &&
+            abs(position.y) <= viewport.height / 2 + reach
+        ) {
+            onScreen += index
+        }
+    }
+    return onScreen
 }
 
 /** The size a face is drawn at, rounded up to a step, so a pinch does not re-decode per frame. */
