@@ -15,7 +15,11 @@ on:
 
 jobs:
   merge:
-    if: github.head_ref == 'l10n'
+    # The download step opens its own pull request and merges it in the same run, so this is for
+    # the ones a person opens. The bot's arrival is not hypothetical: a run for one failed with
+    # `github-actions[bot]` as its actor, and stayed red after that pull request had been merged
+    # and its branch deleted, which is a red mark against nothing at all.
+    if: github.head_ref == 'l10n' && github.event.pull_request.user.login != 'github-actions[bot]'
     runs-on: ubuntu-latest
     permissions:
       contents: write
