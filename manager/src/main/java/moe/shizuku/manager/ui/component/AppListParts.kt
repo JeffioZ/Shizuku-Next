@@ -49,6 +49,7 @@ import androidx.core.graphics.drawable.toBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import moe.shizuku.manager.R
+import moe.shizuku.manager.utils.UserHandleCompat
 
 /**
  * The pictures the two app screens share: a filter chip that carries its own count, the
@@ -309,6 +310,41 @@ fun StatusChip(
             .background(container)
             .padding(horizontal = ChipPadding, vertical = 3.dp)
     )
+}
+
+/**
+ * The key a row in an app list is identified by.
+ *
+ * The package name on its own is not one. Every list here is built from the packages of *all*
+ * users - a work profile, a Secure Folder, an app like Island - so the same name can arrive
+ * twice, and a LazyColumn handed two equal keys throws before it draws a single row. That is
+ * what a phone with a work profile did to the Apps tab, with the crash naming one of its own
+ * packages.
+ *
+ * The uid is the platform's own answer to "which app, for which user": one application id under
+ * one user id, and different for every copy of an app on the device.
+ */
+fun appRowKey(packageName: String, uid: Int): String = "$packageName#$uid"
+
+/** The key for a row, taken from the package record itself. */
+fun PackageInfo.rowKey(): String = appRowKey(packageName, applicationInfo?.uid ?: 0)
+
+/**
+ * The user a row belongs to, when it is not the one holding the phone, and null when it is.
+ *
+ * Two rows of the same app are two different grants - one for the app in the work profile and
+ * one for the app outside it - so a list that spans users has to say which is which, or it is
+ * two identical rows with switches that mean different things.
+ */
+fun otherUserId(uid: Int, myUserId: Int): Int? =
+    UserHandleCompat.getUserId(uid).takeIf { it != myUserId }
+
+/** The package name, with the user it belongs to when that is not the reader's own. */
+@Composable
+fun PackageInfo.packageLine(): String {
+    val other = otherUserId(applicationInfo?.uid ?: 0, UserHandleCompat.myUserId())
+    return if (other == null) packageName else "$packageName  \u00b7  " +
+        stringResource(R.string.app_row_user, other)
 }
 
 /**

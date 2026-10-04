@@ -63,6 +63,7 @@ import moe.shizuku.manager.ui.component.PillButtonQuiet
 import moe.shizuku.manager.R
 import moe.shizuku.manager.manage.Activities
 import moe.shizuku.manager.ui.component.AppIcon
+import moe.shizuku.manager.ui.component.rowKey
 import moe.shizuku.manager.ui.component.CenteredMessage
 import moe.shizuku.manager.manage.InstalledPackages
 import moe.shizuku.manager.ui.component.ActivityStatusLabels
@@ -393,7 +394,7 @@ fun ActivitiesScreen(bottomPadding: Dp, onBack: () -> Unit) {
                     ),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(shownApps, key = { it.packageName }) { pi ->
+                    items(shownApps, key = { it.rowKey() }) { pi ->
                         SegmentedCard {
                             ListItem(
                                 modifier = Modifier.clickable {

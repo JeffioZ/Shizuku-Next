@@ -79,6 +79,8 @@ import moe.shizuku.manager.manage.InstalledPackages
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter
 import moe.shizuku.manager.ui.component.AppFilterChip
 import moe.shizuku.manager.ui.component.AppIcon
+import moe.shizuku.manager.ui.component.packageLine
+import moe.shizuku.manager.ui.component.rowKey
 import moe.shizuku.manager.ui.component.AppStatusChips
 import moe.shizuku.manager.ui.component.CenteredMessage
 import moe.shizuku.manager.ui.component.ChipEmphasis
@@ -503,7 +505,7 @@ fun AppsScreen(
             contentPadding = PaddingValues(start = 16.dp, top = 4.dp, end = 16.dp, bottom = bottomPadding),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(shown, key = { it.packageName }) { pi ->
+            items(shown, key = { it.rowKey() }) { pi ->
                 val uid = pi.applicationInfo!!.uid
                 val granted = remember(pi.packageName, version) {
                     runCatching { AuthorizationManager.granted(pi.packageName, uid) }.getOrDefault(false)
@@ -549,7 +551,7 @@ fun AppsScreen(
                     // The package name is the whole line and ellipsises, because the chip and
                     // the switch now share the row's right side.
                     supportingContent = {
-                        Text(pi.packageName, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(pi.packageLine(), maxLines = 1, overflow = TextOverflow.Ellipsis)
                     },
                     trailingContent = {
                         // One Row, so the chip and the control sit beside each other rather than

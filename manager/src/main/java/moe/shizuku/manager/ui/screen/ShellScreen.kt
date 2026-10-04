@@ -119,6 +119,7 @@ import moe.shizuku.manager.shell.ShellBackend
 import moe.shizuku.manager.shell.LibraryCommand
 import moe.shizuku.manager.shell.ShellHistory
 import moe.shizuku.manager.shell.ShellHostCommands
+import moe.shizuku.manager.ui.component.rowKey
 import moe.shizuku.manager.ui.component.stripHtmlTags
 import moe.shizuku.manager.shell.ShellBookmarks
 import moe.shizuku.manager.shell.ShellContinuity
@@ -1354,7 +1355,7 @@ private fun PackagePickerDialog(
                     )
 
                     else -> LazyColumn(modifier = Modifier.heightIn(max = 420.dp)) {
-                        items(shown, key = { it.packageName }) { pi ->
+                        items(shown, key = { it.rowKey() }) { pi ->
                             ListItem(
                                 modifier = Modifier.clickable { onPick(pi.packageName) },
                                 leadingContent = { AppIcon(pi) },

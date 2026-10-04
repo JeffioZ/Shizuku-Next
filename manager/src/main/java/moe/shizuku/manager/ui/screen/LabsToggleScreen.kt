@@ -76,6 +76,7 @@ import moe.shizuku.manager.manage.Signal
 import moe.shizuku.manager.service.HidingWatchService
 import moe.shizuku.manager.ui.component.AppFilterChip
 import moe.shizuku.manager.ui.component.AppIcon
+import moe.shizuku.manager.ui.component.rowKey
 import moe.shizuku.manager.ui.component.AppStatusChips
 import moe.shizuku.manager.ui.component.CenteredMessage
 import moe.shizuku.manager.ui.component.ChoiceRow
@@ -352,7 +353,7 @@ fun LabsToggleScreen(
                         candidates.mapNotNull { pkg ->
                             apps.firstOrNull { it.packageName == pkg }
                         },
-                        key = { it.packageName }
+                        key = { it.rowKey() }
                     ) { pi ->
                         // The same row the rest of the app's single-choice lists use, with the
                         // app's icon after the radio: which app is chosen is a choice like any
@@ -611,7 +612,7 @@ fun LabsToggleScreen(
                     }
                 }
 
-                items(shown, key = { it.packageName }) { pi ->
+                items(shown, key = { it.rowKey() }) { pi ->
                     val isBlocked = pi.packageName in blocked
                     SegmentedCard {
                         ListItem(

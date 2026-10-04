@@ -54,6 +54,7 @@ import moe.shizuku.manager.service.HidingWatchService
 import moe.shizuku.manager.ui.component.AppFilterChip
 import moe.shizuku.manager.ui.component.AppIcon
 import moe.shizuku.manager.ui.component.AppStatusChips
+import moe.shizuku.manager.ui.component.rowKey
 import moe.shizuku.manager.ui.component.CenteredMessage
 import moe.shizuku.manager.ui.component.ExpressiveSwitch
 import moe.shizuku.manager.ui.component.SegmentedCard
@@ -299,7 +300,7 @@ fun ForceDarkScreen(bottomPadding: Dp, onBack: () -> Unit) {
                 ),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(shown, key = { it.packageName }) { pi ->
+                items(shown, key = { it.rowKey() }) { pi ->
                     val isForced = pi.packageName in forced
                     SegmentedCard {
                         ListItem(

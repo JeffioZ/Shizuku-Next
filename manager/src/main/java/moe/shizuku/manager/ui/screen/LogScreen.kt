@@ -83,6 +83,8 @@ import moe.shizuku.manager.manage.InstalledPackages
 import moe.shizuku.manager.manage.Logcat
 import moe.shizuku.manager.ui.component.AppFilterChip
 import moe.shizuku.manager.ui.component.CenteredMessage
+import moe.shizuku.manager.ui.component.packageLine
+import moe.shizuku.manager.ui.component.rowKey
 import moe.shizuku.manager.ui.component.appLabel
 import moe.shizuku.manager.utils.Diag
 import moe.shizuku.manager.utils.ShizukuStateMachine
@@ -648,7 +650,7 @@ private fun AppPickerDialog(onDismiss: () -> Unit, onPick: (Logcat.Scope.App) ->
             Column {
                 SearchField(query, stringResource(R.string.log_capture_choose_hint)) { query = it }
                 LazyColumn(modifier = Modifier.height(420.dp)) {
-                    items(shown, key = { it.packageName }) { pi ->
+                    items(shown, key = { it.rowKey() }) { pi ->
                         ListItem(
                             modifier = Modifier.clickable {
                                 onPick(
@@ -660,7 +662,7 @@ private fun AppPickerDialog(onDismiss: () -> Unit, onPick: (Logcat.Scope.App) ->
                                 )
                             },
                             headlineContent = { Text(appLabel(pm, pi), maxLines = 1) },
-                            supportingContent = { Text(pi.packageName, maxLines = 1) },
+                            supportingContent = { Text(pi.packageLine(), maxLines = 1) },
                             colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                         )
                     }

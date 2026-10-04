@@ -811,6 +811,7 @@
     <string name="manage_empty">No apps found.</string>
     <string name="manage_status_system">System</string>
     <string name="manage_status_user">User</string>
+    <string name="app_row_user">user %1$d</string>
     <string name="manage_status_removed">Removed, data kept</string>
     <string name="manage_status_disabled">Disabled</string>
     <string name="manage_status_suspended">Suspended</string>

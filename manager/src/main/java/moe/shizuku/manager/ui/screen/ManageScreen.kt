@@ -63,6 +63,8 @@ import moe.shizuku.manager.R
 import moe.shizuku.manager.manage.InstalledPackages
 import moe.shizuku.manager.ui.component.AppFilterChip
 import moe.shizuku.manager.ui.component.appLabel
+import moe.shizuku.manager.ui.component.packageLine
+import moe.shizuku.manager.ui.component.rowKey
 import moe.shizuku.manager.ui.component.AppIcon
 import moe.shizuku.manager.ui.component.AppStatusChips
 import moe.shizuku.manager.ui.component.CenteredMessage
@@ -343,7 +345,7 @@ fun ManageScreen(
                 contentPadding = PaddingValues(start = 16.dp, top = 4.dp, end = 16.dp, bottom = bottomPadding),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(shown, key = { it.packageName }) { pi ->
+                items(shown, key = { it.rowKey() }) { pi ->
                     val removed = pi.packageName in removedPackages
 
                     SegmentedCard {
@@ -358,7 +360,7 @@ fun ManageScreen(
                             // The package name is the whole line, and it ellipsises rather than
                             // being cut, because nothing follows it any more.
                             supportingContent = {
-                                Text(pi.packageName, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(pi.packageLine(), maxLines = 1, overflow = TextOverflow.Ellipsis)
                             },
                             trailingContent = {
                                 Row(
