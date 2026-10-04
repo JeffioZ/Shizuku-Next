@@ -184,7 +184,18 @@ jobs:
           # From the commit before HEAD: on a re-run this version's tag already points at
           # HEAD, and describing HEAD would return the release we are writing notes for,
           # leaving the range empty.
-          PREV=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || true)
+          #
+          # A pre-release describes what it added to the release before it, of any kind. A stable
+          # one describes everything since the last stable, because that is what somebody moving
+          # from one stable to the next is getting - the fixes that already went out in the betas
+          # in between included. So the betas are excluded from that range, and only for the
+          # stable run: a beta excluding them would repeat everything the beta before it had
+          # already said.
+          if [ "${{ inputs.prerelease }}" = "true" ]; then
+            PREV=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || true)
+          else
+            PREV=$(git describe --tags --abbrev=0 --exclude '*-beta*' HEAD^ 2>/dev/null || true)
+          fi
           echo "previous tag: ${PREV:-none}"
           PREV="$PREV" VERSION="$VERSION" python3 - <<'PY'
           import collections, os, re, subprocess
