@@ -28,12 +28,18 @@ public class ServerLog {
     private static final String TAG = "ShizukuServerLog";
 
     /**
-     * Both of the manager's external directories, media first: it exists to be reachable from
-     * outside the app, so it is the one another process is allowed to write.
+     * Where `starter.log` lives, media first: it exists to be reachable from outside the app, so
+     * it is the one another process is allowed to write.
+     *
+     * Templates rather than bare directories, because the two are not the same shape: the data
+     * one keeps the file in `files`, which is the directory the starter writes to. Without that
+     * segment this looked for a `starter.log` beside the package directory, where nothing ever
+     * is, decided there was none and made one under media instead - one start's account split
+     * across two files, which is exactly what the lookup below exists to prevent.
      */
     private static final String[] DIRECTORIES = {
-            "/storage/emulated/0/Android/media/",
-            "/storage/emulated/0/Android/data/",
+            "/storage/emulated/0/Android/media/%s",
+            "/storage/emulated/0/Android/data/%s/files",
     };
 
     private static File file;
@@ -72,14 +78,14 @@ public class ServerLog {
         // Whichever exists is the one the starter wrote, and appending to it keeps one
         // account of the start in one place.
         for (String directory : DIRECTORIES) {
-            File existing = new File(directory + pkg, "starter.log");
+            File existing = new File(String.format(Locale.US, directory, pkg), "starter.log");
             if (existing.isFile()) {
                 file = existing;
                 return file;
             }
         }
 
-        File media = new File(DIRECTORIES[0] + pkg, "starter.log");
+        File media = new File(String.format(Locale.US, DIRECTORIES[0], pkg), "starter.log");
         File parent = media.getParentFile();
         if (parent != null) {
             //noinspection ResultOfMethodCallIgnored
