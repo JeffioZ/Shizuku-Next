@@ -294,7 +294,8 @@ private fun activeFeatures(context: Context): Set<Detail> {
                     if (Hiding.isSignalEnabled(feature.signal)) Hiding.appsFor(feature.signal).size
                     else 0
 
-                feature == AppToggleFeature.AUTOSTART -> PackageTools.readOpDenied(feature.op).size
+                feature == AppToggleFeature.AUTOSTART ->
+                    PackageTools.readOpDeniedInstalled(feature.op).size
                 else -> PackageTools.readFirewallBlocked(context).size
             }
 

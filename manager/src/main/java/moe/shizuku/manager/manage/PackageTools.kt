@@ -561,12 +561,51 @@ object PackageTools {
      * apps instead of six hundred of them.
      */
     fun readOpDenied(op: String): Set<String> =
-        runShellCommand("cmd appops query-op $op deny")
+        parseOpDenied(runShellCommand("cmd appops query-op $op deny"))
+
+    /**
+     * The names `cmd appops query-op` printed, and only the ones that are names.
+     *
+     * A line that is not a package name is not a package. `query-op` is asked for an op by the
+     * name the framework gives it, and a name this platform does not have makes the command
+     * print something else entirely - which the screen then counted as one blocked app, with no
+     * row to show for it. A package name never contains a space and never starts with a dash, so
+     * anything that does is the command talking rather than an app.
+     */
+    internal fun parseOpDenied(output: String?): Set<String> =
+        output
             ?.lineSequence()
             ?.map { it.trim() }
+            ?.filter { it.isNotEmpty() && it.none { c -> c.isWhitespace() } && !it.startsWith("-") }
+            ?.toSet()
+            ?: emptySet()
+
+    /**
+     * The installed packages, by name, in one command.
+     *
+     * For the one thing a package name read out of an app op is not allowed to be: an app that is
+     * not on the device. The op service keeps its records by uid and answers with names, and a
+     * record can outlive what it was made for - an app that has been uninstalled, a name this
+     * platform has never had. Counting those is how a screen says "1 blocked" over an empty list,
+     * and how a tile grows a dot for a feature that is doing nothing at all.
+     */
+    fun installedPackageNames(): Set<String> =
+        runShellCommand("pm list packages")
+            ?.lineSequence()
+            ?.map { it.trim().removePrefix("package:") }
             ?.filter { it.isNotEmpty() }
             ?.toSet()
             ?: emptySet()
+
+    /**
+     * The packages with [op] denied, among those the device actually has.
+     *
+     * What every count of "blocked" in the UI is built from, so that the number and the list under
+     * it are the same statement: an app that is not installed cannot be shown, cannot be unblocked
+     * from here, and is not something to claim anything about.
+     */
+    fun readOpDeniedInstalled(op: String): Set<String> =
+        readOpDenied(op) intersect installedPackageNames()
 
     /**
      * The packages this app has blocked with the platform's firewall, as far as it knows.

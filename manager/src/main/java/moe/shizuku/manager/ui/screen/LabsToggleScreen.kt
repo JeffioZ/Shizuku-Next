@@ -702,7 +702,7 @@ private suspend fun readBlocked(
     // but not about which apps asked for it to be hidden.
     feature.signal != null -> Hiding.appsFor(feature.signal)
     // One command for every app in the mode.
-    feature == AppToggleFeature.AUTOSTART -> PackageTools.readOpDenied(feature.op)
+    feature == AppToggleFeature.AUTOSTART -> PackageTools.readOpDeniedInstalled(feature.op)
     // This app's own record; the platform cannot be asked for the list.
     else -> PackageTools.readFirewallBlocked(context)
 }
