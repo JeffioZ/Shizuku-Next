@@ -1,5 +1,6 @@
 package moe.shizuku.manager.ui.screen
 
+import android.content.Context
 import android.content.Intent
 import android.os.Build
 import androidx.annotation.StringRes
@@ -971,9 +972,19 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                     closeTcpDialog = false
                     scope.launch {
                         val port = EnvironmentUtils.getAdbTcpPort()
-                        if (port > 0) AdbStarter.stopTcp(context, port)
+                        val outcome = if (port > 0) AdbStarter.stopTcp(port) else null
                         ShizukuSettings.setTcpMode(false)
                         tcpMode = false
+
+                        // Said rather than assumed: the port is not always closed, and a switch
+                        // that goes off while the port stays open has to say so.
+                        outcome?.takeIf { it != AdbStarter.CloseOutcome.CLOSED }?.let { result ->
+                            Toast.makeText(
+                                context,
+                                closePortMessage(context, result),
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
                     }
                 }) { Text(stringResource(android.R.string.ok)) }
             },
@@ -1206,6 +1217,28 @@ private fun needsRestart(setting: String, newValue: Any? = null): Boolean {
         else -> false
     }
 }
+
+/**
+ * What to say about a port that was asked to close and did not.
+ *
+ * Every answer names something the person can act on rather than the mechanism: the mode that is
+ * in the way, or the toggle the platform wants on first.
+ */
+private fun closePortMessage(context: Context, outcome: AdbStarter.CloseOutcome): String =
+    when (outcome) {
+        AdbStarter.CloseOutcome.WIRELESS_IN_USE ->
+            context.getString(R.string.settings_tcp_mode_close_wireless)
+
+        AdbStarter.CloseOutcome.USB_DEBUGGING_OFF ->
+            context.getString(R.string.settings_tcp_mode_close_usb_off)
+
+        AdbStarter.CloseOutcome.KEY_STORE -> context.getString(R.string.adb_error_key_store)
+
+        AdbStarter.CloseOutcome.NOT_LISTENING ->
+            context.getString(R.string.settings_tcp_mode_close_nothing)
+
+        else -> context.getString(R.string.adb_error_stop_tcp)
+    }
 
 /**
  * Section title above a settings card, so the list reads as deliberate groups.

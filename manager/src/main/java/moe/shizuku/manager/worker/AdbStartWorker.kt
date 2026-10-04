@@ -114,7 +114,9 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             //               debugging on is what the old USB "fallback" did, and it
             //               is what killed Shizuku on some Chinese devices when the
             //               USB mode was File Transfer and the screen went off.
-            val wirelessAlreadyEnabled = Settings.Global.getInt(cr, "adb_wifi_enabled", 0) == 1
+            // Read through the one helper rather than the setting's name again here: the port's own
+            // close asks the same question, and two spellings of it would eventually disagree.
+            val wirelessAlreadyEnabled = EnvironmentUtils.isWirelessDebuggingEnabled()
             val usbAlreadyEnabled = EnvironmentUtils.isAdbEnabled()
 
             // All of the writes below go through helpers that swallow a permission denial:
@@ -157,7 +159,9 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             // a USB start exists to use that port, so it opens and keeps it instead of
             // closing the very thing it needs.
             if (tcpPort > 0 && !ShizukuSettings.getTcpMode() && !usbMethod) {
-                AdbStarter.stopTcp(applicationContext, tcpPort)
+                // Unattended, so the answer goes to the log: a port that could not be closed is the
+                // kind of thing only this would ever show.
+                Diag.info(AppConstants.TAG, "closing the port: ${AdbStarter.stopTcp(tcpPort)}")
             }
 
             if (usbMethod && tcpPort <= 0) {

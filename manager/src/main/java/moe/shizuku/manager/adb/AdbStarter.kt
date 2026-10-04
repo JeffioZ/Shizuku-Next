@@ -1,12 +1,9 @@
 package moe.shizuku.manager.adb
 
 import android.Manifest.permission.WRITE_SECURE_SETTINGS
-import android.content.pm.PackageManager
 import android.content.Context
 import android.os.Build
-import android.provider.Settings
 import android.util.Log
-import android.widget.Toast
 import java.io.EOFException
 import java.net.Socket
 import java.net.SocketException
@@ -148,50 +145,92 @@ object AdbStarter {
         }
     }
 
-    suspend fun stopTcp(context: Context, port: Int) {
-        runCatching {
-            val cr = context.contentResolver
-            val hadUsbDebugging = EnvironmentUtils.isAdbEnabled()
-            val canWriteSettings =
-                context.checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED
-            if (canWriteSettings) {
-                Settings.Global.putInt(cr, Settings.Global.ADB_ENABLED, 1)
-                Settings.Global.putLong(cr, "adb_allowed_connection_time", 0L)
-            }
+    /** What came of asking for the classic port to be closed. */
+    enum class CloseOutcome {
+        /** Tried, and adbd is no longer listening on it. */
+        CLOSED,
 
-            if (!EnvironmentUtils.isAdbEnabled()) throw IllegalStateException("ADB is not enabled")
+        /** Not attempted: wireless debugging is the mode adbd is in. */
+        WIRELESS_IN_USE,
 
-            ShizukuStateMachine.set(ShizukuStateMachine.State.STOPPING)
-            val key = AdbKey(PreferenceAdbKeyStore(ShizukuSettings.getPreferences()), "shizuku")
-            withContext(Dispatchers.IO) {
-                AdbClient("127.0.0.1", port, key).use { client ->
-                    connectWithRetry(client)
-                    client.command("usb:")
-                }
-            }
-            // USB debugging was only borrowed to issue the command restore it
-            if (!hadUsbDebugging && canWriteSettings) {
-                Settings.Global.putInt(cr, Settings.Global.ADB_ENABLED, 0)
-            }
-            // Resolve the STOPPING state we set above: closing the TCP port does
-            // not kill an already-running server, and if nothing was running the
-            // state must return to STOPPED rather than stick at STOPPING (which
-            // would suppress the watchdog's dead-check).
-            ShizukuStateMachine.update()
-        }.onFailure {
-            // Never leave the state stuck at STOPPING
-            ShizukuStateMachine.update()
-            if (EnvironmentUtils.getAdbTcpPort() > 0) {
-                withContext(Dispatchers.Main) {
-                    val errorMsg = when (it) {
-                        is AdbKeyException -> context.getString(R.string.adb_error_key_store)
-                        else -> it.message
-                    }
-                    Toast.makeText(context, context.getString(R.string.adb_error_stop_tcp) + ". ${errorMsg}", Toast.LENGTH_LONG)
-                        .show()
-                }
-            }
+        /** Not attempted: the command is only accepted as USB debugging, which is off. */
+        USB_DEBUGGING_OFF,
+
+        /** Nothing was listening on the port. */
+        NOT_LISTENING,
+
+        /** The key this app pairs with could not be read. */
+        KEY_STORE,
+
+        /** Tried, and refused. */
+        FAILED
+    }
+
+    /**
+     * What is in the way of closing the port, or null when nothing is.
+     *
+     * Both answers are about the phone rather than about the port, because closing it is not a
+     * change to a port: it is `usb:` on adbd, which puts the daemon back in USB mode. A decision
+     * rather than an attempt, so the screen can say which of the two it is without a shell in the
+     * way.
+     */
+    internal fun closeBlocker(wirelessDebugging: Boolean, usbDebugging: Boolean): CloseOutcome? =
+        when {
+            wirelessDebugging -> CloseOutcome.WIRELESS_IN_USE
+            !usbDebugging -> CloseOutcome.USB_DEBUGGING_OFF
+            else -> null
         }
+
+    /**
+     * Closes the classic ADB port, or says why it cannot be closed.
+     *
+     * The port is closed by sending `usb:`, and that is a switch of adbd's mode rather than of one
+     * port - the same daemon, and the same switch, that wireless debugging's session lives on. Two
+     * things follow, and both are why this refuses rather than forcing it:
+     *
+     *  * with wireless debugging on, adbd is the session that mode is using, and `usb:` takes it
+     *    away to put the daemon back in USB mode: the port closes and whatever the user was in the
+     *    middle of goes with it;
+     *  * the command is only accepted as USB debugging, and turning that toggle on by ourselves to
+     *    issue it - then back off, hoping nothing happens in between - would leave the phone's own
+     *    debugging state flickering for a setting that is about a port.
+     *
+     * So the port is left to the next adbd restart, which closes it without touching anything on
+     * the way, and the answer says which of the two it was.
+     */
+    suspend fun stopTcp(port: Int): CloseOutcome = withContext(Dispatchers.IO) {
+        if (port <= 0) return@withContext CloseOutcome.NOT_LISTENING
+
+        closeBlocker(
+            wirelessDebugging = EnvironmentUtils.isWirelessDebuggingEnabled(),
+            usbDebugging = EnvironmentUtils.isAdbEnabled()
+        )?.let { blocker ->
+            Diag.info(TAG, "not closing port $port: ${blocker.name}")
+            return@withContext blocker
+        }
+
+        // Resolve the STOPPING state below: closing the port does not kill an already-running
+        // server, and if nothing was running the state must return to STOPPED rather than stick at
+        // STOPPING, which would suppress the watchdog's dead-check.
+        ShizukuStateMachine.set(ShizukuStateMachine.State.STOPPING)
+
+        val outcome = runCatching {
+            val key = AdbKey(PreferenceAdbKeyStore(ShizukuSettings.getPreferences()), "shizuku")
+            AdbClient("127.0.0.1", port, key).use { client ->
+                connectWithRetry(client)
+                client.command("usb:")
+            }
+        }.fold(
+            onSuccess = { CloseOutcome.CLOSED },
+            onFailure = { throwable ->
+                Diag.warn(TAG, "closing port $port failed", throwable)
+                if (throwable is AdbKeyException) CloseOutcome.KEY_STORE else CloseOutcome.FAILED
+            }
+        )
+
+        ShizukuStateMachine.update()
+        Diag.info(TAG, "closing port $port: $outcome")
+        outcome
     }
 
     /**

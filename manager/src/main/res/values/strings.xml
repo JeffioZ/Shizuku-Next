@@ -544,6 +544,9 @@
     <string name="settings_tcp_mode">TCP mode</string>
     <string name="settings_tcp_mode_summary">"Allows Shizuku to restart without Wi-Fi. (Shizuku must have started once since reboot)"</string>
     <string name="settings_tcp_mode_dialog_close_port">"The TCP port will be closed immediately. You will need Wi-Fi to turn on TCP mode again. Continue?"</string>
+    <string name="settings_tcp_mode_close_wireless">Not closed: wireless debugging is on. Closing the port would stop it. The port will close when the phone restarts.</string>
+    <string name="settings_tcp_mode_close_usb_off">Not closed: USB debugging is off. Turn it on and try again.</string>
+    <string name="settings_tcp_mode_close_nothing">No TCP port was open.</string>
     <string name="settings_restart_dialog_title">Restart Required</string>
     <string name="settings_restart_dialog_message">Shizuku must restart to apply this setting.</string>
     <string name="settings_restart_dialog_message_wifi_required"><![CDATA[<br><br><b>Wi-Fi is required. Shizuku will continue running and wait for a Wi-Fi connection before restarting in the background.</b>]]></string>

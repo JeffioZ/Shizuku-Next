@@ -73,6 +73,18 @@ object EnvironmentUtils {
 
     fun isUsbDebuggingEnabled(): Boolean = isAdbEnabled()
 
+    /**
+     * Whether wireless debugging is switched on.
+     *
+     * The platform keeps it in the `adb_wifi_enabled` global setting - the one its own Developer
+     * options page writes, and the one this app already writes when a start needs it - and offers
+     * no API for reading it back. Zero is "not on", which is also what a phone that has never
+     * touched the setting reports.
+     */
+    fun isWirelessDebuggingEnabled(): Boolean = runCatching {
+        Settings.Global.getInt(appContext.contentResolver, "adb_wifi_enabled", 0) == 1
+    }.getOrDefault(false)
+
     fun isWifiConnected(): Boolean {
         val cm = appContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network = cm.activeNetwork ?: return false
