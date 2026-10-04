@@ -83,6 +83,17 @@ object AdbStarter {
             val keepTcpPort = openTcpPort
             var viaTcp = !EnvironmentUtils.isTlsSupported() ||
                     (activePort > 0 && activePort == EnvironmentUtils.getAdbTcpPort())
+
+            // Reported through Diag as well as to the start screen, because which port a start
+            // used and whether adbd was switched is exactly what a report about a server that
+            // dies needs to say, and the screen's log is the one account nobody can attach.
+            // Asked for after the fact, "was this the start that restarted adbd?" has no answer.
+            Diag.info(
+                TAG,
+                "Start on port $activePort, TCP mode: ${ShizukuSettings.getTcpMode()}, " +
+                    "USB debugging: $usbDebugging, opening the ADB port: $keepTcpPort"
+            )
+
             if (keepTcpPort && usbDebugging && activePort != tcpPort) {
                 log?.invoke("Connecting on port $activePort...")
 
@@ -93,6 +104,13 @@ object AdbStarter {
 
                     log?.invoke("Successfully connected on port $activePort...")
                     log?.invoke("\nRestarting in TCP mode port: $tcpPort")
+                    // Said here too, and this is the one that matters most: adbd restarts on
+                    // this command, so a server already running is the thing it can take with
+                    // it - the suspicion a report about repeated deaths has to settle.
+                    Diag.info(
+                        TAG,
+                        "Switching adbd to TCP mode on port $tcpPort, which restarts adbd"
+                    )
 
                     activePort = tcpPort
                     viaTcp = true
@@ -121,6 +139,11 @@ object AdbStarter {
             // card can show whether it runs via wireless or USB debugging.
             ShizukuSettings.setLastAdbTransport(
                 if (viaTcp) ShizukuSettings.ADB_TRANSPORT_TCP else ShizukuSettings.ADB_TRANSPORT_TLS
+            )
+            Diag.info(
+                TAG,
+                "Server started over ${if (viaTcp) "the classic (TCP) port" else "the wireless port"}" +
+                    " on port $activePort"
             )
         }
     }
@@ -209,6 +232,14 @@ object AdbStarter {
         val key = AdbKey(PreferenceAdbKeyStore(ShizukuSettings.getPreferences()), "shizuku")
 
         try {
+            // Which attempt this is, and over what, before adbd is asked to restart: the
+            // answer to "did the port open, and did it cost a running server" starts here.
+            Diag.info(
+                TAG,
+                "Opening the ADB port $port over the wireless connection on $wirelessPort, " +
+                    "which restarts adbd"
+            )
+
             AdbClient("127.0.0.1", wirelessPort, key).use { client ->
                 client.connectForPairing()
                 // adbd restarts to listen on the new port, so the connection dying here
