@@ -1,5 +1,8 @@
 *.iml
 .gradle
+# Written whenever ci/check-translations.py runs, because it imports the escape rule that
+# sits beside it.
+__pycache__/
 /local.properties
 /.idea/workspace.xml
 /.idea/libraries

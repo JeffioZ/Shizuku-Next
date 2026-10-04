@@ -13,11 +13,17 @@ being one rule.
 request came from), and `source-ref` the revision holding the English strings.
 
 A file is refused when it is not a locale file, would create a locale folder the
-repository does not have, is not valid XML, holds no strings at all, or is 90% or more the
-English text - the last one being how a language that was never translated gets exported
-looking translated. Keys the source no longer has are reported and do not block: every
-locale carries a few from strings renamed upstream, Android ignores a translation with
-nothing to attach it to, and the next export drops them.
+repository does not have, is not valid XML, holds no strings at all, holds an apostrophe the
+resource compiler refuses (see `translation_escapes.py`, which is the same rule and the
+script that repairs one), or is 90% or more the English text - the last one being how a
+language that was never translated gets exported looking translated. Keys the source no
+longer has are reported and do not block: every locale carries a few from strings renamed
+upstream, Android ignores a translation with nothing to attach it to, and the next export
+drops them.
+
+The apostrophe rule is here for the pull request a person opens. The ones the download
+writes are repaired before this ever sees them, so a refusal here means somebody handed in
+translations by hand and one of them would not compile.
 
 The folder rule is the one that earns its keep. Which languages ship is decided here, in
 the repository, and Crowdin's own list of target languages is not the same list: it holds
@@ -28,6 +34,11 @@ import re
 import subprocess
 import sys
 import xml.etree.ElementTree as ElementTree
+
+# The apostrophe rule lives in the script that repairs it - this file is run as
+# `python3 ci/check-translations.py`, so the directory holding it is already the first entry
+# on the path.
+from translation_escapes import bare_apostrophes
 
 # One or more qualifiers, so `values-ja`, `values-pt-rBR` and `values-sr-rCyrl-rME` all
 # count as locale folders. Whether we want the folder is a separate question, below.
@@ -99,6 +110,17 @@ def main():
 
         if not translated:
             problems.append(f"{path}: no strings in it")
+            continue
+
+        unescaped = sorted(
+            key for key, value in translated.items() if bare_apostrophes(value)
+        )
+        if unescaped:
+            problems.append(
+                f"{path}: {len(unescaped)} value(s) hold an apostrophe the resource"
+                f" compiler refuses, starting at {unescaped[0]}"
+                f" - python3 ci/translation_escapes.py escapes them"
+            )
             continue
 
         shared = [key for key in translated if key in source]
