@@ -65,6 +65,21 @@ body:
       label: Issue Description
       description: Please upload any relevant logs and/or screenshots
 
+  # The app's own record of every start, and the only one that exists when the server is not
+  # up: it is written by the process that starts the server, which runs as the shell or root,
+  # so it survives the case the app itself has nothing to read. A report about a start that
+  # fails - or one that comes up and then dies - cannot be answered without it, so it is asked
+  # for in a field of its own rather than left to "any relevant logs".
+  - type: textarea
+    id: starter_log
+    attributes:
+      label: Launch log
+      description: >-
+        What each start did is in Android/data/moe.shizuku.privileged.api/files/starter.log,
+        falling back to Android/media/moe.shizuku.privileged.api/starter.log. Paste it here, or
+        drag the file into this box. If the manager itself crashed, `adb logcat -b crash -d` is
+        the other half of the story.
+
   - type: textarea
     id: reproducer
     attributes:
