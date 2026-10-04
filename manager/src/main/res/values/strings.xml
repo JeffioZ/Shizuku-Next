@@ -812,6 +812,11 @@
     <string name="manage_status_system">System</string>
     <string name="manage_status_user">User</string>
     <string name="app_row_user">user %1$d</string>
+
+    <string name="permissions_phantom">Background processes</string>
+    <string name="permissions_phantom_summary">Android 12 and later may stop processes started by an app after the app closes. This can stop the server after a boot start. This setting affects the whole device and may need a restart.</string>
+    <string name="permissions_action_deny">Deny</string>
+    <string name="permissions_phantom_failed">Could not change it. Shizuku or the WRITE_SECURE_SETTINGS permission is required.</string>
     <string name="manage_status_removed">Removed, data kept</string>
     <string name="manage_status_disabled">Disabled</string>
     <string name="manage_status_suspended">Suspended</string>

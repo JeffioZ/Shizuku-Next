@@ -26,6 +26,7 @@ import androidx.compose.material.icons.rounded.BatterySaver
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.Memory
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.Wifi
@@ -55,11 +56,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import moe.shizuku.manager.ui.component.PillButton
+import moe.shizuku.manager.ui.component.PillButtonQuiet
 import moe.shizuku.manager.R
 import moe.shizuku.manager.home.isAccessibilityEnabled
 import moe.shizuku.manager.manage.HidingGrants
 import moe.shizuku.manager.start.hasPermission
 import moe.shizuku.manager.start.isPermissionPermanentlyDenied
+import moe.shizuku.manager.start.PhantomProcessKiller
 import moe.shizuku.manager.start.openAppSettings
 import moe.shizuku.manager.ui.component.SegmentedCard
 import moe.shizuku.manager.start.localNetworkPermission
@@ -90,6 +93,11 @@ fun PermissionsScreen(onBack: () -> Unit) {
     }
     var usageAccess by remember { mutableStateOf(HidingGrants.usageAccess()) }
     var dump by remember { mutableStateOf(HidingGrants.dump()) }
+    // The one row on this page that is this app's own change to the device rather than a
+    // permission the platform holds: the process monitor is on until somebody turns it off.
+    var processesSurvive by remember {
+        mutableStateOf(PhantomProcessKiller.isMonitorDisabled(context))
+    }
 
     fun refresh() {
         notifications = context.hasPermission(POST_NOTIFICATIONS)
@@ -99,6 +107,7 @@ fun PermissionsScreen(onBack: () -> Unit) {
         localNetwork = localNetworkPermission()?.let { context.hasPermission(it) } ?: true
         usageAccess = HidingGrants.usageAccess()
         dump = HidingGrants.dump()
+        processesSurvive = PhantomProcessKiller.isMonitorDisabled(context)
     }
 
     // Which permission the request on screen is for, so the answer can be attributed to it,
@@ -292,6 +301,51 @@ fun PermissionsScreen(onBack: () -> Unit) {
                     }
                 )
             }
+
+            // Last, and the only row here that changes the *device* rather than asking for
+            // something on this app - see [PhantomProcessKiller]. Both directions are offered:
+            // a global setting nobody can put back is one somebody will regret, and the way back
+            // is what makes saying yes a decision rather than a trap.
+            item {
+                PermissionRow(
+                    icon = Icons.Rounded.Memory,
+                    headline = stringResource(R.string.permissions_phantom),
+                    reason = stringResource(R.string.permissions_phantom_summary),
+                    granted = processesSurvive,
+                    actionLabel = stringResource(R.string.permissions_action_allow),
+                    onAction = {
+                        scope.launch {
+                            val changed = withContext(Dispatchers.IO) {
+                                PhantomProcessKiller.disable(context)
+                            }
+                            refresh()
+                            if (!changed) {
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.permissions_phantom_failed),
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        }
+                    },
+                    revertLabel = stringResource(R.string.permissions_action_deny),
+                    onRevert = {
+                        scope.launch {
+                            val changed = withContext(Dispatchers.IO) {
+                                PhantomProcessKiller.restore(context)
+                            }
+                            refresh()
+                            if (!changed) {
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.permissions_phantom_failed),
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        }
+                    }
+                )
+            }
         }
     }
 }
@@ -311,7 +365,12 @@ private fun PermissionRow(
     reason: String,
     granted: Boolean,
     actionLabel: String,
-    onAction: () -> Unit
+    onAction: () -> Unit,
+    // The way back, for the one row whose "granted" is a change to the device rather than a
+    // permission the platform holds. Null everywhere else: a permission that has been given is
+    // given, and a button offering to take it back would be an offer that cannot be kept.
+    revertLabel: String? = null,
+    onRevert: (() -> Unit)? = null
 ) {
     SegmentedCard {
         Row(
@@ -355,12 +414,18 @@ private fun PermissionRow(
             // A tick is enough for "this one is fine": the word beside it only added
             // width to every row on the page.
             if (granted) {
-                Icon(
-                    Icons.Rounded.CheckCircle,
-                    contentDescription = stringResource(R.string.permissions_allowed),
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Rounded.CheckCircle,
+                        contentDescription = stringResource(R.string.permissions_allowed),
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    if (revertLabel != null && onRevert != null) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        PillButtonQuiet(onClick = onRevert) { Text(revertLabel) }
+                    }
+                }
             } else {
                 PillButton(onClick = onAction) { Text(actionLabel) }
             }
