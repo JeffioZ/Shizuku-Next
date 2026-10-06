@@ -33,6 +33,7 @@ import moe.shizuku.manager.receiver.WatchdogAlarmReceiver
 import moe.shizuku.manager.start.runningMethodLabel
 import moe.shizuku.manager.start.runningMethodSuffix
 import moe.shizuku.manager.starter.Starter
+import moe.shizuku.manager.worker.AdbStartWorker
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.SettingsPage
 import moe.shizuku.manager.utils.ShizukuStateMachine
@@ -219,6 +220,17 @@ class WatchdogService : Service() {
         // asks for a start itself the moment nothing is hidden any more.
         if (HidingWatchService.holding()) {
             Diag.debug(TAG, "Restart attempt skipped: hiding is holding the debugging toggle off")
+            pendingRestart = true
+            return
+        }
+
+        // A start of ours is running right now, and that start is the one that has to find the
+        // port: a no-network attempt is given minutes for it, while this poll comes around every
+        // thirty seconds and forces a start by cancelling the queued work. The attempt in flight
+        // was therefore thrown away thirty seconds in, time after time, and the window it needed
+        // never arrived. Waited on rather than replaced, with the retry left armed for its end.
+        if (AdbStartWorker.inFlight) {
+            Diag.debug(TAG, "Restart attempt skipped: a start is already in flight")
             pendingRestart = true
             return
         }

@@ -65,18 +65,26 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
         ShizukuReceiverStarter.updateNotification(applicationContext, state, requestedMethod)
 
     override suspend fun doWork(): Result {
-        // A hiding list is holding a debugging toggle off for an app the user has open. Every
-        // path below that needs one writes it back on if it finds it off, so an attempt now is
-        // not a start that fails - it is a start that undoes the hide and then fails. Deferred
-        // instead: the watch asks for a start itself once nothing is hidden.
-        if (HidingWatchService.holding()) {
-            Diag.info(AppConstants.TAG, "Start deferred: hiding is holding the debugging toggle off")
-            return Result.success()
-        }
+        // Set before the first thing this attempt does and cleared in the `finally`, so the whole
+        // attempt counts as one. See [inFlight] for who reads it and why.
+        inFlight = true
 
         try {
+            // A hiding list is holding a debugging toggle off for an app the user has open. Every
+            // path below that needs one writes it back on if it finds it off, so an attempt now is
+            // not a start that fails - it is a start that undoes the hide and then fails. Deferred
+            // instead: the watch asks for a start itself once nothing is hidden.
+            if (HidingWatchService.holding()) {
+                Diag.info(
+                    AppConstants.TAG,
+                    "Start deferred: hiding is holding the debugging toggle off"
+                )
+                return Result.success()
+            }
+
             return startServer()
         } finally {
+            inFlight = false
             // A local-only hotspot is only ever brought up to give discovery an
             // interface, so it goes away with the attempt that needed it: leaving it up
             // would be tethering nobody asked for.
@@ -528,6 +536,25 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
 
     companion object {
         const val KEY_START_METHOD = "start_method"
+
+        /**
+         * Whether a start is running in this process at this moment.
+         *
+         * The watchdog is the one that reads it, and waiting on this is what stops it replacing a
+         * start that is still working. A no-network attempt is given minutes to find a port (see
+         * [FORCED_DISCOVERY_TIMEOUT_MS]), while the watchdog's recovery poll comes every thirty
+         * seconds and forces a start by cancelling the queued work - so the attempt in flight died
+         * thirty seconds in, the window it needed never arrived, and the log said the same thing
+         * over and over: a start cancelled, a start forced, and still no server.
+         *
+         * Kept here rather than asked of the watchdog's end, which queries for the work from places
+         * that cannot wait on one - a state listener running on the main thread. Both ends are in
+         * the same process either way: no service or worker here declares a process of its own, and
+         * WorkManager runs a worker in the process that enqueued it.
+         */
+        @Volatile
+        var inFlight: Boolean = false
+            private set
 
         /**
          * Longer than the experiment's own asking window, so the asking and the interface
