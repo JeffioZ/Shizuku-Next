@@ -150,6 +150,25 @@ object UpdateHelper {
 
     fun updateLastPromptedVersion() = ShizukuSettings.setLastPromptedVersion(latestRelease.version.toString())
 
+    /**
+     * Forgets that this version has been offered, so the next check offers it again.
+     *
+     * The prompt is recorded the moment it is shown - that is what keeps it from nagging - and a
+     * failed attempt must not spend that record. Refusing the install (no permission to install
+     * unknown apps is the usual one) left the version marked as dealt with, and the update never
+     * came back: the card was gone for good and reinstalling the app was the only way to see it
+     * again. Any failure on the way to an install now hands the offer back.
+     */
+    fun clearPromptedVersion() {
+        // Said out loud because the symptom it answers is "the update disappeared" and nothing else
+        // on the phone would show why it is back.
+        Diag.info(
+            "UpdateHelper",
+            "the update offer was handed back after an attempt that did not install"
+        )
+        ShizukuSettings.setLastPromptedVersion("")
+    }
+
     suspend fun update() {
         if (!::latestRelease.isInitialized && !isUpdateAvailable()) return
 
@@ -177,6 +196,7 @@ object UpdateHelper {
                                 appContext.getString(R.string.update_failed),
                                 Toast.LENGTH_SHORT,
                             ).show()
+                        clearPromptedVersion()
                         return@update
                     }
                 } else {
@@ -190,6 +210,7 @@ object UpdateHelper {
                     appContext.getString(R.string.update_download_failed),
                     Toast.LENGTH_SHORT,
                 ).show()
+            clearPromptedVersion()
             return
         }
 
@@ -198,6 +219,9 @@ object UpdateHelper {
                 if (isSuccess) appContext.getString(R.string.update_success)
                 else appContext.getString(R.string.update_failed)
             Toast.makeText(appContext, toastMsg, Toast.LENGTH_SHORT).show()
+            // The card that offered this update is gone from the home screen either way, and on a
+            // refusal the offer has to come back: see [clearPromptedVersion].
+            if (!isSuccess) clearPromptedVersion()
         }
     }
 
