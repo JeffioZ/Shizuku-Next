@@ -69,6 +69,7 @@ import kotlinx.coroutines.withContext
 import moe.shizuku.manager.ui.component.PillButtonQuiet
 import moe.shizuku.manager.AppConstants
 import moe.shizuku.manager.R
+import moe.shizuku.manager.manage.BlockedGates
 import moe.shizuku.manager.manage.Hiding
 import moe.shizuku.manager.manage.HidingGrants
 import moe.shizuku.manager.manage.InstalledPackages
@@ -219,7 +220,10 @@ fun LabsToggleScreen(
     var running by remember { mutableStateOf(ShizukuStateMachine.isRunning()) }
     var vpnClient by remember { mutableStateOf(Hiding.chosenVpnClient()) }
     var gateOn by remember {
-        mutableStateOf(feature.signal?.let { Hiding.isSignalEnabled(it) } ?: true)
+        mutableStateOf(
+            feature.signal?.let { Hiding.isSignalEnabled(it) }
+                ?: BlockedGates.isEnabled(feature.name)
+        )
     }
     // The name rather than the package, with the package as the fallback: what a person chose is
     // PairVPN, and "com.pairvpn" is the answer to a different question.
@@ -230,6 +234,15 @@ fun LabsToggleScreen(
         ?: stringResource(R.string.hiding_vpn_client_none)
     var pickingVpn by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+
+    /** What putting one app on or off this list writes, whichever kind of list it is. */
+    suspend fun writeBlocked(packageName: String, shouldBlock: Boolean): Boolean = when {
+        feature.signal != null -> Hiding.setOnList(feature.signal, packageName, shouldBlock)
+        feature == AppToggleFeature.AUTOSTART ->
+            PackageTools.setOpBlocked(context, packageName, feature.op, shouldBlock)
+
+        else -> PackageTools.setNetworkBlocked(context, packageName, shouldBlock)
+    }
 
     LaunchedEffect(version) {
         loading = true
@@ -253,7 +266,11 @@ fun LabsToggleScreen(
             withContext(Dispatchers.IO) { HidingWatchService.refresh(context) }
         }
         vpnClient = Hiding.chosenVpnClient()
-        gateOn = feature.signal?.let { Hiding.isSignalEnabled(it) } ?: true
+        // Read back the same way it is first read, and for both kinds of list: the two that are about
+        // an app op keep their gate in this app's settings, and reading "on" for them here would put
+        // the switch back wherever it was before the tap that changed it.
+        gateOn = feature.signal?.let { Hiding.isSignalEnabled(it) }
+            ?: BlockedGates.isEnabled(feature.name)
         loading = false
     }
 
@@ -267,19 +284,25 @@ fun LabsToggleScreen(
     fun toggle(packageName: String, shouldBlock: Boolean) {
         scope.launch {
             val applied = withContext(Dispatchers.IO) {
-                val signal = feature.signal
                 when {
                     // A hiding list is a rule about an app and not a state: what it writes down
                     // is that this app objects, and whether anything is hidden right now is a
                     // question for the watch, which is told to look again.
-                    signal != null ->
-                        Hiding.setOnList(signal, packageName, shouldBlock)
+                    feature.signal != null -> writeBlocked(packageName, shouldBlock)
 
-                    feature == AppToggleFeature.AUTOSTART ->
-                        PackageTools.setOpBlocked(context, packageName, feature.op, shouldBlock)
+                    // While the gate is off the rows edit what is being kept rather than the
+                    // platform: nothing is applied until it is switched back on, which is the whole
+                    // of what a gate is for.
+                    !BlockedGates.isEnabled(feature.name) -> {
+                        val kept = BlockedGates.kept(feature.name)
+                        BlockedGates.setKept(
+                            feature.name,
+                            if (shouldBlock) kept + packageName else kept - packageName
+                        )
+                        true
+                    }
 
-                    else ->
-                        PackageTools.setNetworkBlocked(context, packageName, shouldBlock)
+                    else -> writeBlocked(packageName, shouldBlock)
                 }
             }
             if (!applied) {
@@ -405,19 +428,37 @@ fun LabsToggleScreen(
         )
     }
 
-    // One place for what turning the mode on or off does, because the switch that does it has
-    // moved: the setting, the screen's own state and telling the watch to look again are three
-    // things that must not drift apart.
+    // One place for what turning the mode on or off does, because the switch that does it sits in
+    // the header: the setting, what the list applies, the screen's own state and telling the watch
+    // to look again are four things that must not drift apart.
     fun setGate(checked: Boolean) {
-        val signal = feature.signal ?: return
-        Hiding.setSignalEnabled(signal, checked)
         gateOn = checked
-        // The watch starts and stops with the gates, so it is told to look again: turning the last
-        // one off has nothing left to do.
         scope.launch {
-            withContext(Dispatchers.IO) {
+            val now = withContext(Dispatchers.IO) {
+                val signal = feature.signal
+                if (signal != null) {
+                    Hiding.setSignalEnabled(signal, checked)
+                } else {
+                    // The two lists that are about an app op have no rule of their own - what they
+                    // act on is what the platform reports - so the gate keeps the list itself: off
+                    // writes it down and puts every app on it back, on puts those apps back again.
+                    // A round trip therefore returns exactly what was there, which is what makes
+                    // offering it safe.
+                    val key = feature.name
+                    if (checked) {
+                        BlockedGates.kept(key).forEach { app -> writeBlocked(app, true) }
+                    } else {
+                        BlockedGates.setKept(key, blocked)
+                        blocked.forEach { app -> writeBlocked(app, false) }
+                    }
+                    BlockedGates.setEnabled(key, checked)
+                }
+                // The watch starts and stops with the gates, so it is told to look again: turning
+                // the last one off has nothing left to do.
                 HidingWatchService.refresh(context)
+                readBlocked(feature, context)
             }
+            blocked = now
             version++
         }
     }
@@ -456,15 +497,15 @@ fun LabsToggleScreen(
                 // In the header, where the whole screen is about it and one look at the title says
                 // which mode is being switched: on a card of its own it took the top of the list
                 // and said nothing the switch does not say itself.
-                feature.signal?.let {
-                    ExpressiveSwitch(
-                        checked = gateOn,
-                        onCheckedChange = { checked -> setGate(checked) },
-                        // Inset the way the title is, rather than hard against the edge: the bar
-                        // has no padding of its own, so a switch put in it lands on the glass.
-                        modifier = Modifier.padding(end = 16.dp)
-                    )
-                }
+                // Every list here has a gate: the hiding ones had it already, and the two that are
+                // about an app op have one now, which keeps the list itself.
+                ExpressiveSwitch(
+                    checked = gateOn,
+                    onCheckedChange = { checked -> setGate(checked) },
+                    // Inset the way the title is, rather than hard against the edge: the bar has no
+                    // padding of its own, so a switch put in it lands on the glass.
+                    modifier = Modifier.padding(end = 16.dp)
+                )
             }
         )
 
@@ -487,7 +528,7 @@ fun LabsToggleScreen(
         // A mode that is switched off keeps its list, dimmed. Letting go of it was the wrong thing
         // to lose: it is what the gate exists to preserve, and the rows stay usable, because taking
         // an app off a list is one of the reasons to come back to one that is switched off.
-        val contentAlpha = if (feature.signal == null || gateOn) 1f else GateOffAlpha
+        val contentAlpha = if (gateOn) 1f else GateOffAlpha
 
         if (feature.signal == Signal.VPN) {
             SegmentedCard(
@@ -721,8 +762,14 @@ private suspend fun readBlocked(
     // This app's own record, one list per setting: the platform can be asked about a setting
     // but not about which apps asked for it to be hidden.
     feature.signal != null -> Hiding.appsFor(feature.signal)
+
+    // A gate that is off is keeping a list rather than applying it, so what the rows show is what
+    // will be put back when it is switched on again.
+    !BlockedGates.isEnabled(feature.name) -> BlockedGates.kept(feature.name)
+
     // One command for every app in the mode.
     feature == AppToggleFeature.AUTOSTART -> PackageTools.readOpDeniedInstalled(feature.op)
+
     // This app's own record; the platform cannot be asked for the list.
     else -> PackageTools.readFirewallBlocked(context)
 }
