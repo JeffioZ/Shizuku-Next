@@ -36,6 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -158,6 +159,23 @@ fun ForceDarkScreen(bottomPadding: Dp, onBack: () -> Unit) {
         searched.sortedBy { appLabel(pm, it).lowercase() }
     }
 
+    // One place for what turning the mode on or off does: the setting, the screen's own state and
+    // telling the watch to look again are three things that must not drift apart, and the switch
+    // that does them has moved to the header.
+    fun setGate(checked: Boolean) {
+        gateOn = checked
+        scope.launch {
+            withContext(Dispatchers.IO) {
+                ForceDark.setEnabled(checked)
+                // Turning it off has to put the switches back whether or not this app is the one
+                // holding them: the user has just asked for exactly that.
+                if (!checked) ForceDark.restoreAlways()
+                HidingWatchService.refresh(context)
+            }
+            version++
+        }
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
             title = {
@@ -179,41 +197,21 @@ fun ForceDarkScreen(bottomPadding: Dp, onBack: () -> Unit) {
                 IconButton(onClick = onBack) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
                 }
+            },
+            actions = {
+                // In the header, where one look at the title says which mode is being switched,
+                // and inset the way the title is: this bar has no padding of its own, so a switch
+                // put in it without any lands on the glass.
+                ExpressiveSwitch(
+                    checked = gateOn,
+                    onCheckedChange = { checked -> setGate(checked) },
+                    modifier = Modifier.padding(end = 16.dp)
+                )
             }
         )
 
-        SegmentedCard(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
-            ListItem(
-                headlineContent = {
-                    Text(
-                        stringResource(
-                            if (gateOn) R.string.force_dark_gate
-                            else R.string.force_dark_gate_disabled
-                        )
-                    )
-                },
-                trailingContent = {
-                    ExpressiveSwitch(
-                        checked = gateOn,
-                        onCheckedChange = { checked ->
-                            gateOn = checked
-                            scope.launch {
-                                withContext(Dispatchers.IO) {
-                                    ForceDark.setEnabled(checked)
-                                    // Turning it off has to put the switches back whether or not
-                                    // this app is the one holding them: the user has just asked
-                                    // for exactly that.
-                                    if (!checked) ForceDark.restoreAlways()
-                                    HidingWatchService.refresh(context)
-                                }
-                                version++
-                            }
-                        }
-                    )
-                },
-                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-            )
-        }
+        // The switch itself is in the header; what used to be here was a card saying "Enabled" or
+        // "Disabled" above the list, which is the one thing a switch already says.
 
         SegmentedCard(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
             ListItem(
@@ -239,11 +237,15 @@ fun ForceDarkScreen(bottomPadding: Dp, onBack: () -> Unit) {
             )
         }
 
-        if (!gateOn) return@Column
+        // A mode that is switched off keeps its list, dimmed: the list is what the gate exists to
+        // preserve, and the per-app switches on it are one of the reasons to come back to a mode
+        // that is off.
+        val contentAlpha = if (gateOn) 1f else GateOffAlpha
 
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .alpha(contentAlpha)
                 .padding(horizontal = 16.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -268,6 +270,7 @@ fun ForceDarkScreen(bottomPadding: Dp, onBack: () -> Unit) {
             onValueChange = { query = it },
             modifier = Modifier
                 .fillMaxWidth()
+                .alpha(contentAlpha)
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             placeholder = { Text(stringResource(R.string.app_management_search_hint)) },
             leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
@@ -289,7 +292,7 @@ fun ForceDarkScreen(bottomPadding: Dp, onBack: () -> Unit) {
             )
         )
 
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.fillMaxSize().alpha(contentAlpha)) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(

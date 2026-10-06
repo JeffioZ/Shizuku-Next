@@ -52,6 +52,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -186,6 +187,15 @@ enum class AppToggleFeature(
  * list to choose from, this has nothing else to offer.
  */
 private enum class ToggleFilter { ALL, ALLOWED, BLOCKED }
+
+/**
+ * How much of itself a list keeps while its mode is switched off.
+ *
+ * Dimmed rather than absent: the list is *kept* while the gate is off - that is what the gate is
+ * for - and what is kept is work somebody came back for, so it is shown as what it is, out of
+ * effect rather than gone. Far enough down to read as out of effect, far enough up to read.
+ */
+internal const val GateOffAlpha = 0.45f
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -381,6 +391,23 @@ fun LabsToggleScreen(
         )
     }
 
+    // One place for what turning the mode on or off does, because the switch that does it has
+    // moved: the setting, the screen's own state and telling the watch to look again are three
+    // things that must not drift apart.
+    fun setGate(checked: Boolean) {
+        val signal = feature.signal ?: return
+        Hiding.setSignalEnabled(signal, checked)
+        gateOn = checked
+        // The watch starts and stops with the gates, so it is told to look again: turning the last
+        // one off has nothing left to do.
+        scope.launch {
+            withContext(Dispatchers.IO) {
+                HidingWatchService.refresh(context)
+            }
+            version++
+        }
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
             title = {
@@ -410,6 +437,20 @@ fun LabsToggleScreen(
                 IconButton(onClick = onBack) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
                 }
+            },
+            actions = {
+                // In the header, where the whole screen is about it and one look at the title says
+                // which mode is being switched: on a card of its own it took the top of the list
+                // and said nothing the switch does not say itself.
+                feature.signal?.let {
+                    ExpressiveSwitch(
+                        checked = gateOn,
+                        onCheckedChange = { checked -> setGate(checked) },
+                        // Inset the way the title is, rather than hard against the edge: the bar
+                        // has no padding of its own, so a switch put in it lands on the glass.
+                        modifier = Modifier.padding(end = 16.dp)
+                    )
+                }
             }
         )
 
@@ -425,52 +466,14 @@ fun LabsToggleScreen(
         // scrolls horizontally - and a scrolling row hands its children an unbounded width, so
         // a card that asked to fill the width hugged its own text and changed size with the
         // length of a package name.
-        // The mode itself, off and on, above the list it applies to. A list of apps that object
-        // is worth keeping while the hiding is turned off - for a day, for an app that no longer
-        // minds, or to prove the hiding is what caused something - and until this switch the only
-        // way to stop a mode was to empty its list, which threw that work away.
-        feature.signal?.let { signal ->
-            SegmentedCard(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-            ) {
-                ListItem(
-                    // The state word and the switch, nothing under them. The word used to be
-                    // fixed at "Enabled" while the switch said otherwise, and the sentence
-                    // under it explained the state the screen was not in; both are gone, and the
-                    // one thing the row has to say is what the switch is doing now.
-                    headlineContent = {
-                        Text(
-                            stringResource(
-                                if (gateOn) R.string.hiding_gate else R.string.hiding_gate_disabled
-                            )
-                        )
-                    },
-                    trailingContent = {
-                        ExpressiveSwitch(
-                            checked = gateOn,
-                            onCheckedChange = { checked ->
-                                Hiding.setSignalEnabled(signal, checked)
-                                gateOn = checked
-                                // The watch starts and stops with the gates, so it is told to
-                                // look again: turning the last one off has nothing left to do.
-                                scope.launch {
-                                    withContext(Dispatchers.IO) {
-                                        HidingWatchService.refresh(context)
-                                    }
-                                    version++
-                                }
-                            }
-                        )
-                    },
-                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-                )
-            }
-        }
+        // The switch itself is in the header, so the body of the screen is the list and nothing
+        // else: what used to be here was a card saying "Enabled" or "Disabled" above it, which is
+        // the one thing a switch already says.
 
-        // A mode that is switched off has nothing to list. The list is kept - that is the whole
-        // point of the gate - and it is not drawn, because a list of apps somebody is not being
-        // hidden from is something to come back to, not something to work through now.
-        if (feature.signal != null && !gateOn) return@Column
+        // A mode that is switched off keeps its list, dimmed. Letting go of it was the wrong thing
+        // to lose: it is what the gate exists to preserve, and the rows stay usable, because taking
+        // an app off a list is one of the reasons to come back to one that is switched off.
+        val contentAlpha = if (feature.signal == null || gateOn) 1f else GateOffAlpha
 
         if (feature.signal == Signal.VPN) {
             SegmentedCard(
@@ -493,6 +496,7 @@ fun LabsToggleScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .alpha(contentAlpha)
                 .padding(horizontal = 16.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -529,6 +533,7 @@ fun LabsToggleScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .alpha(contentAlpha)
                 .padding(horizontal = 16.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -559,6 +564,7 @@ fun LabsToggleScreen(
             onValueChange = { query = it },
             modifier = Modifier
                 .fillMaxWidth()
+                .alpha(contentAlpha)
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             placeholder = { Text(stringResource(R.string.app_management_search_hint)) },
             leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
@@ -580,7 +586,7 @@ fun LabsToggleScreen(
             )
         )
 
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.fillMaxSize().alpha(contentAlpha)) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(
