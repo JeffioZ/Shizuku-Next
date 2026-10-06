@@ -85,6 +85,18 @@ object EnvironmentUtils {
         Settings.Global.getInt(appContext.contentResolver, "adb_wifi_enabled", 0) == 1
     }.getOrDefault(false)
 
+    /**
+     * Whether this platform will not run wireless debugging without a wireless network.
+     *
+     * Android 17 (SDK 37) is that release: its AdbWifiNetworkMonitor answers "Not connected to any
+     * wireless network. Not enabling adbwifi." and stops adbd again within milliseconds, measured
+     * with this app's own local-only hotspot up. Older releases start the server and stop it only
+     * when their own constraint check fires, which is the race a no-network start rides - so the
+     * behaviour written for Android 17 is kept to Android 17, and older platforms keep what they
+     * had.
+     */
+    fun isAdbWifiOverhauled(): Boolean = Build.VERSION.SDK_INT >= 37
+
     fun isWifiConnected(): Boolean {
         val cm = appContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network = cm.activeNetwork ?: return false

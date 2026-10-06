@@ -229,7 +229,9 @@ class WatchdogService : Service() {
         // thirty seconds and forces a start by cancelling the queued work. The attempt in flight
         // was therefore thrown away thirty seconds in, time after time, and the window it needed
         // never arrived. Waited on rather than replaced, with the retry left armed for its end.
-        if (AdbStartWorker.inFlight) {
+        // Only on the platform that needs it: a release whose wireless server still comes up is
+        // answered by its own attempts, and its retries keep the schedule they had.
+        if (EnvironmentUtils.isAdbWifiOverhauled() && AdbStartWorker.inFlight) {
             Diag.debug(TAG, "Restart attempt skipped: a start is already in flight")
             pendingRestart = true
             return
