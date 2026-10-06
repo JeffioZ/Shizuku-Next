@@ -855,6 +855,29 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                     item {
                         SegmentedListItem(
                             centerSlots = true,
+                            leadingContent = { SettingsIcon(Icons.Outlined.Translate) },
+                            headlineContent = {
+                                Text(stringResource(R.string.settings_translate))
+                            },
+                            // The note says where the translating happens, because the row leads
+                            // out of the app rather than to another screen of it.
+                            supportingContent = {
+                                Text(stringResource(R.string.settings_translate_note))
+                            },
+                            trailingContent = {
+                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+                            },
+                            onClick = {
+                                CustomTabsHelper.launchUrlOrCopy(
+                                    context,
+                                    context.getString(R.string.crowdin_url)
+                                )
+                            }
+                        )
+                    }
+                    item {
+                        SegmentedListItem(
+                            centerSlots = true,
                             leadingContent = { SettingsIcon(Icons.Outlined.Coffee) },
                             headlineContent = {
                                 Text(stringResource(R.string.settings_support_coffee))

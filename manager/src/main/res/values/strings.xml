@@ -575,6 +575,9 @@
     <string name="permissions_accessibility_summary">Reads the pairing code automatically.</string>
     <string name="permissions_battery_summary">Stops Android from killing Shizuku in the background.</string>
     <string name="settings_help">Help</string>
+    <string name="settings_translate">Participate in translation</string>
+    <string name="settings_translate_note">Translate the app on Crowdin.</string>
+    <string name="crowdin_url">https://crowdin.com/project/Shizuku-Next</string>
     <string name="settings_report_bug">Report a bug</string>
     <string name="settings_support_coffee">Buy me a coffee</string>
     <string name="settings_support_coffee_note">Support the development of Shizuku-Next</string>
