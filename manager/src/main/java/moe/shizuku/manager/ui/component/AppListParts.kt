@@ -79,13 +79,16 @@ fun AppFilterChip(
     // A row of chips that shares the width evenly wants each chip to fill its slot; a row
     // that scrolls, because there are more filters than fit, wants them to hug their text.
     fill: Boolean = true,
+    // False while the list behind these is not being applied: a filter is a way into a list, and a
+    // list that cannot be changed is one to look at rather than to work through.
+    enabled: Boolean = true,
     onClick: () -> Unit
 ) {
     Surface(
         modifier = modifier
             .height(34.dp)
             .clip(MaterialTheme.shapes.large)
-            .selectable(selected = selected, role = Role.Tab, onClick = onClick),
+            .selectable(selected = selected, enabled = enabled, role = Role.Tab, onClick = onClick),
         shape = MaterialTheme.shapes.large,
         color = if (selected) {
             MaterialTheme.colorScheme.secondaryContainer

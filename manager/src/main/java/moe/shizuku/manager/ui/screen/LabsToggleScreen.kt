@@ -577,6 +577,7 @@ fun LabsToggleScreen(
                     ),
                     count = count,
                     selected = kind == option,
+                    enabled = gateOn,
                     // Hugging its label rather than filling a slot: a row that scrolls sizes
                     // each chip to its own text.
                     fill = false,
@@ -597,6 +598,7 @@ fun LabsToggleScreen(
                 label = stringResource(feature.offLabelRes),
                 count = apps.count { it.packageName !in blocked },
                 selected = filter == ToggleFilter.ALLOWED,
+                enabled = gateOn,
                 // Tapping the chosen one again lets go of it: with no filter the list shows
                 // both, which is what opening the screen should do.
                 onClick = {
@@ -608,6 +610,7 @@ fun LabsToggleScreen(
                 label = stringResource(feature.onLabelRes),
                 count = apps.count { it.packageName in blocked },
                 selected = filter == ToggleFilter.BLOCKED,
+                enabled = gateOn,
                 onClick = {
                     filter = if (filter == ToggleFilter.BLOCKED) ToggleFilter.ALL else ToggleFilter.BLOCKED
                 }
@@ -621,6 +624,9 @@ fun LabsToggleScreen(
                 .fillMaxWidth()
                 .alpha(contentAlpha)
                 .padding(horizontal = 16.dp, vertical = 8.dp),
+            // A search is part of working through the list, and the list is shut while the gate is
+            // off: what is shown then is what is being kept, not something to sieve.
+            enabled = gateOn,
             placeholder = { Text(stringResource(R.string.app_management_search_hint)) },
             leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
             trailingIcon = {
@@ -696,7 +702,11 @@ fun LabsToggleScreen(
                                     AppStatusChips(pi, hidden = pi.packageName in launcherless)
                                     ExpressiveSwitch(
                                         checked = isBlocked,
-                                        enabled = (!feature.needsShell || running) && !carriesSession,
+                                        // The gate off means the list is not being applied, and a
+                                        // switch that changes nothing is a switch to stop offering:
+                                        // it is dimmed with the rest of the list.
+                                        enabled = (!feature.needsShell || running) &&
+                                            !carriesSession && gateOn,
                                         onCheckedChange = { checked ->
                                             blocked = if (checked) blocked + pi.packageName
                                             else blocked - pi.packageName

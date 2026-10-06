@@ -262,6 +262,7 @@ fun ForceDarkScreen(bottomPadding: Dp, onBack: () -> Unit) {
                 label = stringResource(R.string.force_dark_filter_not),
                 count = apps.count { it.packageName !in forced },
                 selected = !showOnlyForced,
+                enabled = gateOn,
                 onClick = { showOnlyForced = false }
             )
             AppFilterChip(
@@ -269,6 +270,7 @@ fun ForceDarkScreen(bottomPadding: Dp, onBack: () -> Unit) {
                 label = stringResource(R.string.force_dark_filter_forced),
                 count = apps.count { it.packageName in forced },
                 selected = showOnlyForced,
+                enabled = gateOn,
                 onClick = { showOnlyForced = true }
             )
         }
@@ -280,6 +282,9 @@ fun ForceDarkScreen(bottomPadding: Dp, onBack: () -> Unit) {
                 .fillMaxWidth()
                 .alpha(contentAlpha)
                 .padding(horizontal = 16.dp, vertical = 8.dp),
+            // Shut with the list while the gate is off: what is shown then is what is being kept,
+            // not something to sieve.
+            enabled = gateOn,
             placeholder = { Text(stringResource(R.string.app_management_search_hint)) },
             leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
             trailingIcon = {
@@ -338,7 +343,10 @@ fun ForceDarkScreen(bottomPadding: Dp, onBack: () -> Unit) {
                                     AppStatusChips(pi, hidden = false)
                                     ExpressiveSwitch(
                                         checked = isForced,
-                                        enabled = running,
+                                        // Dimmed and inert while the gate is off: the list is being
+                                        // kept, not applied, and a switch that changes nothing is
+                                        // one to stop offering.
+                                        enabled = running && gateOn,
                                         onCheckedChange = { checked -> toggle(pi.packageName, checked) }
                                     )
                                 }
