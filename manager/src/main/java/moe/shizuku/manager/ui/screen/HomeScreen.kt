@@ -97,6 +97,8 @@ import moe.shizuku.manager.receiver.ShizukuReceiverStarter
 import moe.shizuku.manager.start.StartFailureKind
 import moe.shizuku.manager.start.StartStatus
 import moe.shizuku.manager.start.StartStatusReporter
+import moe.shizuku.manager.start.stillInTheWay
+import moe.shizuku.manager.utils.Diag
 import moe.shizuku.manager.service.HidingWatchService
 import moe.shizuku.manager.start.isDeveloperOptionsEnabled
 import moe.shizuku.manager.start.isPermissionPermanentlyDenied
@@ -209,7 +211,30 @@ fun HomeScreen(bottomPadding: Dp) {
         startMethod = StartMethodGuard.resolve()
         // A start that is already running has nothing left to report; without this a
         // "starting" state from a path that finishes elsewhere would stick.
-        if (running) StartStatusReporter.clear()
+        if (running) {
+            StartStatusReporter.clear()
+        } else {
+            // The other state with nothing left to report: a failure whose cause was dealt with
+            // while the app was away. This screen refreshes when it comes back into view, which is
+            // exactly when somebody has just been to Developer options or to the accessibility
+            // list and done what the message asked for - so the message is asked about again, and
+            // dropped when the thing it wanted is now true. Leaving it there asks for the same
+            // step twice and hides the next one behind a Start press.
+            val status = StartStatusReporter.status.value
+            if (status is StartStatus.Failed &&
+                !status.kind.stillInTheWay(
+                    wifiConnected = EnvironmentUtils.isWifiConnected(),
+                    wirelessDebuggingOn = EnvironmentUtils.isWirelessDebuggingEnabled(),
+                    adbPort = EnvironmentUtils.getAdbTcpPort()
+                )
+            ) {
+                // Written down because the message it drops is the one somebody was looking at: a
+                // report that says "the step went away" or "the step never went away" is answered
+                // by this line, and by nothing else.
+                Diag.info(TAG, "dropping the start failure whose cause is gone: ${status.kind}")
+                StartStatusReporter.clear()
+            }
+        }
 
         withContext(Dispatchers.IO) {
             // Reset rather than keep: the card must not show the uid of a server that is
@@ -928,6 +953,9 @@ private fun StatusCard(
  * Their per-manufacturer "marketing name" properties (Samsung, Xiaomi, OPPO…) could be
  * layered on top later; on a Nothing phone this is the name KSU shows too.
  */
+/** What this screen's own decisions are filed under in the on-device log. */
+private const val TAG = "StartStatus"
+
 private fun deviceModel(): String = buildString {
     // Capitalised because manufacturers report themselves in lowercase ("samsung"),
     // and without their marketing-name layer there is nothing else to show.

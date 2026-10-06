@@ -80,6 +80,30 @@ fun Context.runningMethodLabel(): String? = runningStartMethodLabelRes()?.let { 
  */
 fun Context.runningMethodSuffix(): String = runningMethodLabel()?.let { " · $it" } ?: ""
 
+/**
+ * Whether what a failure was about is still in the way.
+ *
+ * A failure here is an instruction about one thing to do - switch wireless debugging on, join a
+ * network, open the port - and once it has been done the instruction is worse than useless: it asks
+ * for the step a second time, and the flow looks stuck until somebody presses Start and finds out
+ * it was not. So the answer is asked about again whenever the screen behind it comes back into
+ * view.
+ *
+ * Only the ones that can be asked about are asked about. Pairing is not one of them: the only thing
+ * that knows a phone is paired is a real connection to it, which is the start itself, so that
+ * message stays until a start replaces it.
+ */
+fun StartFailureKind.stillInTheWay(
+    wifiConnected: Boolean,
+    wirelessDebuggingOn: Boolean,
+    adbPort: Int
+): Boolean = when (this) {
+    StartFailureKind.WIFI -> !wifiConnected
+    StartFailureKind.SETTINGS -> !wirelessDebuggingOn
+    StartFailureKind.PORT -> adbPort <= 0
+    StartFailureKind.PAIRING, StartFailureKind.GENERIC -> true
+}
+
 object StartStatusReporter {
     private val _status = MutableStateFlow<StartStatus>(StartStatus.Idle)
     val status: StateFlow<StartStatus> = _status.asStateFlow()
