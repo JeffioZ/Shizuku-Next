@@ -88,40 +88,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # The export writes what the translator typed, and a translator is not thinking about
-      # the resource compiler: an Italian sentence arrives holding `nell'app`, aapt2 refuses
-      # a bare apostrophe wherever it is not inside a quoted region, and master's Build App
-      # goes red on a translation nobody can compile. Escaping it in the repository does not
-      # hold - the next export writes the translator's text again - so it is escaped here, on
-      # the branch that has just been pushed and before the pull request is checked.
-      #
-      # It is a commit of its own rather than part of the export because the export is one
-      # step of somebody else's action; the merge that follows is a squash, so the message
-      # this commits with never reaches master.
-      - name: Escape the apostrophes the export cannot carry
-        run: |
-          set -euo pipefail
-
-          # No branch means the export found nothing new to write, and therefore nothing to
-          # repair: the merge job looks for the same branch and skips for the same reason.
-          if ! git fetch --depth=1 origin l10n 2>/dev/null; then
-            echo "the download pushed no branch, so there is nothing to repair"
-            exit 0
-          fi
-
-          git checkout -B l10n origin/l10n
-          python3 ci/translation_escapes.py
-
-          if git diff --quiet; then
-            echo "the export carried no apostrophe the compiler refuses"
-            exit 0
-          fi
-
-          git -c user.name='github-actions[bot]' \
-              -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
-              commit -am 'fix(i18n): escape the apostrophes the resource compiler refuses'
-          git push origin l10n
-
   merge:
     # In the same workflow as the pull request it merges, and not in a workflow of its own
     # reacting to the pull request event: GitHub does not start runs for events caused by
@@ -152,6 +118,44 @@ jobs:
           fi
           echo "number=$number" >> "$GITHUB_OUTPUT"
           gh pr diff "$number" --name-only | sed '/^$/d' > changed.txt
+          git fetch --depth=1 origin l10n
+
+      # The export writes what the translator typed, and a translator is not thinking about the
+      # resource compiler: an Italian sentence arrives holding `nell'app`, aapt2 refuses a bare
+      # apostrophe wherever it is not inside a quoted region, and master's Build App goes red on a
+      # translation nobody can compile. Escaping it in the repository does not hold - the next
+      # export writes the translator's text again - so it is escaped here, on the branch the
+      # download pushed, before the check that would otherwise refuse it.
+      #
+      # Here rather than in the download job, where it was first written, because the fetch of the
+      # branch the export had just pushed failed there and the step reported "nothing to repair" -
+      # with that fetch's error sent to /dev/null, which is why the cause is still open. A shallow
+      # clone is not it: fetching a branch that has just been pushed into one works, measured. What
+      # is known is that this job fetches the same branch successfully a few steps above, and that
+      # the repair has to happen before the check below rather than after it.
+      - name: Escape the apostrophes the export cannot carry
+        if: steps.pr.outputs.skip != 'true'
+        run: |
+          set -euo pipefail
+
+          # No swallowing of a fetch failure here: if the branch cannot be read, the repair cannot
+          # be made, and the step has to say so rather than let the check below report it as a bad
+          # translation.
+          git checkout -B l10n origin/l10n
+          python3 ci/translation_escapes.py
+
+          if git diff --quiet; then
+            echo "the export carried no apostrophe the compiler refuses"
+            exit 0
+          fi
+
+          git -c user.name='github-actions[bot]' \
+              -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+              commit -am 'fix(i18n): escape the apostrophes the resource compiler refuses'
+          git push origin l10n
+
+          # The check reads the branch out of git rather than out of this working tree, so the
+          # fetch that found it has to see what this step pushed.
           git fetch --depth=1 origin l10n
 
       - name: Check it before merging it
