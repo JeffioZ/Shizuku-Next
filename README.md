@@ -2,17 +2,17 @@
 
 <img src="docs/logo.png" width="132" alt="Shizuku Next">
 
-# Shizuku Next
+# Shizuku-Next
 
-<img width="200" alt="Screenshot_20260928_115734_Shizuku Next" src="https://github.com/user-attachments/assets/377def8a-0e21-45a8-abd1-22ad83e53fa2" />
-<img width="200" alt="Screenshot_20260928_115739_Shizuku Next" src="https://github.com/user-attachments/assets/339d8b1b-0c2c-4374-9a9f-13a5aa3fb2c7" />
-<img width="200" alt="Screenshot_20260928_115745_Shizuku Next" src="https://github.com/user-attachments/assets/146ac504-a78e-48c5-81d6-d9367dc87616" />
+<img width="200" alt="Home: whether the server is running and how it was started" src="docs/screenshots/home.png" />
+<img width="200" alt="Apps: which apps may use Shizuku" src="docs/screenshots/apps.png" />
+<img width="200" alt="Settings: the switches that decide how it starts" src="docs/screenshots/settings.png" />
 
 #
 
 An Android app that allows other apps to use system-level APIs that require ADB/root privileges.
 
-**Shizuku Next is a fork of [thedjchi's Shizuku](https://github.com/thedjchi/Shizuku), which is itself a fork of
+**Shizuku-Next is a fork of [thedjchi's Shizuku](https://github.com/thedjchi/Shizuku), which is itself a fork of
 [RikkaApps' Shizuku](https://github.com/RikkaApps/Shizuku).** Shizuku the server, the API, the shell and
 everything that makes this possible is RikkaW's work, and the fork this is built on is thedjchi's. Their credit
 is given in full below; please support them.
@@ -59,7 +59,7 @@ on purpose, because the second list is the only part this project is responsible
 
 ### 🍴 From [thedjchi's fork](https://github.com/thedjchi/Shizuku) his work, carried over
 
-Shizuku Next started from his fork of Shizuku, so these are his features. A couple have been extended here
+Shizuku-Next started from his fork of Shizuku, so these are his features. A couple have been extended here
 since the transport split inside **TCP mode**, for instance and where that is so, the extra behaviour
 also appears under this fork's own list below.
 
@@ -121,7 +121,7 @@ fixes a critical bug in the original v13.6.0 which prevented Shizuku from workin
 
 * And more!
 
-### 🦊 Added by Shizuku Next (this fork)
+### 🦊 Added by Shizuku-Next (this fork)
 
 The interface work, the start-method handling and the reliability fixes below are ours, built on top of his
 fork, which is built on [RikkaApps' Shizuku](https://github.com/RikkaApps/Shizuku).
