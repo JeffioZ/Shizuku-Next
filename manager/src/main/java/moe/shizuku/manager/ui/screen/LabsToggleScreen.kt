@@ -349,7 +349,21 @@ fun LabsToggleScreen(
                     it.packageName.contains(trimmed, ignoreCase = true)
             }
         }
-        searched.sortedBy { appLabel(pm, it).lowercase() }
+        // The apps this mode applies to first, then by name. The list is long - three hundred
+        // packages on a phone - and the rows somebody opens this screen for are the ones already on
+        // it, which sorting by name alone buries wherever the alphabet happens to put them. Inside
+        // each group the order is still the name, so nothing moves except across the line between
+        // applied and not.
+        //
+        // Each name is resolved once, before the sort rather than inside it: a comparator is asked
+        // for its keys about n log n times, and this one runs again on every keystroke of the
+        // search above it, so a lookup per comparison was the same few labels fetched over and over.
+        searched
+            .map { app -> app to appLabel(pm, app).lowercase() }
+            .sortedWith(
+                compareBy({ (app, _) -> app.packageName !in blocked }, { (_, label) -> label })
+            )
+            .map { (app, _) -> app }
     }
 
     if (pickingVpn) {

@@ -156,7 +156,15 @@ fun ForceDarkScreen(bottomPadding: Dp, onBack: () -> Unit) {
                     it.packageName.contains(trimmed, ignoreCase = true)
             }
         }
-        searched.sortedBy { appLabel(pm, it).lowercase() }
+        // The forced apps first, then by name, for the same reason the hiding lists do it: what
+        // somebody opens this screen for is what is already on it. The names are resolved once,
+        // before the sort, for the reason the hiding list gives.
+        searched
+            .map { app -> app to appLabel(pm, app).lowercase() }
+            .sortedWith(
+                compareBy({ (app, _) -> app.packageName !in forced }, { (_, label) -> label })
+            )
+            .map { (app, _) -> app }
     }
 
     // One place for what turning the mode on or off does: the setting, the screen's own state and
