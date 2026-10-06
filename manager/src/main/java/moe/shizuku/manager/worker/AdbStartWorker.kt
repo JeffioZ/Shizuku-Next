@@ -193,11 +193,20 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             // From here the USB method always has a classic port to use.
 
             // A wireless start goes over the wireless (TLS) port, which discovery has to
-            // find. Taking the classic ADB port whichever TCP mode keeps open is what made
-            // a "Wireless debugging" start run over USB debugging's transport and report
-            // itself as USB, so the classic port is what the USB method and platforms
-            // without wireless debugging use.
-            val useClassicPort = usbMethod || !EnvironmentUtils.isTlsSupported()
+            // find - unless TCP mode is keeping the classic port open, in which case that is the
+            // port to use and hunting for a wireless one is asking for the network this start does
+            // not need. See [StartTransport.classicPortInUse] for what went wrong when the two
+            // answers disagreed, and for why Android 17 makes the port the only answer there is.
+            //
+            // A wireless start taking the classic port used to report itself as USB, which is why
+            // it was kept away from one; that was the reporting rather than the transport, and
+            // [AdbStarter] now says which of the two a start used.
+            val useClassicPort = StartTransport.classicPortInUse(
+                usbMethod = usbMethod,
+                tlsSupported = EnvironmentUtils.isTlsSupported(),
+                tcpPort = tcpPort,
+                tcpMode = ShizukuSettings.getTcpMode()
+            )
             val port = tcpPort.takeIf { useClassicPort }
                 ?: callbackFlow {
                 // The mDNS service discovery below arrived with wireless debugging in Android 11
