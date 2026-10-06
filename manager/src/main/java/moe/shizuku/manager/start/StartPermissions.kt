@@ -169,3 +169,49 @@ fun grantWriteSecureSettingsIfNeeded() {
         }
     }
 }
+
+/**
+ * The permission a local-only hotspot needs, or null where there is none.
+ *
+ * Android 13 (SDK 33) gated `startLocalOnlyHotspot` behind NEARBY_WIFI_DEVICES and Android 17 has
+ * not moved it on, while Android 17 is also the release that asks for ACCESS_LOCAL_NETWORK instead
+ * - which is the permission [localNetworkPermission] answers with there. Measured on the phone: the
+ * app holds ACCESS_LOCAL_NETWORK and `startLocalOnlyHotspot` still throws "does not have nearby
+ * devices permission", so the hotspot never comes up, there is no interface for mDNS to resolve a
+ * port against, and every no-network start ends having found nothing, with the app's own
+ * permissions page saying everything is granted. The hotspot therefore gets its own answer rather
+ * than the discovery one.
+ */
+fun localHotspotPermission(): String? =
+    if (Build.VERSION.SDK_INT >= 33) Manifest.permission.NEARBY_WIFI_DEVICES else null
+
+/**
+ * Grants the hotspot's permission through the already running server.
+ *
+ * Asking for it is not enough: on Android 17 the request is made for the discovery permission
+ * instead, so nothing ever asks for this one, and the hotspot is left unable to start. A runtime
+ * permission cannot be given without a dialog either, and the dialog is not offered for a
+ * permission the app has not asked for - but a running server *is* ADB (or root), so it can pass
+ * this on the way `pm grant` does, which is how the hiding lists and WRITE_SECURE_SETTINGS already
+ * get theirs.
+ *
+ * Safe to call whenever a server is seen running: it returns at once when the permission is there.
+ */
+fun grantLocalHotspotPermissionIfNeeded() {
+    val context = ShizukuApplication.appContext
+    val permission = localHotspotPermission() ?: return
+    if (context.hasPermission(permission)) return
+
+    scope.launch {
+        val output = runShellCommand("pm grant ${context.packageName} $permission")
+        if (context.hasPermission(permission)) {
+            Diag.info(AppConstants.TAG, "Granted $permission through the running server")
+        } else {
+            Diag.warn(
+                AppConstants.TAG,
+                "Could not grant $permission through the server" +
+                    (output?.let { ": $it" } ?: "")
+            )
+        }
+    }
+}

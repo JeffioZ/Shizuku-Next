@@ -15,6 +15,7 @@ import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.manage.Hiding
 import moe.shizuku.manager.utils.Diag
 import moe.shizuku.manager.manage.HidingGrants
+import moe.shizuku.manager.start.grantLocalHotspotPermissionIfNeeded
 import moe.shizuku.manager.start.grantWriteSecureSettingsIfNeeded
 import rikka.shizuku.Shizuku
 
@@ -69,6 +70,10 @@ object ShizukuStateMachine {
                 // The server is up, so it can hand us the ADB-only permission the wireless
                 // flow needs the user shouldn't have to reach for a computer for it.
                 grantWriteSecureSettingsIfNeeded()
+                // And the one the no-network start's hotspot needs, which Android 17 leaves
+                // ungranted on a fresh install because its own ask is for a different
+                // permission there - see [localHotspotPermission].
+                grantLocalHotspotPermissionIfNeeded()
                 grantHidingAccessIfListsAreInUse()
                 // Remember how the server was launched so later background starts
                 // know whether to use root or wireless debugging (previously done by
@@ -159,6 +164,7 @@ object ShizukuStateMachine {
         // permission that was revoked behind our back: there is no transition to hook then.
         if (state == State.RUNNING) {
             grantWriteSecureSettingsIfNeeded()
+            grantLocalHotspotPermissionIfNeeded()
             grantHidingAccessIfListsAreInUse()
         }
         return state
