@@ -55,6 +55,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -716,13 +717,20 @@ private fun PasswordLine(password: String, security: String, revealed: Boolean, 
         Text(
             text = when {
                 password.isEmpty() -> stringResource(R.string.wifi_passwords_none)
-                revealed -> password
+                revealed -> breakable(password)
                 // A length that says nothing: the key's own would be a hint, and this is a mask.
                 else -> Mask
             },
             style = MaterialTheme.typography.bodySmall,
             fontFamily = if (revealed) FontFamily.Monospace else FontFamily.Default,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            // A key is one unbroken word - up to sixty-three characters with no space in it - and
+            // text with nothing to break at cannot wrap: it ran out of the row and took the row with
+            // it. Weight first, so the labels beside it are measured and it gets what is left, and
+            // the lines and the ellipsis are the backstop for a key longer than a real one.
+            maxLines = if (revealed) 3 else 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f, fill = false)
         )
 
         Text(
@@ -745,6 +753,19 @@ private fun PasswordLine(password: String, security: String, revealed: Boolean, 
 
 /** The dots a hidden key is drawn as, whatever the key's length is. */
 private const val Mask = "••••••••"
+
+/** The break opportunity [breakable] puts between characters, which draws as nothing. */
+private const val Breakable = "\u200B"
+
+/**
+ * A key with somewhere to wrap.
+ *
+ * Four characters at a time, joined by a zero-width space: a break opportunity the eye does not
+ * see, which is the only way a run of characters with no spaces in it can be drawn over more than
+ * one line. The copy button still copies the key itself, so nothing is inserted into what leaves
+ * the screen.
+ */
+internal fun breakable(password: String): String = password.chunked(4).joinToString(Breakable)
 
 private fun toast(context: Context, message: String) {
     Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
