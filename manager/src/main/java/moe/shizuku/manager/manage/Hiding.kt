@@ -418,13 +418,21 @@ object Hiding {
      */
     fun reconcile(): String? {
         val foreground = foregroundPackage()
+
+        // An app this app just launched counts as in front until it really is: the hiding has to be
+        // in place before the app reads the settings, and the app being in front is already too late
+        // for that. See [openWithHiding]. Dropped the moment the platform names it, so from there
+        // the ordinary rule - hide while it is in front - is what holds it.
+        val opening = openingPackage()
+        if (opening != null && foreground == opening) forgetOpening()
+
         var hidingFor: String? = null
 
         // An app the user closed counts as gone even when the platform still names it the last
         // app to come to the front: a swipe out of recents does not always leave a pause behind
         // it, and the watch would go on hiding for an app that is not there. That is what DUMP
         // is for, and it is the only reason it is asked for.
-        val inFront = foreground?.takeIf { !closedByUserSince(it, hiddenSince()) }
+        val inFront = opening ?: foreground?.takeIf { !closedByUserSince(it, hiddenSince()) }
 
         Signal.entries.forEach { signal ->
             // A mode somebody switched off is put back and left alone, list and all: turning it
@@ -533,6 +541,58 @@ object Hiding {
      * same thing twice cannot record the lie as the truth and leave restore with nothing to put
      * back.
      */
+    /**
+     * Applies the hiding for one app and then opens it, which is the order that works.
+     *
+     * An app that reads the settings while it starts cannot be helped by a watch that reacts to it
+     * being in front - that is after its first read. Measured on a Nothing A065: YONO SBI crashed on
+     * every launch with the watch's write landing a second in, and started normally when the same
+     * write was made before the launch. So the write comes first, and the app is remembered as
+     * coming: without that the watch's next pass would see nothing in front and put it straight
+     * back, before the app had even drawn.
+     */
+    fun openWithHiding(signal: Signal, packageName: String): Boolean {
+        val hidden = hide(signal)
+
+        val intent = ShizukuApplication.appContext.packageManager
+            .getLaunchIntentForPackage(packageName)
+            ?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        if (intent == null) {
+            // No way to open it: the hiding was asked for and stays, but nothing is coming for the
+            // hold to wait on.
+            forgetOpening()
+            return hidden
+        }
+
+        opening = packageName to System.currentTimeMillis()
+        runCatching { ShizukuApplication.appContext.startActivity(intent) }
+            .onFailure {
+                Diag.warn(TAG, "could not open $packageName with its settings hidden", it)
+                forgetOpening()
+            }
+        return hidden
+    }
+
+    /** The app a hide-then-open is waiting for, and when it was asked for. */
+    @Volatile
+    private var opening: Pair<String, Long>? = null
+
+    /** How long an app may take to appear before the hold lets go. */
+    private const val OPENING_GRACE_MS = 15_000L
+
+    private fun openingPackage(): String? {
+        val (packageName, at) = opening ?: return null
+        if (System.currentTimeMillis() - at > OPENING_GRACE_MS) {
+            forgetOpening()
+            return null
+        }
+        return packageName
+    }
+
+    private fun forgetOpening() {
+        opening = null
+    }
+
     fun hide(signal: Signal): Boolean {
         if (signal == Signal.VPN) return takeVpnDown()
         if (isHidden(signal)) return true

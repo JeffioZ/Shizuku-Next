@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.AccessibilityNew
 import androidx.compose.material.icons.outlined.DeveloperMode
 import androidx.compose.material.icons.outlined.Dns
+import androidx.compose.material.icons.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.RestartAlt
 import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.outlined.Usb
@@ -697,6 +698,36 @@ fun LabsToggleScreen(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
+                                    // Hiding an app while it is starting is the only way that works
+                                    // for a check made during startup, so the list can open an app
+                                    // the way the watch cannot: hide first, then launch. Offered only
+                                    // where hiding it is something this app can actually do.
+                                    val openWithHiding = feature.signal?.takeIf {
+                                        isBlocked && gateOn && !carriesSession &&
+                                            (!feature.needsShell || running)
+                                    }
+                                    if (openWithHiding != null) {
+                                        IconButton(
+                                            onClick = {
+                                                scope.launch {
+                                                    withContext(Dispatchers.IO) {
+                                                        Hiding.openWithHiding(
+                                                            openWithHiding,
+                                                            pi.packageName
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        ) {
+                                            Icon(
+                                                Icons.Outlined.OpenInNew,
+                                                contentDescription = stringResource(
+                                                    R.string.hiding_open_with_hiding
+                                                )
+                                            )
+                                        }
+                                    }
+
                                     // The chips the other app lists carry, so an app says the
                                     // same things about itself wherever it is listed.
                                     AppStatusChips(pi, hidden = pi.packageName in launcherless)

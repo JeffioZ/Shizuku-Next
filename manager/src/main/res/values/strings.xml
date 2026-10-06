@@ -159,6 +159,7 @@
     <string name="hiding_gate_disabled">Disabled</string>
     <string name="hiding_gate_kept">%1$d kept</string>
     <string name="hiding_filter_hidden">Hidden</string>
+    <string name="hiding_open_with_hiding">Open with the settings hidden</string>
     <string name="hiding_filter_shown">Visible</string>
     <string name="hiding_filter_empty">Nothing hidden.</string>
     <string name="hiding_restore">Restore</string>
