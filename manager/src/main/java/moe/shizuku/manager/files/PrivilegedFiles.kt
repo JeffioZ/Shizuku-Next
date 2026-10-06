@@ -1,6 +1,7 @@
 package moe.shizuku.manager.files
 
 import android.content.ComponentName
+import moe.shizuku.manager.ShizukuApplication
 import android.content.ServiceConnection
 import android.os.IBinder
 import android.os.Looper
@@ -60,7 +61,15 @@ object PrivilegedFiles {
 
     private val args by lazy {
         Shizuku.UserServiceArgs(
-            ComponentName(BuildConfig.APPLICATION_ID, PrivilegedFilesService::class.java.name)
+            // The app's own package as it is *now*, not as it was built: Stealth mode renames the
+            // package, and a component named by the build-time id then points at a package that no
+            // longer exists - which is what made the file browser and the installer fail on a
+            // hidden copy while everything else worked. The service class keeps its name, so only
+            // the package half of this needed to change.
+            ComponentName(
+                ShizukuApplication.appContext.packageName,
+                PrivilegedFilesService::class.java.name
+            )
         )
             // Not a daemon: the service exists for this app's screens, and a process left running
             // after the app is gone would be a thing the user never asked to keep.

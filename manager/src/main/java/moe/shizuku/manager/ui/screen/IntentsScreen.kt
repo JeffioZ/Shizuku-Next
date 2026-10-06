@@ -28,13 +28,21 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import moe.shizuku.manager.ui.component.PillButtonQuiet
 import moe.shizuku.manager.R
+import moe.shizuku.manager.ShizukuApplication
 import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.starter.Starter
 import moe.shizuku.manager.ui.component.SegmentedColumn
 import moe.shizuku.manager.ui.component.SegmentedListItem
 import rikka.core.util.ClipboardUtils
 
-private const val PACKAGE = "moe.shizuku.privileged.api"
+/**
+ * The package as it is now, not as it was built.
+ *
+ * These are the commands the screen asks people to paste into their automation app, and a hidden
+ * copy answers to its own name: showing the build-time one would hand out commands that address a
+ * package which is not installed.
+ */
+private val PACKAGE: String get() = ShizukuApplication.appContext.packageName
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

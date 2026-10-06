@@ -810,7 +810,9 @@ private fun NameDialog(ask: Ask, onDismiss: () -> Unit, onConfirm: (String) -> U
 private fun openWith(context: Context, path: String, name: String): Boolean {
     val uri = Uri.Builder()
         .scheme("content")
-        .authority("${BuildConfig.APPLICATION_ID}.files")
+        // The authority as it is now: the rename rewrites the manifest's authorities to the new
+        // package, so a URI built from the build-time id addresses a provider that is not there.
+        .authority("${context.packageName}.files")
         .path(path)
         .build()
 
