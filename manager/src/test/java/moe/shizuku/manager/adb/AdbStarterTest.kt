@@ -1,8 +1,12 @@
 package moe.shizuku.manager.adb
 
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.net.ServerSocket
 
 /**
  * The decision in front of closing the classic ADB port.
@@ -45,5 +49,31 @@ class AdbStarterTest {
     @Test
     fun `nothing in the way leaves the port closable`() {
         assertNull(AdbStarter.closeBlocker(wirelessDebugging = false, usbDebugging = true))
+    }
+
+    // -- whether a port is really there -----------------------------------------------------------
+
+    @Test
+    fun `a port something is listening on is reported as listening`() = runBlocking {
+        // A real socket, because that is the whole point of the check: the port number a start
+        // reads out of `service.adb.tcp.port` says nothing on its own.
+        ServerSocket(0).use { server ->
+            assertTrue(AdbStarter.isPortListening(server.localPort))
+        }
+    }
+
+    @Test
+    fun `a port the daemon has left behind is not listening`() = runBlocking {
+        // Bound and then released, which is the state issue #71 was: the number is still in the
+        // setting and nothing is behind it, so a start has to look elsewhere.
+        val port = ServerSocket(0).use { it.localPort }
+
+        assertFalse(AdbStarter.isPortListening(port))
+    }
+
+    @Test
+    fun `a port that is not a number at all is not listening`() = runBlocking {
+        assertFalse(AdbStarter.isPortListening(0))
+        assertFalse(AdbStarter.isPortListening(-1))
     }
 }

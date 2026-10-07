@@ -125,7 +125,6 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             // Read through the one helper rather than the setting's name again here: the port's own
             // close asks the same question, and two spellings of it would eventually disagree.
             val wirelessAlreadyEnabled = EnvironmentUtils.isWirelessDebuggingEnabled()
-            val usbAlreadyEnabled = EnvironmentUtils.isAdbEnabled()
 
             // All of the writes below go through helpers that swallow a permission denial:
             // on a fresh install (or after a re-signed update) the app has no
@@ -133,9 +132,14 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             // used to abort the start and get reported as a pairing problem. A start that
             // can't nudge adbd should still try to connect.
             if (usbMethod) {
-                if (!usbAlreadyEnabled) {
-                    applicationContext.writeGlobalSetting(Settings.Global.ADB_ENABLED, 1)
-                }
+                // Written whether or not it reads as on. On Android 17 (SDK 37) that read is
+                // redacted to 0 for third-party apps, so [EnvironmentUtils.isAdbEnabled] answers
+                // "on" for a phone that has it off - and skipping the write on that answer left a
+                // USB start on the one platform where the "Disable USB debugging" option had just
+                // turned the toggle off: nothing to connect to, and the toggle never coming back.
+                // Setting it to 1 when it already is 1 changes nothing, so there is no reason to
+                // ask a question whose answer may be invented.
+                applicationContext.writeGlobalSetting(Settings.Global.ADB_ENABLED, 1)
                 // Don't let the authorized connection expire while we connect.
                 applicationContext.writeGlobalLongSetting("adb_allowed_connection_time", 0L)
             } else if (wirelessAlreadyEnabled && !forcedWireless) {
@@ -206,14 +210,27 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             // not need. See [StartTransport.classicPortInUse] for what went wrong when the two
             // answers disagreed, and for why Android 17 makes the port the only answer there is.
             //
-            // A wireless start taking the classic port used to report itself as USB, which is why
-            // it was kept away from one; that was the reporting rather than the transport, and
-            // [AdbStarter] now says which of the two a start used.
+            // "Kept open" is a question about the phone, not about the setting: the port number is
+            // a property that outlives adbd, so the toggles turned off on a stop leave it behind
+            // and the start has to look at whether anything is behind it. It did not, and that is
+            // what the two starts measured at 20:49 on the phone did - port 5555 taken in the 18 ms
+            // the state change took, no mDNS search, no `adb_wifi_enabled=1` anywhere in the log,
+            // and a socket nothing was listening on. Discovered instead, the search writes
+            // wireless debugging on, and adbd with it, which is how a start brings back a toggle an
+            // earlier stop switched off. Tracked as issue #71.
+            val classicPortListening = AdbStarter.isPortListening(tcpPort)
+            if (tcpPort > 0 && !classicPortListening && !usbMethod) {
+                Diag.info(
+                    AppConstants.TAG,
+                    "Port $tcpPort is not listening behind the setting; looking for a wireless one"
+                )
+            }
             val useClassicPort = StartTransport.classicPortInUse(
                 usbMethod = usbMethod,
                 tlsSupported = EnvironmentUtils.isTlsSupported(),
                 tcpPort = tcpPort,
-                tcpMode = ShizukuSettings.getTcpMode()
+                tcpMode = ShizukuSettings.getTcpMode(),
+                portListening = classicPortListening
             )
             val port = tcpPort.takeIf { useClassicPort }
                 ?: callbackFlow {

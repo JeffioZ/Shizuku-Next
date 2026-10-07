@@ -42,13 +42,23 @@ object StartTransport {
      * any wireless network. Not enabling adbwifi.", measured with a local-only hotspot up and a
      * wireless network absent - so searching for a wireless port there is asking for a port that
      * cannot exist, and the search is what a networkless start spends its whole window on.
+     *
+     * [portListening] is the answer only the caller can give, because it is about the phone rather
+     * than about the request: `service.adb.tcp.port` outlives adbd, so a number in it is not a port
+     * that is there. A phone whose debugging toggles were turned off when Shizuku stopped still
+     * reads the port the daemon was using, and taking that number sent a wireless start to a socket
+     * nothing was listening on - while skipping the mDNS search that is the only thing which turns
+     * wireless debugging back on, which is what the start after that stop has to do. Issue #71:
+     * a start there failed with the toggles still off, and needed the toggle switched on by hand.
      */
     fun classicPortInUse(
         usbMethod: Boolean,
         tlsSupported: Boolean,
         tcpPort: Int,
-        tcpMode: Boolean
-    ): Boolean = usbMethod || !tlsSupported || (tcpMode && classicPortFallback(tcpPort) != null)
+        tcpMode: Boolean,
+        portListening: Boolean
+    ): Boolean = usbMethod || !tlsSupported ||
+        (tcpMode && classicPortFallback(tcpPort) != null && portListening)
 
     /**
      * The port to use when discovery over mDNS has found nothing, or null when there is

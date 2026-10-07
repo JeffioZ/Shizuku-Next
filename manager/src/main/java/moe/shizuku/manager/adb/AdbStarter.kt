@@ -317,6 +317,21 @@ object AdbStarter {
         }
     }
 
+    /**
+     * Whether something is listening on a local port at this moment.
+     *
+     * A port number is not a port, which is the mistake this exists to stop: `service.adb.tcp.port`
+     * is a property and outlives the daemon that was listening on it, so a phone whose debugging
+     * toggles were turned off when Shizuku stopped still reads the port adbd was using. A connect
+     * is the only answer that tells the two apart, and it is cheap - nothing listening on the
+     * loopback refuses at once.
+     */
+    suspend fun isPortListening(port: Int, host: String = "127.0.0.1"): Boolean =
+        withContext(Dispatchers.IO) {
+            if (port <= 0) return@withContext false
+            runCatching { Socket(host, port).use { } }.isSuccess
+        }
+
     private suspend fun waitForPortAvailable(
         host: String,
         port: Int,
