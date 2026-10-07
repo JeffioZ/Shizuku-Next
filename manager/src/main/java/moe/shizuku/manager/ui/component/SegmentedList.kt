@@ -137,7 +137,13 @@ fun SegmentedListItem(
     // A row that carries a switch toggles from anywhere on it, which is what a settings row
     // is, and the switch becomes decoration: hidden from accessibility, so the row is read
     // once with its state rather than as a row plus a second control saying the same thing.
-    val toggle = if (switchState != null && onSwitchChange != null) {
+    //
+    // [switchEnabled] is what makes the whole row toggle, not only the greyed switch: the click
+    // lives on the row, so a switch drawn as off-limits and a row that still answers a tap is a
+    // control saying two different things - the switch the user could not turn off was one tap
+    // anywhere on the row away. A row with an [onClick] keeps it: that is the tap opening
+    // whatever the row is for, and it is not the switch's state being changed behind it.
+    val toggle = if (switchState != null && onSwitchChange != null && switchEnabled) {
         { onSwitchChange(!switchState) }
     } else null
     val rowClick = onClick ?: toggle
