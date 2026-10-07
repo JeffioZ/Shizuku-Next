@@ -27,6 +27,16 @@ private const val TAG = "ApkUtils"
 
 const val ORIGINAL_PACKAGE_NAME = "moe.shizuku.privileged.api"
 
+/**
+ * The version code the stub is installed with.
+ *
+ * Above every version of the original app there can ever be, which is the point: the stub exists to
+ * hold the original package name while the real app is hidden under another one, and anything the
+ * store could publish above it would be offered as an update for a package it does not own. Being
+ * over Google Play's own limit (2,100,000,000) is what makes that permanently true.
+ */
+private const val STUB_VERSION_CODE = Int.MAX_VALUE
+
 private val app = ShizukuApplication.application
 private val appContext = ShizukuApplication.appContext
 
@@ -100,8 +110,16 @@ fun createStubApk(pkgName: String): File {
     Log.i(TAG, "Creating manifest")
     manifest.apply {
         setPackageName(pkgName)
-        setVersionCode(1)
-        setVersionName("1.0.0")
+        // The most this package can ever claim. The stub carries the original package name, so
+        // Google Play sees that app installed and offers the store's version over it - which is
+        // what issue #73 reports: an update that cannot work, and that would take the stub's place
+        // if it did. A code above the store's own ceiling (2,100,000,000) is the one no release can
+        // outrank, so nothing is ever offered for it again.
+        setVersionCode(STUB_VERSION_CODE)
+        // The fork's own version name rather than a made-up one: this is what the app-info page and
+        // the store's row show, and a stub reading "1.0.0" is what made it look like an outdated
+        // copy of the original.
+        setVersionName(getVersionName())
         setApplicationLabel(appName.getResourceId())
         setIconResourceId(appIcon.getResourceId())
         setTargetSdkVersion(app.applicationInfo.targetSdkVersion)
