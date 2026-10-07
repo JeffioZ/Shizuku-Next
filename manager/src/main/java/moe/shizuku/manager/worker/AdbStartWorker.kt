@@ -142,6 +142,19 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 applicationContext.writeGlobalSetting(Settings.Global.ADB_ENABLED, 1)
                 // Don't let the authorized connection expire while we connect.
                 applicationContext.writeGlobalLongSetting("adb_allowed_connection_time", 0L)
+            } else if (withoutNetwork) {
+                // "Without Wi-Fi" has no wireless network to raise adbd with, and the classic port it
+                // runs over exists only while adbd does, so the USB toggle is what starts it - but
+                // only when it is off. Android 17 redacts that read and answers "on" for a phone
+                // that has it off, so there the write is what "off" has to mean.
+                if (!EnvironmentUtils.isAdbEnabled() || Build.VERSION.SDK_INT >= 37) {
+                    if (applicationContext.writeGlobalSetting(Settings.Global.ADB_ENABLED, 1)) {
+                        Diag.info(
+                            AppConstants.TAG,
+                            "Start without Wi-Fi: switched USB debugging on for adbd"
+                        )
+                    }
+                }
             } else if (wirelessAlreadyEnabled && !forcedWireless) {
                 // Wireless is already active. Writing adb_wifi_enabled=1 again is a
                 // no-op (SettingsProvider does not notify on the same value), so adbd
