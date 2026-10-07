@@ -496,6 +496,17 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                                                 false
                                             ).apply()
                                         autoDisableWireless = false
+                                        // Android 17 only, and the reason is the platform: it refuses
+                                        // to run adbd's wireless server without a wireless network,
+                                        // so there the classic port is this mode's only transport
+                                        // rather than the faster one. TCP mode is switched on with
+                                        // it, and the row below refuses to switch it off while this
+                                        // is on. Everywhere else the hotspot route still works and
+                                        // the two settings stay the user's to choose.
+                                        if (EnvironmentUtils.isAdbWifiOverhauled()) {
+                                            ShizukuSettings.setTcpMode(true)
+                                            tcpMode = true
+                                        }
                                     }
                                     ShizukuSettings.setForceWirelessDebugging(checked)
                                     forceWireless = checked
@@ -558,6 +569,12 @@ fun SettingsScreen(bottomPadding: Dp, onOpenDetail: (Detail) -> Unit) {
                             headlineContent = { Text(stringResource(R.string.settings_tcp_mode)) },
                             supportingContent = { Text(stringResource(R.string.settings_tcp_mode_summary)) },
                             switchState = tcpMode,
+                            // On Android 17, on and not switchable off while the start without Wi-Fi
+                            // is on: there that start runs over the classic port this keeps open,
+                            // so a mode that cannot work without it must not leave it off. On any
+                            // other platform it stays the user's setting.
+                            switchEnabled =
+                                !(forceWireless && EnvironmentUtils.isAdbWifiOverhauled()),
                             onSwitchChange =
                                 { checked ->
                                     when {

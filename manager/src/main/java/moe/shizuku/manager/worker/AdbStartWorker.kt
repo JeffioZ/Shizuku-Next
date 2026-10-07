@@ -155,6 +155,17 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                         )
                     }
                 }
+                // Android 17 refuses to run adbd's wireless server without a wireless network, so on
+                // that platform the classic port is this method's only transport rather than the
+                // faster one: TCP mode is switched on with it, which is the setting that keeps that
+                // port open for the restarts the method exists for.
+                if (EnvironmentUtils.isAdbWifiOverhauled() && !ShizukuSettings.getTcpMode()) {
+                    ShizukuSettings.setTcpMode(true)
+                    Diag.info(
+                        AppConstants.TAG,
+                        "Start without Wi-Fi: switched TCP mode on for Android 17"
+                    )
+                }
             } else if (wirelessAlreadyEnabled && !forcedWireless) {
                 // Wireless is already active. Writing adb_wifi_enabled=1 again is a
                 // no-op (SettingsProvider does not notify on the same value), so adbd
