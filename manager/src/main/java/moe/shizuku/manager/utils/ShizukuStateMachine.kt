@@ -96,23 +96,45 @@ object ShizukuStateMachine {
             // launch ends and clearing it here also wiped it on every transient
             // STOPPED while a start was still coming up (the binder is not up yet),
             // which left a running server being reported as "Unknown".
-            listeners.forEach { it(newState) }
-            Log.d("ShizukuStateMachine", newState.toString())
+            // The broadcast goes out first, and the listeners are each guarded.
+            //
+            // This is the one piece of news that leaves the app, and it used to sit after the
+            // listener loop, so a listener that threw took it with it. Measured on the device
+            // while answering issue #80: the transitions were logged from this very block and no
+            // broadcast reached the system for any of them, while the same action sent from a
+            // shell was recorded. A status broadcast is not something a listener gets to cancel,
+            // and neither is a listener's own failure the state machine's problem.
             when (newState) {
                 State.RUNNING, State.STOPPED, State.CRASHED -> sendShizukuChangedBroadcast(newState)
                 else -> Unit
             }
+            listeners.forEach { listener ->
+                runCatching { listener(newState) }
+                    .onFailure { Diag.warn("ShizukuStateMachine", "A state listener failed", it) }
+            }
+            Log.d("ShizukuStateMachine", newState.toString())
         }
     }
 
     // Broadcast so automation apps (e.g. MacroDroid/Tasker) can react to
     // Shizuku starting or stopping.
     private fun sendShizukuChangedBroadcast(newState: State) {
+        val status = if (newState == State.RUNNING) 1 else 0
         val intent = Intent("${appContext.packageName}.SHIZUKU_CHANGED").apply {
-            putExtra("status", if (newState == State.RUNNING) 1 else 0)
-            addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
+            putExtra("status", status)
+            addFlags(
+                Intent.FLAG_INCLUDE_STOPPED_PACKAGES or
+                    // Sent urgently rather than as bookkeeping to catch up on: this is a status
+                    // change somebody's automation is waiting on.
+                    Intent.FLAG_RECEIVER_FOREGROUND
+            )
         }
-        appContext.sendBroadcast(intent)
+        // Written down either way round: whether it went, and what it said. A send that fails is
+        // the one thing an automation author needs to know about, and without this line it looks
+        // exactly like nobody having registered for it.
+        runCatching { appContext.sendBroadcast(intent) }
+            .onSuccess { Diag.info("ShizukuStateMachine", "status broadcast sent: $status") }
+            .onFailure { Diag.warn("ShizukuStateMachine", "Could not send the status broadcast", it) }
     }
 
     fun set(newState: State) = transition { newState }
