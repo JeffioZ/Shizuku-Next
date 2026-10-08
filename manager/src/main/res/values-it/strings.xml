@@ -146,6 +146,7 @@
     <string name="hiding_gate_disabled">Disabilitato</string>
     <string name="hiding_gate_kept">%1$d mantenuti</string>
     <string name="hiding_filter_hidden">Nascosto</string>
+    <string name="hiding_open_with_hiding">Apri con le impostazioni nascoste</string>
     <string name="hiding_filter_shown">Visibile</string>
     <string name="hiding_filter_empty">Nessun elemento nascosto.</string>
     <string name="hiding_restore">Ripristina</string>
