@@ -623,6 +623,23 @@ object PackageTools {
             .orEmpty()
             .toSet()
 
+    /**
+     * Puts the remembered blocks back on the platform, and returns how many took.
+     *
+     * What the platform holds for these apps is `cmd connectivity` state, which a reboot clears,
+     * while the list of what this app blocked is its own and does not - so after a restart every
+     * blocked app has its network back and only this app's screen still says otherwise. Applied
+     * once the server is up, because the command needs the shell.
+     *
+     * Only packages the device still has are asked about: an app uninstalled since is not one to
+     * reach for behind the user's back, and blocking a package name nobody has installed is a
+     * command with nothing to do.
+     */
+    fun reapplyNetworkBlocked(context: Context): Int {
+        val blocked = readFirewallBlocked(context) intersect installedPackageNames()
+        return blocked.count { setNetworkBlocked(context, it, true) }
+    }
+
     private fun rememberFirewallBlocked(
         context: Context,
         packageName: String,

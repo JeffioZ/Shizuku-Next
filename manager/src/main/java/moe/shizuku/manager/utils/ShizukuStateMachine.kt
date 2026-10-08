@@ -15,6 +15,7 @@ import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.manage.Hiding
 import moe.shizuku.manager.utils.Diag
 import moe.shizuku.manager.manage.HidingGrants
+import moe.shizuku.manager.manage.LabsReapply
 import moe.shizuku.manager.start.grantLocalHotspotPermissionIfNeeded
 import moe.shizuku.manager.start.grantWriteSecureSettingsIfNeeded
 import rikka.shizuku.Shizuku
@@ -75,6 +76,10 @@ object ShizukuStateMachine {
                 // permission there - see [localHotspotPermission].
                 grantLocalHotspotPermissionIfNeeded()
                 grantHidingAccessIfListsAreInUse()
+                // And whatever a reboot took with it: a block is the platform's state and does not
+                // survive one, while the list of what was blocked is this app's. This is the first
+                // moment there is a server to run the commands with, and it happens once per boot.
+                LabsReapply.ifRebooted()
                 // Remember how the server was launched so later background starts
                 // know whether to use root or wireless debugging (previously done by
                 // the removed HomeViewModel).
