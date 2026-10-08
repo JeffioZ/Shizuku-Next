@@ -18,6 +18,7 @@ import moe.shizuku.manager.start.StartFailureKind
 import moe.shizuku.manager.service.WatchdogGuard
 import moe.shizuku.manager.start.StartStatusReporter
 import moe.shizuku.manager.start.StartMethodGuard
+import moe.shizuku.manager.start.StartTransport
 import moe.shizuku.manager.start.hasWriteSecureSettings
 import moe.shizuku.manager.start.needsWriteSecureSettingsFor
 import moe.shizuku.manager.start.startMethodLabelRes
@@ -178,11 +179,22 @@ object ShizukuReceiverStarter {
         // because Wi-Fi routinely arrives a few seconds after boot and failing it there
         // just leaves Shizuku down. The worker carries a Wi-Fi constraint and retries, so
         // it starts by itself once the network is up.
-        if (userInitiated &&
-            startMethod == ShizukuSettings.StartMethod.WIRELESS &&
-            !hasWifi &&
-            !television
-        ) {
+        //
+        // Which starts need it is asked of the same place the worker asks it, rather than being
+        // read off the method: a start that chose no network (Without Wi-Fi, or the experiment
+        // that makes the same start) needs none, and neither does one that TCP mode has left a
+        // classic port to use. Comparing the method alone refused exactly those - a phone with
+        // Wi-Fi off and the no-network mode on was sent to connect to a Wi-Fi network by the
+        // wireless card, which passes the plain wireless method, while the same start arriving
+        // as an intent went ahead, since an unattended start is never refused (issue #79).
+        val withoutNetwork = startMethod == ShizukuSettings.StartMethod.WIRELESS_NO_NETWORK
+        val wirelessStart = startMethod == ShizukuSettings.StartMethod.WIRELESS || withoutNetwork
+        val needsNetwork = wirelessStart && StartTransport.wifiRequired(
+            EnvironmentUtils.getAdbTcpPort(),
+            ShizukuSettings.getTcpMode(),
+            ShizukuSettings.getForceWirelessDebugging() || withoutNetwork
+        )
+        if (userInitiated && needsNetwork && !hasWifi && !television) {
             StartStatusReporter.failed(
                 context.getString(R.string.start_failed_wifi_required),
                 StartFailureKind.WIFI
