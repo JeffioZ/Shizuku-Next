@@ -99,31 +99,45 @@ object ForcedWirelessDebugging {
         // of an attempt that may be short asking without one.
         startHotspot(context, log)
 
-        if (!ask(cr)) {
+        // Every pass reads before it writes, which is the whole of what issue #79 needed: a write
+        // of 1 while the setting already reads 1 does nothing to the daemon (SettingsProvider does
+        // not notify on the same value), so a start whose wireless debugging was already up - the
+        // phone that reported this spammed the setting on itself with a macro first - asked two
+        // thousand times anyway and announced from its notification the whole time that it was
+        // switching wireless debugging on. What the asking is for is the framework turning it back
+        // off, so the read is what decides whether there is anything to ask for.
+        var passes = 0
+        var writes = 0
+
+        fun pass(): Boolean {
+            passes++
+            if (isEnabled(cr)) return true
+            writes++
+            return writeOnce(cr)
+        }
+
+        if (!pass()) {
             log("the wireless debugging setting could not be written")
             return@withContext
         }
-        log("asking for wireless debugging")
+        log(if (writes == 0) "wireless debugging is already on" else "asking for wireless debugging")
 
         val deadline = System.currentTimeMillis() + WINDOW_MS
-        var attempts = 1
 
         repeat(BURST_COUNT - 1) {
             if (!isActive) return@withContext
-            ask(cr)
-            attempts++
+            pass()
             delay(BURST_INTERVAL_MS)
         }
 
         while (isActive && System.currentTimeMillis() < deadline) {
-            ask(cr)
-            attempts++
+            pass()
             delay(INTERVAL_MS)
         }
 
         Diag.info(
             AppConstants.TAG,
-            "Forced wireless debugging: asked $attempts times, " +
+            "Forced wireless debugging: asked $writes times over $passes passes, " +
                 "hotspot ${if (reservation == null) "not running" else "running"}"
         )
     }
@@ -140,11 +154,16 @@ object ForcedWirelessDebugging {
 
     fun isHotspotRunning(): Boolean = reservation != null
 
-    /** Whether the write was allowed at all. Without it there is nothing to keep asking. */
-    private fun ask(cr: ContentResolver): Boolean =
+    /** Writes the setting once, and answers whether the write was allowed at all. */
+    private fun writeOnce(cr: ContentResolver): Boolean =
         runCatching { Settings.Global.putInt(cr, KEY_WIFI_ENABLED, 1) }
             .onFailure { Diag.warn(AppConstants.TAG, "Could not ask for wireless debugging", it) }
             .isSuccess
+
+    /** Whether the setting reads as on, which is the platform's own record of the toggle. */
+    private fun isEnabled(cr: ContentResolver): Boolean =
+        runCatching { Settings.Global.getInt(cr, KEY_WIFI_ENABLED, 0) == 1 }
+            .getOrDefault(false)
 
     /**
      * A local-only hotspot brings an interface up without touching the user's own
