@@ -61,6 +61,18 @@
 -keep public interface android.content.res.XmlResourceParser { *; }
 -keep public interface org.xmlpull.v1.** { *; }
 
+# An enum that travels through a Parcel or a Bundle is read back by reflective lookup of its
+# values(), and R8 removes that method when nothing in the code calls it directly - the read then
+# throws NoSuchMethodException on whatever thread is restoring the state, which for a View is
+# onAttachedToWindow and therefore a fatal crash in the app. Reported from an Oppo Reno on
+# Android 16 as "java.lang.NoSuchMethodException: <enum>.values []" inside Enum.enumValues, with
+# the app itself repackaged into rikka.shizuku by the rule below, which is why the class in the
+# trace looks like part of the library.
+-keepclassmembers enum * {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
+
 -allowaccessmodification
 -repackageclasses rikka.shizuku
 -keepattributes SourceFile,LineNumberTable
