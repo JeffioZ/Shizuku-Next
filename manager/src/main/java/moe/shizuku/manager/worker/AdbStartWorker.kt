@@ -24,8 +24,10 @@ import java.io.IOException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.callbackFlow
@@ -53,6 +55,7 @@ import moe.shizuku.manager.start.writeGlobalSetting
 import moe.shizuku.manager.starter.Starter
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.ShizukuStateMachine
+import rikka.shizuku.Shizuku
 import moe.shizuku.manager.utils.Diag
 import moe.shizuku.manager.utils.createChannelCompat
 
@@ -462,6 +465,38 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             nm.cancel(ShizukuReceiverStarter.NOTIFICATION_ID)
 
             StartStatusReporter.succeeded()
+
+            // A start reports success the moment the binder appears, and the case worth cover is
+            // the one that appears and then goes away again within seconds: the platform settles a
+            // debugging toggle it has just been asked for by restarting adbd, and the server, being
+            // a process adbd spawned, goes with it. Measured here (wireless starts dying with the
+            // daemon) and reported from a phone that had to tap Start twice every time after
+            // wireless debugging had been off or the phone had restarted (issue #79's thread) - the
+            // second attempt sticks because the state has settled by then.
+            //
+            // Checked in the background so the success report above is not held up by the wait, and
+            // connected once more if the server is gone: the same second start, made by the app
+            // rather than by the person holding the phone. The watchdog does a check like this for
+            // the restarts it makes, but the watchdog is a setting and this has to hold without it.
+            settleScope.launch {
+                delay(START_SETTLE_MS)
+                if (Shizuku.pingBinder()) return@launch
+                // A stop asked for in between is an answer of its own: bringing the server back
+                // would be undoing what the user just did.
+                if (ShizukuSettings.getManuallyStopped()) return@launch
+
+                Diag.warn(
+                    AppConstants.TAG,
+                    "The server went away again within ${START_SETTLE_MS / 1000}s; connecting once more"
+                )
+                runCatching {
+                    AdbStarter.startAdb(applicationContext, port, openTcpPort = usbMethod)
+                    Starter.waitForBinder()
+                }.onFailure {
+                    Diag.warn(AppConstants.TAG, "The second connect did not take either", it)
+                }
+            }
+
             return Result.success()
         } catch (e: CancellationException) {
             val state = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
@@ -577,6 +612,21 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
 
     companion object {
         const val KEY_START_METHOD = "start_method"
+
+        /**
+         * How long a start waits before checking that the server it brought up is still there.
+         *
+         * Long enough to cover the platform settling the debugging toggle this start just asked
+         * for - the reported case was a server gone within about two seconds - and short enough
+         * that a first start which has to be made twice is still over quickly.
+         */
+        private const val START_SETTLE_MS = 8_000L
+
+        /**
+         * The scope the settle check runs on. It outlives the worker on purpose: the check is about
+         * what happens after the work this worker was asked for has finished.
+         */
+        private val settleScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
         /**
          * Whether a start is running in this process at this moment.
