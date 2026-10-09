@@ -3,6 +3,7 @@ package moe.shizuku.manager.adb
 import android.Manifest.permission.WRITE_SECURE_SETTINGS
 import android.content.Context
 import android.os.Build
+import android.os.SystemClock
 import android.util.Log
 import java.io.EOFException
 import java.net.Socket
@@ -27,6 +28,7 @@ import moe.shizuku.manager.starter.Starter
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.ShizukuStateMachine
 import moe.shizuku.manager.utils.Diag
+import moe.shizuku.manager.utils.runShellCommand
 
 private const val TAG = "AdbStarter"
 
@@ -142,7 +144,66 @@ object AdbStarter {
                 "Server started over ${if (viaTcp) "the classic (TCP) port" else "the wireless port"}" +
                     " on port $activePort"
             )
+            logStartedPids(activePort)
         }
+    }
+
+    /**
+     * What the phone looked like when this start last succeeded.
+     *
+     * Kept so the next start can say what changed in between: which adbd the server was running
+     * under last time, and whether that is a different adbd now. The death this exists to explain -
+     * a server that comes up and is taken away seconds later - has one strong suspect, adbd being
+     * restarted underneath it, and a dead server cannot be asked anything after the fact, so the
+     * comparison is made at the next start instead.
+     */
+    @Volatile
+    private var lastServerPid = 0
+    @Volatile
+    private var lastAdbdPid = 0
+    @Volatile
+    private var lastStartAt = 0L
+
+    /**
+     * Reads both pids through the shell this app already has (the server that just came up is what
+     * provides it) and writes down what it found next to what the previous start left behind.
+     *
+     * Best effort: a reading that fails leaves the two numbers at zero and the start it describes
+     * carries on, because this is a diagnostic and not a step.
+     */
+    private fun logStartedPids(port: Int) {
+        val serverOut = runShellCommand("pidof shizuku_server")
+        val adbdOut = runShellCommand("pidof adbd")
+        val server = serverOut?.trim()?.toIntOrNull() ?: 0
+        val adbd = adbdOut?.trim()?.toIntOrNull() ?: 0
+
+        // Said rather than hidden: a zero here means the shell could not answer, not that there
+        // are no such processes, and the two look identical in the line below without this.
+        if (server == 0 || adbd == 0) {
+            Diag.warn(
+                TAG,
+                "Could not read the pids (shizuku_server: '${serverOut.orEmpty()}', " +
+                    "adbd: '${adbdOut.orEmpty()}')"
+            )
+        }
+
+        val previous = if (lastStartAt > 0L && lastServerPid != 0) {
+            val ran = (SystemClock.elapsedRealtime() - lastStartAt) / 1000
+            val adbdChange = when {
+                adbd == 0 || lastAdbdPid == 0 -> "adbd unknown"
+                adbd != lastAdbdPid -> "adbd restarted ($lastAdbdPid -> $adbd)"
+                else -> "adbd unchanged ($adbd)"
+            }
+            ", previous server $lastServerPid ran ${ran}s, $adbdChange"
+        } else {
+            ""
+        }
+
+        Diag.info(TAG, "Pids on port $port: server $server, adbd $adbd$previous")
+
+        lastServerPid = server
+        lastAdbdPid = adbd
+        lastStartAt = SystemClock.elapsedRealtime()
     }
 
     /** What came of asking for the classic port to be closed. */
