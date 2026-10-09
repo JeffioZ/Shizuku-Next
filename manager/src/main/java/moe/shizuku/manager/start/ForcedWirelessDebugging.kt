@@ -41,18 +41,28 @@ object ForcedWirelessDebugging {
     /** The setting the framework watches. */
     private const val KEY_WIFI_ENABLED = "adb_wifi_enabled"
 
-    /** Writes close together first: the window before the constraint check is short. */
-    private const val BURST_COUNT = 20
-    private const val BURST_INTERVAL_MS = 60L
+    /**
+     * Writes close together first: the window before the constraint check is short.
+     *
+     * The shape is one somebody measured rather than one chosen here: a macro that writes this
+     * setting and then waits 20ms, eighty times over, switches wireless debugging on reliably,
+     * while the same loop waiting 10ms - or any other value tried - sometimes does not (reported
+     * on issue #79). So the burst is that loop: eighty passes at 20ms. It was twenty at 60ms
+     * before, which is both fewer and slower than the shape known to work, and the setting only
+     * goes in when the framework has just taken it back out, so the cadence is what decides
+     * whether a write lands in the gap.
+     */
+    private const val BURST_COUNT = 80
+    private const val BURST_INTERVAL_MS = 20L
 
     /**
      * Then steadily, at the same rate as the burst. The framework stops the daemon again
      * within about a tenth of a second of every write, and the port only becomes findable
      * once adbd has had long enough to advertise it, so what wins is the draw where that
-     * check lands late. The one start this has won so far won during the burst, which is
-     * why the steady part matches it rather than being twice as slow.
+     * check lands late - which is a question of cadence, and 20ms is the cadence that was
+     * measured to work.
      */
-    private const val INTERVAL_MS = 60L
+    private const val INTERVAL_MS = 20L
 
     /**
      * How long a start keeps asking before it carries on without.
