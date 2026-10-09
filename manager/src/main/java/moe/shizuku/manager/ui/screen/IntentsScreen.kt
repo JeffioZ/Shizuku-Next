@@ -117,6 +117,25 @@ fun IntentsScreen(onBack: () -> Unit) {
                             }
                         )
                     }
+                    // The one broadcast this app sends rather than takes, and the reason it is
+                    // here at all: an automation that reacts to Shizuku stopping has to match this
+                    // action, and nothing in the app said so (reported while answering issue #80).
+                    item {
+                        SegmentedListItem(
+                            headlineContent = { Text(stringResource(R.string.intents_status_broadcast)) },
+                            supportingContent = {
+                                Column {
+                                    Text("$PACKAGE.SHIZUKU_CHANGED", fontFamily = FontFamily.Monospace)
+                                    Text(stringResource(R.string.intents_status_broadcast_extra))
+                                }
+                            },
+                            trailingContent = {
+                                PillButtonQuiet(onClick = { copy("Copied", "$PACKAGE.SHIZUKU_CHANGED") }) {
+                                    Text(stringResource(R.string.intents_copy))
+                                }
+                            }
+                        )
+                    }
                     item {
                         SegmentedListItem(
                             headlineContent = { Text(stringResource(R.string.intents_adb_command)) },
