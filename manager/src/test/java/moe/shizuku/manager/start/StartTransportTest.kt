@@ -105,6 +105,40 @@ class StartTransportTest {
         )
     }
 
+    // -- which ports a start asks before searching ---------------------------------------------
+
+    @Test
+    fun `the platform's port, the last one used and ours are all tried, in that order`() {
+        // The order is the point: the platform's answer is a fact, the last port is a good guess
+        // (a wireless port is random per boot), and the app's own port is where it would open one.
+        assertEquals(
+            listOf(5555, 43279, 5556),
+            StartTransport.portCandidates(configured = 5555, lastStart = 43279, appTcpPort = 5556)
+        )
+    }
+
+    @Test
+    fun `the same port named twice is asked once`() {
+        assertEquals(
+            listOf(5555, 43279),
+            StartTransport.portCandidates(configured = 5555, lastStart = 43279, appTcpPort = 5555)
+        )
+    }
+
+    @Test
+    fun `a start that has recorded nothing has only the platform's port to try`() {
+        assertEquals(
+            listOf(5555),
+            StartTransport.portCandidates(configured = 5555, lastStart = -1, appTcpPort = 0)
+        )
+    }
+
+    @Test
+    fun `nothing to try means the search, which is what an empty list asks for`() {
+        assertTrue(StartTransport.portCandidates(configured = -1, lastStart = -1, appTcpPort = 0).isEmpty())
+        assertTrue(StartTransport.portCandidates(configured = 0, lastStart = 0, appTcpPort = 0).isEmpty())
+    }
+
     @Test
     fun `a port left open with TCP mode off is not taken by a wireless start`() {
         // Unchanged from before: the mode is what says a port is wanted, and one left behind is not

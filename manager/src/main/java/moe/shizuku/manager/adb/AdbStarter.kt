@@ -6,6 +6,7 @@ import android.os.Build
 import android.os.SystemClock
 import android.util.Log
 import java.io.EOFException
+import java.net.InetSocketAddress
 import java.net.Socket
 import java.net.SocketException
 import javax.net.ssl.SSLException
@@ -139,6 +140,9 @@ object AdbStarter {
             ShizukuSettings.setLastAdbTransport(
                 if (viaTcp) ShizukuSettings.ADB_TRANSPORT_TCP else ShizukuSettings.ADB_TRANSPORT_TLS
             )
+            // And the port itself: a wireless one is random per boot, so this is the only thing that
+            // lets the next start reach adbd without searching for it.
+            ShizukuSettings.setLastAdbPort(activePort)
             Diag.info(
                 TAG,
                 "Server started over ${if (viaTcp) "the classic (TCP) port" else "the wireless port"}" +
@@ -390,8 +394,29 @@ object AdbStarter {
     suspend fun isPortListening(port: Int, host: String = "127.0.0.1"): Boolean =
         withContext(Dispatchers.IO) {
             if (port <= 0) return@withContext false
-            runCatching { Socket(host, port).use { } }.isSuccess
+            runCatching {
+                Socket().use { it.connect(InetSocketAddress(host, port), CONNECT_TIMEOUT_MS) }
+            }.isSuccess
         }
+
+    /**
+     * The first of [candidates] that something is listening on, or null when none answers.
+     *
+     * The ports worth trying before searching for one: the port the setting names, the port the last
+     * start used, and the classic port this app would open. A wireless port is random per boot, so
+     * the remembered one is what turns a start that spent fifteen seconds searching into one that
+     * connects - and a candidate that answers but is not adbd is no worse than a wrong guess, since
+     * the handshake fails at once rather than hanging.
+     */
+    suspend fun firstListening(candidates: List<Int>, host: String = "127.0.0.1"): Int? =
+        candidates.filter { it > 0 }.distinct().firstOrNull { isPortListening(it, host) }
+
+    /**
+     * Bounds one probe. Nothing listening on the loopback refuses at once, so this only ever covers
+     * the case where a socket does not answer at all - and waiting longer than this for a port to
+     * decide whether it is there is a worse answer than saying it is not.
+     */
+    private const val CONNECT_TIMEOUT_MS = 250
 
     private suspend fun waitForPortAvailable(
         host: String,

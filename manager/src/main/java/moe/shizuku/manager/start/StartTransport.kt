@@ -65,4 +65,20 @@ object StartTransport {
      * nothing to fall back to.
      */
     fun classicPortFallback(tcpPort: Int): Int? = tcpPort.takeIf { it > 0 }
+
+    /**
+     * The ports a start should try, in order, before it searches for one over mDNS.
+     *
+     * Three answers to the same question, and the order is what they are worth: what the platform
+     * says the classic port is, what the last start actually reached adbd on - a wireless port is
+     * random per boot, so this is the one that makes a restart instant - and the port this app
+     * would open itself. [configured] and [appTcpPort] are often the same number and the last one
+     * is often absent, which is why the list is cleaned here rather than at each caller: a port
+     * that is not a port, or one already asked about, is not a candidate.
+     *
+     * Nothing here is trusted on its own - the caller probes each in turn - so the cost of a stale
+     * entry is one refused connection, and the cost of this list being empty is the search.
+     */
+    fun portCandidates(configured: Int, lastStart: Int, appTcpPort: Int): List<Int> =
+        listOf(configured, lastStart, appTcpPort).filter { it > 0 }.distinct()
 }

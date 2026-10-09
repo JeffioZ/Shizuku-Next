@@ -245,7 +245,30 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             // and a socket nothing was listening on. Discovered instead, the search writes
             // wireless debugging on, and adbd with it, which is how a start brings back a toggle an
             // earlier stop switched off. Tracked as issue #71.
-            val classicPortListening = AdbStarter.isPortListening(tcpPort)
+            // Which ports are worth asking before the search: the one the platform names, the one
+            // the last start reached adbd on, and the one this app would open. A wireless port is
+            // random per boot, so the remembered one is what makes a wireless restart connect
+            // instead of spending fifteen seconds (or the no-network method's two minutes) finding
+            // a port that was there all along. Measured against the same trick in Shevery, whose
+            // starts are instant for exactly this reason (issue #84).
+            val candidates = StartTransport.portCandidates(
+                configured = tcpPort,
+                lastStart = ShizukuSettings.getLastAdbPort(),
+                appTcpPort = ShizukuSettings.getTcpPort()
+            )
+            val livePort = AdbStarter.firstListening(candidates)
+            // Said every time, not only when one answers: "the search ran because nothing was
+            // listening" and "the search ran because this was never asked" look identical in a log
+            // without it, and the second was a real possibility - the watchdog's direct restart
+            // path never reaches this worker at all.
+            Diag.info(
+                AppConstants.TAG,
+                "Ports tried before the search: " +
+                    candidates.joinToString(", ").ifEmpty { "none" } +
+                    if (livePort != null) "; $livePort answered" else "; none answered"
+            )
+
+            val classicPortListening = tcpPort > 0 && livePort == tcpPort
             if (tcpPort > 0 && !classicPortListening && !usbMethod) {
                 Diag.info(
                     AppConstants.TAG,
@@ -259,8 +282,15 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 tcpMode = ShizukuSettings.getTcpMode(),
                 portListening = classicPortListening
             )
-            val port = tcpPort.takeIf { useClassicPort }
-                ?: callbackFlow {
+            // A candidate that answered is used as it is, except for the USB method: that one is
+            // the classic port by promise, and a remembered wireless port is not it. Where nothing
+            // answered, the old decision stands and the search takes over.
+            val port = when {
+                usbMethod -> tcpPort
+                livePort != null -> livePort
+                useClassicPort -> tcpPort
+                else -> null
+            } ?: callbackFlow {
                 // The mDNS service discovery below arrived with wireless debugging in Android 11
                 // (API 30), and so did the class that queries it: on anything older the class
                 // does not exist at all and naming it is a NoClassDefFoundError rather than a

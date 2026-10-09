@@ -47,6 +47,9 @@ public class ShizukuSettings {
         public static final String KEY_CATEGORY_ADVANCED = "category_advanced";
         public static final String KEY_MANUALLY_STOPPED = "manually_stopped";
         public static final String KEY_LAST_ADB_TRANSPORT = "last_adb_transport";
+
+        /** The port a start last reached adbd on, whatever kind of port it was. */
+        public static final String KEY_LAST_ADB_PORT = "last_adb_port";
         public static final String KEY_START_METHOD = "start_method";
         public static final String KEY_RUNNING_START_METHOD = "running_start_method";
         public static final String KEY_WAIT_FOR_WIFI = "wait_for_wifi";
@@ -314,6 +317,22 @@ public class ShizukuSettings {
 
     public static void setLastAdbTransport(int transport) {
         getPreferences().edit().putInt(Keys.KEY_LAST_ADB_TRANSPORT, transport).apply();
+    }
+
+    /**
+     * The port the last start reached adbd on, or -1 when no start has recorded one.
+     *
+     * Worth remembering because a wireless debugging port is random per boot: without it the only
+     * way back to adbd is the mDNS search, which is what made a wireless start take fifteen seconds
+     * where the rest of the app was instant. It is a hint rather than a fact - the port is probed
+     * before it is used, and a stale one fails at the handshake.
+     */
+    public static int getLastAdbPort() {
+        return getPreferences().getInt(Keys.KEY_LAST_ADB_PORT, -1);
+    }
+
+    public static void setLastAdbPort(int port) {
+        getPreferences().edit().putInt(Keys.KEY_LAST_ADB_PORT, port).apply();
     }
 
     /**
