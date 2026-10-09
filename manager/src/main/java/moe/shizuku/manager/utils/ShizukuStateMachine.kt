@@ -76,10 +76,12 @@ object ShizukuStateMachine {
                 // permission there - see [localHotspotPermission].
                 grantLocalHotspotPermissionIfNeeded()
                 grantHidingAccessIfListsAreInUse()
-                // And whatever a reboot took with it: a block is the platform's state and does not
-                // survive one, while the list of what was blocked is this app's. This is the first
-                // moment there is a server to run the commands with, and it happens once per boot.
-                LabsReapply.ifRebooted()
+                // And whatever the platform has lost: a block is its state and goes with the
+                // framework - a full reboot or a soft one - while the list of what was blocked is
+                // this app's. This is the first moment there is a server to run the commands
+                // with, and the platform is asked what is still in place rather than a reboot
+                // being guessed at.
+                LabsReapply.putBack()
                 // Remember how the server was launched so later background starts
                 // know whether to use root or wireless debugging (previously done by
                 // the removed HomeViewModel).

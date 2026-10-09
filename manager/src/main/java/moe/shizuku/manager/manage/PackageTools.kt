@@ -624,20 +624,42 @@ object PackageTools {
             .toSet()
 
     /**
-     * Puts the remembered blocks back on the platform, and returns how many took.
+     * The blocked packages the platform no longer has blocked.
      *
-     * What the platform holds for these apps is `cmd connectivity` state, which a reboot clears,
-     * while the list of what this app blocked is its own and does not - so after a restart every
-     * blocked app has its network back and only this app's screen still says otherwise. Applied
-     * once the server is up, because the command needs the shell.
+     * Recorded by this app, still installed, and not blocked where the platform was asked - the
+     * platform is the authority, so a block that is still in place needs nothing done to it. Split
+     * out from the shell work so the decision can be reasoned about without a device: the answering
+     * lambda is the only part of it that needs one.
+     */
+    internal fun toReapply(
+        recorded: Set<String>,
+        installed: Set<String>,
+        blockedNow: (String) -> Boolean
+    ): Set<String> = (recorded intersect installed).filterNot(blockedNow).toSet()
+
+    /**
+     * Puts back the blocks that are no longer in place, and returns how many took.
+     *
+     * A block is `cmd connectivity` state, which belongs to the framework and goes with it: a full
+     * reboot clears it, and so does a soft one, where the kernel keeps running and only the
+     * framework restarts. That is why this asks the platform what is still blocked rather than
+     * trying to work out whether a reboot happened - what matters is the state, not the cause. It
+     * also covers a change made by something else in the same session.
      *
      * Only packages the device still has are asked about: an app uninstalled since is not one to
      * reach for behind the user's back, and blocking a package name nobody has installed is a
      * command with nothing to do.
      */
     fun reapplyNetworkBlocked(context: Context): Int {
-        val blocked = readFirewallBlocked(context) intersect installedPackageNames()
-        return blocked.count { setNetworkBlocked(context, it, true) }
+        val recorded = readFirewallBlocked(context)
+        if (recorded.isEmpty()) return 0
+
+        val gone = toReapply(recorded, installedPackageNames()) { packageName ->
+            // A failed read counts as still blocked: blocking it again would fail for the same
+            // reason, and the next start asks again anyway.
+            readNetworkBlocked(packageName) != false
+        }
+        return gone.count { setNetworkBlocked(context, it, true) }
     }
 
     private fun rememberFirewallBlocked(
